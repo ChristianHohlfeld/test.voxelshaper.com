@@ -1,5 +1,4 @@
 # .github/workflows/pages.yml
-
 name: Deploy static content to Pages
 
 on:
@@ -34,6 +33,11 @@ jobs:
           mkdir out
           cp index.html out/index.html
           touch out/.nojekyll
+
+      - name: Replace domain in all HTML files
+        run: |
+          echo "🔄 Replacing voxelshaper.com → test.voxelshaper.com..."
+          find out -name '*.html' -exec perl -i -pe 's~(?<!test\.)voxelshaper\.com~test.voxelshaper.com~g' {} \;
 
       - name: 🔧 Inject TEST banner
         run: |
