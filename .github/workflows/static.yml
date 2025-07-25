@@ -1,3 +1,5 @@
+# .github/workflows/pages.yml
+
 name: Deploy static content to Pages
 
 on:
@@ -32,12 +34,6 @@ jobs:
           mkdir out
           cp index.html out/index.html
           touch out/.nojekyll
-
-      - name: Replace domain for test environment
-        run: |
-          echo "🔄 Replacing domain in index.html for test environment..."
-          # Ersetzt nur 'voxelshaper.com', NICHT 'test.voxelshaper.com'
-          perl -i -pe 's~(?<!test\.)voxelshaper\.com~test.voxelshaper.com~g' out/index.html
 
       - name: 🔧 Inject TEST banner
         run: |
