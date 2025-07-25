@@ -2911,7 +2911,7 @@ window.onload = async function() {
                     loginLogoutBtn.textContent = user ? 'Abmelden' : 'Anmelden';
                     userIdDisplay.innerHTML = user ? `<img src="${user.photoURL || 'https://placehold.co/24x24/cccccc/000000?text=U'}" alt="User Avatar" class="w-6 h-6 rounded-full align-middle">` : '';
                     uploadToHubBtn.classList.toggle('hidden', !user);
-                    document.getElementById('mobile-login-logout').textContent = user ? '🚪' : '�';
+                    document.getElementById('mobile-login-logout').textContent = user ? '🚪' : '?';
                     if (user) document.getElementById('authModal').close();
 
                     if (!projectLoadedFromUrl) {
