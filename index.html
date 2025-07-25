@@ -22,7 +22,16 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+/* Wichtig: HTML und Body auf 100% Höhe setzen und Standard-Padding/Margin entfernen */
+html {
+    height: 100%;
+    overflow: hidden; /* Verhindert Scrollbars auf dem HTML-Element */
+}
+
 body {
+    height: 100%; /* Stellt sicher, dass Body 100% der HTML-Höhe einnimmt */
+    margin: 0; /* Entfernt Standard-Body-Margin */
+    /* Die vorhandenen env() Paddings werden durch box-sizing: border-box innerhalb dieser 100% Höhe berücksichtigt */
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
@@ -32,6 +41,8 @@ body {
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
+    display: flex; /* Für Flexbox-Layout */
+    flex-direction: column; /* Elemente untereinander anordnen */
 }
 #container, #voxelCanvas {
     -webkit-user-select: none;
@@ -701,25 +712,54 @@ class VoxelChunk {
         }
     }
     removeVoxel(gx, gy, gz) {
-        const lKey = this.getLocalKey(gx, gy, gz); const gKey = key(gx, gy, gz);
-        if (!this.voxels.has(lKey)) return;
-        const { instanceId: removedId } = this.voxels.get(lKey);
-        this.voxels.delete(lKey); this.globalToLocalInstanceIdMap.delete(gKey);
-        const lastId = this.instancedMesh.count - 1;
-        if (removedId !== lastId) {
-            let lastVoxelLKey = null;
-            for (const [lk, data] of this.voxels.entries()) { if (data.instanceId === lastId) { lastVoxelLKey = lk; break; } }
-            if (lastVoxelLKey !== null) {
-                const tempMatrix = new THREE.Matrix4(); this.instancedMesh.getMatrixAt(lastId, tempMatrix);
-                this.instancedMesh.setMatrixAt(removedId, tempMatrix);
-                this.updateInstanceColor(removedId, this.voxels.get(lastVoxelLKey).color);
-                this.voxels.get(lastVoxelLKey).instanceId = removedId;
-                const [lx, ly, lz] = parseKey(lastVoxelLKey);
-                this.globalToLocalInstanceIdMap.set(key(this.chunkX * this.chunkSize + lx, this.chunkY * this.chunkSize + ly, this.chunkZ * this.chunkSize + lz), removedId);
+        const gKey = key(gx, gy, gz);
+        const { cx, cy, cz } = getChunkCoords(gx, gy, gz); 
+        const cKey = getChunkKey(cx, cy, cz);
+        
+        if (chunks.has(cKey)) {
+            const chunk = chunks.get(cKey);
+            const lKey = chunk.getLocalKey(gx, gy, gz); // Lokalen Schlüssel hier holen
+            if (!chunk.voxels.has(lKey)) return; 
+
+            const { instanceId: removedId } = chunk.voxels.get(lKey);
+            
+            chunk.voxels.delete(lKey); // Entfernen aus der lokalen Chunk-Map
+            chunk.globalToLocalInstanceIdMap.delete(gKey); // Entfernen aus der globalToLocal Map des Chunks
+
+            const lastId = chunk.instancedMesh.count - 1;
+            if (removedId !== lastId) {
+                let lastVoxelLKey = null;
+                for (const [lk, data] of chunk.voxels.entries()) { 
+                    if (data.instanceId === lastId) { 
+                        lastVoxelLKey = lk; 
+                        break; 
+                    } 
+                }
+                if (lastVoxelLKey !== null) {
+                    const tempMatrix = new THREE.Matrix4(); 
+                    chunk.instancedMesh.getMatrixAt(lastId, tempMatrix);
+                    chunk.instancedMesh.setMatrixAt(removedId, tempMatrix);
+                    chunk.updateInstanceColor(removedId, chunk.voxels.get(lastVoxelLKey).color);
+                    chunk.voxels.get(lastVoxelLKey).instanceId = removedId;
+                    const [lx, ly, lz] = parseKey(lastVoxelLKey);
+                    chunk.globalToLocalInstanceIdMap.set(key(chunk.chunkX * chunk.chunkSize + lx, chunk.chunkY * chunk.chunkSize + ly, chunk.chunkZ * chunk.chunkSize + lz), removedId);
+                }
             }
+            chunk.instancedMesh.count--;
+            chunk.instancedMesh.instanceMatrix.needsUpdate = true; 
+            chunk.instancedMesh.instanceColor.needsUpdate = true;
+            
+            // Erst hier aus der globalen voxels-Map löschen, nachdem der Chunk-Voxel erfolgreich behandelt wurde
+            voxels.delete(gKey); 
+
+            if (chunk.instancedMesh.count === 0) { 
+                chunk.dispose(); 
+                chunks.delete(cKey); 
+            }
+        } else {
+            // Wenn der Chunk nicht existiert, aber der Voxel in der globalen Map ist, nur aus globaler Map löschen
+            voxels.delete(gKey);
         }
-        this.instancedMesh.count--;
-        this.instancedMesh.instanceMatrix.needsUpdate = true; this.instancedMesh.instanceColor.needsUpdate = true;
     }
     recolorVoxel(gx, gy, gz, newColorHex) {
         const lKey = this.getLocalKey(gx, gy, gz);
@@ -950,12 +990,57 @@ function _addSingleVoxel(gx, gy, gz, colorHex) {
 
 // Entfernt einen einzelnen Voxel
 function _removeSingleVoxel(gx, gy, gz) {
-    const gKey = key(gx, gy, gz); if (!voxels.has(gKey)) return;
-    voxels.delete(gKey);
-    const { cx, cy, cz } = getChunkCoords(gx, gy, gz); const cKey = getChunkKey(cx, cy, cz);
+    const gKey = key(gx, gy, gz);
+    const { cx, cy, cz } = getChunkCoords(gx, gy, gz); 
+    const cKey = getChunkKey(cx, cy, cz);
+    
     if (chunks.has(cKey)) {
-        const chunk = chunks.get(cKey); chunk.removeVoxel(gx, gy, gz);
-        if (chunk.instancedMesh.count === 0) { chunk.dispose(); chunks.delete(cKey); }
+        const chunk = chunks.get(cKey);
+        const lKey = chunk.getLocalKey(gx, gy, gz); // Lokalen Schlüssel hier holen
+        if (!chunk.voxels.has(lKey)) { // Prüfen, ob der Voxel wirklich im Chunk ist
+            // Wenn der Voxel nicht im Chunk ist, aber in der globalen Map, nur aus der globalen Map löschen
+            if (voxels.has(gKey)) voxels.delete(gKey);
+            return; 
+        }
+
+        const { instanceId: removedId } = chunk.voxels.get(lKey);
+        
+        chunk.voxels.delete(lKey); // Entfernen aus der lokalen Chunk-Map
+        chunk.globalToLocalInstanceIdMap.delete(gKey); // Entfernen aus der globalToLocal Map des Chunks
+
+        const lastId = chunk.instancedMesh.count - 1;
+        if (removedId !== lastId) {
+            let lastVoxelLKey = null;
+            for (const [lk, data] of chunk.voxels.entries()) { 
+                if (data.instanceId === lastId) { 
+                    lastVoxelLKey = lk; 
+                    break; 
+                } 
+            }
+            if (lastVoxelLKey !== null) {
+                const tempMatrix = new THREE.Matrix4(); 
+                chunk.instancedMesh.getMatrixAt(lastId, tempMatrix);
+                chunk.instancedMesh.setMatrixAt(removedId, tempMatrix);
+                chunk.updateInstanceColor(removedId, chunk.voxels.get(lastVoxelLKey).color);
+                chunk.voxels.get(lastVoxelLKey).instanceId = removedId;
+                const [lx, ly, lz] = parseKey(lastVoxelLKey);
+                chunk.globalToLocalInstanceIdMap.set(key(chunk.chunkX * chunk.chunkSize + lx, chunk.chunkY * chunk.chunkSize + ly, chunk.chunkZ * chunk.chunkSize + lz), removedId);
+            }
+        }
+        chunk.instancedMesh.count--;
+        chunk.instancedMesh.instanceMatrix.needsUpdate = true; 
+        chunk.instancedMesh.instanceColor.needsUpdate = true;
+        
+        // Erst hier aus der globalen voxels-Map löschen, nachdem der Chunk-Voxel erfolgreich behandelt wurde
+        voxels.delete(gKey); 
+
+        if (chunk.instancedMesh.count === 0) { 
+            chunk.dispose(); 
+            chunks.delete(cKey); 
+        }
+    } else {
+        // Wenn der Chunk nicht existiert, aber der Voxel in der globalen Map ist, nur aus globaler Map löschen
+        if (voxels.has(gKey)) voxels.delete(gKey);
     }
 }
 
@@ -1104,25 +1189,26 @@ const predefinedTemplates = [
  * @param {number} clientX - X-Koordinate des Maus-/Touch-Ereignisses relativ zum Viewport.
  * @param {number} clientY - Y-Koordinate des Maus-/Touch-Ereignisses relativ zum Viewport.
  * @param {Map<number, boolean>} [excludeVoxelsMap] - Optional: Eine Map von Voxel-Keys, die ignoriert werden sollen (z.B. Voxel im aktuellen Zeichenstrich).
+ * @param {number|null} [lockedYLevel=null] - Optional: Eine Y-KoEbene, auf die der Raycast im DRAW-Modus bevorzugt werden soll.
  * @returns {object|null} Voxelkoordinaten (gx, gy, gz), Normalenvektor (faceNormal, falls Voxel getroffen),
  * ob ein existierender Voxel (hitExistingVoxel) oder eine Vorlage (hitTemplate) getroffen wurde.
  */
-function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null) {
-    if (isPointerLocked) return null; // Keine Interaktion, wenn der Pointer gesperrt ist
+function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null, lockedYLevel = null) {
+    if (isPointerLocked) return null;
 
-    const rect = cvs.getBoundingClientRect(); // Position und Größe des Canvas
+    const rect = cvs.getBoundingClientRect();
     const mouse = new THREE.Vector2(
         ((clientX - rect.left) / rect.width) * 2 - 1,
         -((clientY - rect.top) / rect.height) * 2 + 1
     );
 
-    const raycaster = new THREE.Raycaster(); // Raycaster für Kollisionserkennung
-    raycaster.setFromCamera(mouse, cam); // Raycast von der Kamera durch die Mausposition
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, cam);
 
     // 1. Priorität: Treffen der Vorlage, wenn eine geladen ist
     if (templateInstancedMesh && templateInstancedMesh.count > 0) {
         const templateIntersects = raycaster.intersectObject(templateInstancedMesh);
-        for (const hit of templateIntersects) { // Iterate to find a valid hit
+        for (const hit of templateIntersects) {
             const instanceMatrix = new THREE.Matrix4();
             templateInstancedMesh.getMatrixAt(hit.instanceId, instanceMatrix);
             const instancePosition = new THREE.Vector3().setFromMatrixPosition(instanceMatrix);
@@ -1133,7 +1219,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
 
             const hitKey = key(hitVoxelX, hitVoxelY, hitVoxelZ);
             if (excludeVoxelsMap && excludeVoxelsMap.has(hitKey)) {
-                continue; // Skip this template voxel if it's in the exclude list
+                continue;
             }
 
             return { gx: hitVoxelX, gy: hitVoxelY, gz: hitVoxelZ, faceNormal: null, hitExistingVoxel: false, hitTemplate: true };
@@ -1142,22 +1228,21 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
 
     // 2. Priorität: Treffen von existierenden Voxeln
     const objectsToIntersect = Array.from(chunks.values()).map(chunk => chunk.instancedMesh);
-    // Prevents the image template from being hit by the raycaster
     if (templateImageMesh) {
         templateImageMesh.raycast = function() {}; 
     }
 
     const intersects = raycaster.intersectObjects(objectsToIntersect);
 
-    for (const hit of intersects) { // Iterate to find a valid hit
+    for (const hit of intersects) {
         const hitNormal = hit.face.normal.clone();
         const intersectionPoint = hit.point;
 
         if (!Number.isFinite(intersectionPoint.x) || !Number.isFinite(intersectionPoint.y) || !Number.isFinite(intersectionPoint.z)) {
-            continue; // Skip invalid intersection points
+            continue;
         }
 
-        const epsilon = 0.001; // Kleiner Versatz, um die korrekte Seite des Voxels zu treffen
+        const epsilon = 0.001;
         const adjustedPoint = intersectionPoint.clone().addScaledVector(hitNormal, -epsilon);
 
         const hitVoxelX = Math.floor(adjustedPoint.x / VS);
@@ -1166,12 +1251,12 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
         
         const hitKey = key(hitVoxelX, hitVoxelY, hitVoxelZ);
         if (excludeVoxelsMap && excludeVoxelsMap.has(hitKey)) {
-            continue; // Skip this voxel if it's in the exclude list
+            continue;
         }
 
         const result = { gx: Number(hitVoxelX), gy: Number(hitVoxelY), gz: Number(hitVoxelZ), faceNormal: hitNormal, hitExistingVoxel: true, hitTemplate: false };
         if (!Number.isFinite(result.gx) || !Number.isFinite(result.gy) || !Number.isFinite(result.gz)) {
-            continue; // Skip if coordinates are not finite
+            continue;
         }
         return result;
     }
@@ -1179,17 +1264,42 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
     // 3. Priorität: Treffen der Zeichenebene, wenn keine Voxel getroffen wurden
     let planeNormal = new THREE.Vector3();
     let planeConstant = 0;
+    let targetY = activeDrawingLevel.y; // Standardmäßig die aktive Zeichenebene
 
-    if (currentDrawingAxis === 'y') {
-        planeNormal.set(0, 1, 0);
-        planeConstant = -(activeDrawingLevel.y * VS);
-    } else if (currentDrawingAxis === 'x') {
-        planeNormal.set(1, 0, 0);
-        planeConstant = -(activeDrawingLevel.x * VS);
-    } else if (currentDrawingAxis === 'z') {
-        planeNormal.set(0, 0, 1);
-        planeConstant = -(activeDrawingLevel.z * VS);
+    // Wenn ein lockedYLevel für den DRAW-Modus während eines Drags vorhanden ist,
+    // überschreibe die Standard-Zeichenebene damit.
+    if (lockedYLevel !== null && currentMode === Modes.DRAW && isDragging) {
+        planeNormal.set(0, 1, 0); // Die Zeichenebene ist immer horizontal (Y-Achse)
+        planeConstant = -(lockedYLevel * VS); // Verwende die übergebene Locked Y-Ebene
+        const tempDrawingPlane = new THREE.Plane(planeNormal, planeConstant);
+        const tempIntersectionPoint = new THREE.Vector3();
+
+        if (raycaster.ray.intersectPlane(tempDrawingPlane, tempIntersectionPoint)) {
+            // Wenn der Raycast die gelockte Y-Ebene trifft, gib diesen Treffer zurück
+            let gx = Math.floor(tempIntersectionPoint.x / VS);
+            let gy = lockedYLevel; // Hier ist die Y-Ebene die gelockte Ebene
+            let gz = Math.floor(tempIntersectionPoint.z / VS);
+
+            gx = Number(gx);
+            gy = Number(gy);
+            gz = Number(gz);
+
+            if (Number.isFinite(gx) && Number.isFinite(gy) && Number.isFinite(gz)) {
+                 // Vor dem Zurückgeben prüfen, ob dieser potentielle Voxel
+                 // im Ausschluss-Map enthalten ist. Wenn ja, ignorieren.
+                const potentialKey = key(gx, gy, gz);
+                if (!excludeVoxelsMap || !excludeVoxelsMap.has(potentialKey)) {
+                    return { gx, gy, gz, faceNormal: null, hitExistingVoxel: false, hitTemplate: false };
+                }
+            }
+        }
+        // Wenn die gelockte Y-Ebene nicht getroffen wurde oder der Voxel ausgeschlossen ist,
+        // fahren wir mit der normalen aktiven Zeichenebene fort.
     }
+
+
+    planeNormal.set(0, 1, 0); // Die Zeichenebene ist immer horizontal (Y-Achse)
+    planeConstant = -(targetY * VS); // Verwende die angepasste Target-Y
 
     const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
     const intersectionPoint = new THREE.Vector3();
@@ -1203,18 +1313,19 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
         let gy = Math.floor(intersectionPoint.y / VS);
         let gz = Math.floor(intersectionPoint.z / VS);
 
-        if (currentDrawingAxis === 'y') gy = activeDrawingLevel.y;
-        else if (currentDrawingAxis === 'x') gx = activeDrawingLevel.x;
+        // Die Y-Koordinate ist bereits durch targetY gesetzt oder korrigiert,
+        // daher hier nur noch die X/Z anpassen, wenn die Zeichenachse nicht Y ist.
+        if (currentDrawingAxis === 'x') gx = activeDrawingLevel.x;
         else if (currentDrawingAxis === 'z') gz = activeDrawingLevel.z;
+        // else if currentDrawingAxis === 'y', then gy remains targetY
 
         gx = Number(gx);
-        gy = Number(gy);
+        gy = Number(gy); // gy ist hier schon korrekt (targetY)
         gz = Number(gz);
 
         if (!Number.isFinite(gx) || !Number.isFinite(gy) || !Number.isFinite(gz)) {
             return null;
         }
-
         const result = { gx, gy, gz, faceNormal: null, hitExistingVoxel: false, hitTemplate: false };
         return result;
     }
@@ -2047,7 +2158,7 @@ function onPointerDown(e) {
 
     // Berechnet die Voxelkoordinaten am Start des Klicks (roher Treffer)
     initialRayHitCoords = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
-    if (!initialRayHitCoords || (!Number.isFinite(initialRayHitCoords.gx) || !Number.isFinite(initialRayHitCoords.gy) || !Number.isFinite(initialRayHitCoords.gz))) {
+    if (!initialRayHitCoords || !Number.isFinite(initialRayHitCoords.gx) || !Number.isFinite(initialRayHitCoords.gy) || !Number.isFinite(initialRayHitCoords.gz)) {
         pointerIsDown = false; initialClickPos = null; initialRayHitCoords = null;
         return;
     }
@@ -2094,7 +2205,11 @@ function onPointerDown(e) {
 
             initialDragVoxelCoords = { ...firstActionCoords }; // Dies ist der erste Voxel, der vom Strich betroffen ist
             lastActionVoxelCoords = { ...firstActionCoords }; // Initialisiert lastActionCoords
-            initialDragYLevel = firstActionCoords.gy; // Speichert die initiale Y-Ebene für den Drag
+            
+            // Setze initialDragYLevel hier für DRAW-Modus bei Touch
+            if (currentMode === Modes.DRAW) {
+                initialDragYLevel = initialDragVoxelCoords.gy;
+            }
 
             // Führt die erste Voxel-Modifikation für den Startpunkt des Drags aus
             const gKey = key(firstActionCoords.gx, firstActionCoords.gy, firstActionCoords.gz);
@@ -2117,15 +2232,14 @@ function onPointerDown(e) {
 // Handler für Pointer Move (Maus oder Touch bewegt)
 function onPointerMove(e) {
     e.preventDefault();
-    if (isPointerLocked) return; // Keine Interaktion, wenn Pointer gesperrt ist
+    if (isPointerLocked) return;
 
-    // Für Touch-Ereignisse: Aktualisiert Pointer-Position und handhabt Gesten
     if (e.pointerType === 'touch' && activePointers.has(e.pointerId)) {
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
-        if (activePointers.size > 1) { // Bei Multi-Touch: Geste handhaben
+        if (activePointers.size > 1) {
             handleGesture();
-            updatePreviewVoxel(0, 0, 0, false); // Vorschau-Voxel ausblenden
-            previewLineInstancedMesh.count = 0; // Vorschau-Linie ausblenden
+            updatePreviewVoxel(0, 0, 0, false);
+            previewLineInstancedMesh.count = 0;
             previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
             previewLineVoxels = [];
             return;
@@ -2135,39 +2249,42 @@ function onPointerMove(e) {
     lastX = e.clientX;
     lastY = e.clientY;
 
-    // Überprüft, ob ein Drag begonnen hat (Bewegung über einen Schwellenwert hinaus)
     const currentMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
     const shouldStartDrag = pointerIsDown && (currentMovedDist > MOVE_PX);
 
-    // Wichtig: currentStrokeVoxels als excludeVoxelsMap übergeben, wenn ein Drag aktiv ist
-    let currentRayHit = calculateRayTargetVoxelCoords(e.clientX, e.clientY, isDragging ? currentStrokeVoxels : null); 
-    let targetForVoxelAction = null; // Die Koordinaten, wo die Voxel-Aktion (hinzufügen/löschen/zeichnen) stattfinden soll
-    let voxelForPreview = null;     // Die Koordinaten, wo der transparente Vorschau-Voxel angezeigt werden soll
+    let currentRayHit = calculateRayTargetVoxelCoords(
+        e.clientX,
+        e.clientY,
+        isDragging ? currentStrokeVoxels : null,
+        isDragging && currentMode === Modes.DRAW ? initialDragYLevel : null
+    ); 
 
-    if (currentRayHit) {
+    let targetForVoxelAction = null; 
+    let voxelForPreview = null;     
+
+    // Defensive Prüfung: Nur fortfahren, wenn currentRayHit gültig ist und seine Koordinaten Zahlen sind
+    if (currentRayHit && 
+        Number.isFinite(currentRayHit.gx) && 
+        Number.isFinite(currentRayHit.gy) && 
+        Number.isFinite(currentRayHit.gz)) 
+    {
         // --- Bestimme targetForVoxelAction ---
         let gx_action = currentRayHit.gx;
         let gy_action = currentRayHit.gy;
         let gz_action = currentRayHit.gz;
 
-        // Anpassung für ADD-Modus, wenn kein Template getroffen wird
         if (currentMode === Modes.ADD && currentRayHit.faceNormal && !currentRayHit.hitTemplate) {
             gx_action += currentRayHit.faceNormal.x;
             gy_action += currentRayHit.faceNormal.y;
             gz_action += currentRayHit.faceNormal.z;
         }
-
-        // Y-Ebene-Sperre speziell für DRAW-Modus während des Ziehens
         if (isDragging && currentMode === Modes.DRAW && initialDragYLevel !== null) {
             gy_action = initialDragYLevel;
         }
-        // Klemmen der Action-Koordinaten innerhalb des Rasters
         gx_action = Math.max(0, Math.min(GRID - 1, gx_action));
         gy_action = Math.max(0, Math.min(GRID - 1, gy_action));
         gz_action = Math.max(0, Math.min(GRID - 1, gz_action));
-        if (Number.isFinite(gx_action) && Number.isFinite(gy_action) && Number.isFinite(gz_action)) {
-            targetForVoxelAction = { gx: gx_action, gy: gy_action, gz: gz_action };
-        }
+        targetForVoxelAction = { gx: gx_action, gy: gy_action, gz: gz_action };
 
 
         // --- Bestimme voxelForPreview ---
@@ -2175,55 +2292,49 @@ function onPointerMove(e) {
         let gy_preview = currentRayHit.gy;
         let gz_preview = currentRayHit.gz;
 
-        // Vorschau für ADD-Modus (wo er platziert würde)
         if (currentMode === Modes.ADD && currentRayHit.faceNormal && !currentRayHit.hitTemplate) {
             gx_preview += currentRayHit.faceNormal.x;
             gy_preview += currentRayHit.faceNormal.y;
             gz_preview += currentRayHit.faceNormal.z;
-        }
-        // Vorschau, wenn ein Template-Voxel im ADD-Modus getroffen wird
-        else if (currentMode === Modes.ADD && currentRayHit.hitTemplate) {
+        } else if (currentMode === Modes.ADD && currentRayHit.hitTemplate) {
             // Keine Anpassung, Vorschau an der Position des Template-Voxels
-        }
-        // Vorschau für DELETE/DRAW (an der Position des getroffenen Voxels)
-        else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
+        } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
              // Keine Anpassung, Vorschau an der Position des getroffenen Voxels
         }
-        // Klemmen der Preview-Koordinaten innerhalb des Rasters
         gx_preview = Math.max(0, Math.min(GRID - 1, gx_preview));
         gy_preview = Math.max(0, Math.min(GRID - 1, gy_preview));
         gz_preview = Math.max(0, Math.min(GRID - 1, gz_preview));
-        if (Number.isFinite(gx_preview) && Number.isFinite(gy_preview) && Number.isFinite(gz_preview)) {
-            voxelForPreview = { gx: gx_preview, gy: gy_preview, gz: gz_preview };
-        }
+        voxelForPreview = { gx: gx_preview, gy: gy_preview, gz: gz_preview };
     }
     
     // Führe Aktionen aus, wenn der Pointer gedrückt ist und ein Ziel gefunden wurde
     if (pointerIsDown && targetForVoxelAction) {
         if (!isDragging && shouldStartDrag) { // Start des Drags erkennen
             isDragging = true;
-            // Der erste Voxel, der vom Strich betroffen ist, und die erste Modifikation
-            // werden bereits in onPointerDown gehandhabt. Hier nur lastActionVoxelCoords aktualisieren.
             lastActionVoxelCoords = { ...targetForVoxelAction };
+
+            if (currentMode === Modes.DRAW) {
+                // Sicherstellen, dass initialDragVoxelCoords.gy existiert, wenn darauf zugegriffen wird
+                initialDragYLevel = initialDragVoxelCoords && Number.isFinite(initialDragVoxelCoords.gy) 
+                                    ? initialDragVoxelCoords.gy 
+                                    : targetForVoxelAction.gy;
+            }
         }
 
         if (isDragging) {
             const startPointForLine = lastActionVoxelCoords;
-            const endPointForLine = { ...targetForVoxelAction }; // Aktuelles Ziel für das Linienende
+            const endPointForLine = { ...targetForVoxelAction };
 
             let pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine);
 
-            // Filterung der Voxel im Strich basierend auf dem Modus und der Vorlage
             if (currentMode === Modes.ADD) {
                 pathVoxels = pathVoxels.filter(voxel => {
                     const gKey = key(voxel.gx, voxel.gy, voxel.gz);
-                    const isTemplateVoxel = templateVoxelMap.has(gKey); // Prüft, ob es ein Template-Voxel ist
-                    const hasExistingVoxel = voxels.has(gKey); // Prüft, ob bereits ein Voxel existiert
-                    // Füge hinzu, wenn es leer ist UND (ein Template-Voxel ODER keine Template geladen)
+                    const isTemplateVoxel = templateVoxelMap.has(gKey);
+                    const hasExistingVoxel = voxels.has(gKey);
                     return !hasExistingVoxel && (isTemplateVoxel || !templateInstancedMesh);
                 });
             } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-                // Nur Voxel im Strich berücksichtigen, die zu Beginn des Drags existierten
                 pathVoxels = pathVoxels.filter(voxel => voxelsAtDragStart.has(key(voxel.gx, voxel.gy, voxel.gz)));
             }
 
@@ -2242,21 +2353,21 @@ function onPointerMove(e) {
                     currentStrokeVoxels.get(gKey).finalColor = finalColorAfterModification;
                 }
             }
-            lastActionVoxelCoords = { ...endPointForLine }; // Letzte Aktionskoordinaten für den nächsten Segment aktualisieren
-            updatePreviewVoxel(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz, true); // Vorschau-Voxel anzeigen
-            previewLineInstancedMesh.count = 0; // Vorschau-Linie während des Drags ausblenden
+            lastActionVoxelCoords = { ...endPointForLine };
+            updatePreviewVoxel(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz, true);
+            previewLineInstancedMesh.count = 0;
 
-        } else { // Pointer ist gedrückt, aber noch kein Drag (Hover-Zustand, bevor Drag-Schwelle überschritten)
-            if (voxelForPreview) { // Nutze das dedizierte Preview-Ziel
+        } else {
+            if (voxelForPreview) {
                 let showPreview = false;
                 const gKeyAtPreview = key(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz);
                 const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
-                const isTemplateVoxel = templateVoxelMap.has(gKeyAtPreview); // Nutze die Map für Effizienz
+                const isTemplateVoxel = templateVoxelMap.has(gKeyAtPreview);
 
                 if (currentMode === Modes.ADD) {
-                    showPreview = !hasVoxelAtPreview || isTemplateVoxel; // Vorschau anzeigen, wenn leer oder Template-Voxel
+                    showPreview = !hasVoxelAtPreview || isTemplateVoxel;
                 } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-                    showPreview = hasVoxelAtPreview; // Vorschau anzeigen, wenn existierender Voxel
+                    showPreview = hasVoxelAtPreview;
                 }
                 updatePreviewVoxel(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz, showPreview);
             } else {
@@ -2264,41 +2375,58 @@ function onPointerMove(e) {
             }
             previewLineInstancedMesh.count = 0;
         }
-    } else { // Pointer ist nicht gedrückt (nur Maus/Finger bewegen, ohne zu klicken)
+    } else {
         previewLineInstancedMesh.count = 0;
         previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
         previewLineVoxels = [];
 
-        if (currentRayHit) {
-            let hoverPreviewCoords = { ...currentRayHit };
-            // Wenn ADD-Modus und kein Template hit (sondern Raycast auf Leere oder existierendes Voxel), Preview an Face-Normal-Position
-            if (currentMode === Modes.ADD && currentRayHit.faceNormal && !currentRayHit.hitTemplate) {
-                hoverPreviewCoords.gx += currentRayHit.faceNormal.x;
-                hoverPreviewCoords.gy += currentRayHit.faceNormal.y;
-                hoverPreviewCoords.gz += currentRayHit.faceNormal.z;
-            }
-            // Klemmen der Koordinaten innerhalb des Rasters
-            hoverPreviewCoords.gx = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.gx));
-            hoverPreviewCoords.gy = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.gy));
-            hoverPreviewCoords.gz = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.gz));
+        let hoverRayHit = calculateRayTargetVoxelCoords(
+            e.clientX,
+            e.clientY,
+            null,
+            currentMode === Modes.DRAW && initialDragYLevel !== null ? initialDragYLevel : null
+        );
 
+        let hoverVoxelForPreview = null;
+
+        // Defensive Prüfung für hoverRayHit
+        if (hoverRayHit && 
+            Number.isFinite(hoverRayHit.gx) && 
+            Number.isFinite(hoverRayHit.gy) && 
+            Number.isFinite(hoverRayHit.gz)) {
+
+            let gx_hover_preview = hoverRayHit.gx;
+            let gy_hover_preview = hoverRayHit.gy;
+            let gz_hover_preview = hoverRayHit.gz;
+
+            if (currentMode === Modes.ADD && hoverRayHit.faceNormal && !hoverRayHit.hitTemplate) {
+                gx_hover_preview += hoverRayHit.faceNormal.x;
+                gy_hover_preview += hoverRayHit.faceNormal.y;
+                gz_hover_preview += hoverRayHit.faceNormal.z;
+            }
+            gx_hover_preview = Math.max(0, Math.min(GRID - 1, gx_hover_preview));
+            gy_hover_preview = Math.max(0, Math.min(GRID - 1, gy_hover_preview));
+            gz_hover_preview = Math.max(0, Math.min(GRID - 1, gz_hover_preview));
+            hoverVoxelForPreview = { gx: gx_hover_preview, gy: gy_hover_preview, gz: gz_hover_preview };
+        }
+
+        if (hoverVoxelForPreview) {
             let showPreview = false;
-            const gKeyAtPreview = key(hoverPreviewCoords.gx, hoverPreviewCoords.gy, hoverPreviewCoords.gz);
+            const gKeyAtPreview = key(hoverVoxelForPreview.gx, hoverVoxelForPreview.gy, hoverVoxelForPreview.gz);
             const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
-            const isTemplateVoxel = templateVoxelMap.has(gKeyAtPreview); // Nutze die Map für Effizienz
+            const isTemplateVoxel = templateVoxelMap.has(gKeyAtPreview);
 
             if (currentMode === Modes.ADD) {
-                showPreview = !hasVoxelAtPreview || isTemplateVoxel; // Vorschau anzeigen, wenn leer oder Template-Voxel
+                showPreview = !hasVoxelAtPreview || isTemplateVoxel;
             } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-                showPreview = hasVoxelAtPreview; // Vorschau anzeigen, wenn existierender Voxel
+                showPreview = hasVoxelAtPreview;
             }
-            updatePreviewVoxel(hoverPreviewCoords.gx, hoverPreviewCoords.gy, hoverPreviewCoords.gz, showPreview);
+            updatePreviewVoxel(hoverVoxelForPreview.gx, hoverVoxelForPreview.gy, hoverVoxelForPreview.gz, showPreview);
         } else {
             updatePreviewVoxel(0, 0, 0, false);
         }
     }
     
-    // Wenn nur ein Finger auf dem Touchscreen und kein Drag, handhabt Geste (Rotation)
     if (e.pointerType === 'touch' && activePointers.size === 1 && !isDragging) {
         handleGesture();
     }
@@ -2783,7 +2911,7 @@ window.onload = async function() {
                     loginLogoutBtn.textContent = user ? 'Abmelden' : 'Anmelden';
                     userIdDisplay.innerHTML = user ? `<img src="${user.photoURL || 'https://placehold.co/24x24/cccccc/000000?text=U'}" alt="User Avatar" class="w-6 h-6 rounded-full align-middle">` : '';
                     uploadToHubBtn.classList.toggle('hidden', !user);
-                    document.getElementById('mobile-login-logout').textContent = user ? '🚪' : '🔑';
+                    document.getElementById('mobile-login-logout').textContent = user ? '🚪' : '�';
                     if (user) document.getElementById('authModal').close();
 
                     if (!projectLoadedFromUrl) {
