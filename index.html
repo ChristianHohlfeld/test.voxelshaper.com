@@ -301,7 +301,7 @@
                                 <span id="detail-rating-text" class="text-base-content/60 ml-2"></span>
                             </div>
 
-                            <div class="flex flex-col gap-2 justify-start mb-4">
+                            <div class="flex flex-col sm:flex-row lg:flex-col gap-2 justify-start mb-4">
                                 <button id="download-stl-button" class="btn btn-primary btn-lg w-full">
                                     <i class="fas fa-download mr-2"></i>STL Herunterladen
                                 </button>
@@ -387,7 +387,7 @@
                 <i class="fas fa-user-times mr-2"></i>Konto löschen
             </button>
         </div>
-    </footer>
+    </div>
 
 
     <footer class="footer p-10 bg-base-300 text-base-content mt-16">
@@ -1138,28 +1138,25 @@
 
                 const modelCard = this.canvas.closest('.model-card');
                 if (modelCard) {
-                    const modelId = modelCard.dataset.modelId;
-                    const rendererInstance = rendererInstances.get(modelId); // Correctly get the specific renderer instance
-
                     if (!isMobileDevice) {
                         const rect = modelCard.getBoundingClientRect();
                         if (event.clientX >= rect.left && event.clientX <= rect.right &&
                             event.clientY >= rect.top && event.clientY <= rect.bottom) {
-                            if (!this.hasMoved && rendererInstance) { // Check hasMoved and ensure rendererInstance exists
-                                rendererInstance.startAutoRotation();
+                            if (!this.hasMoved) {
+                                this.startAutoRotation();
                             }
-                        } else if (rendererInstance) {
-                            rendererInstance.stopAutoRotation();
+                        } else {
+                            this.stopAutoRotation();
                         }
                     } else {
                         if (intersectionObserver) {
                             const entry = intersectionObserver.takeRecords().find(e => e.target === modelCard);
                             if (entry && entry.isIntersecting && entry.intersectionRatio > 0.75) {
-                                if (!this.hasMoved && rendererInstance) { // Check hasMoved and ensure rendererInstance exists
-                                    rendererInstance.startAutoRotation();
+                                if (!this.hasMoved) {
+                                    renderer.startAutoRotation();
                                 }
-                            } else if (rendererInstance) {
-                                rendererInstance.stopAutoRotation();
+                            } else {
+                                renderer.stopAutoRotation();
                             }
                         }
                     }
@@ -1765,8 +1762,11 @@
                 adminActionsDiv.classList.add('hidden');
             }
 
+            // Comment input and rating fields are always enabled/disabled based on login status.
+            // The postCommentButton's behavior is now handled in submitFeedback for login check.
             commentInput.disabled = !currentUser;
             userRatingInput.querySelectorAll('input').forEach(input => input.disabled = !currentUser);
+            // postCommentButton is explicitly not disabled by default anymore, its login check is on click.
             commentAuthMessage.classList.toggle('hidden', currentUser !== null);
             
             if (!currentUser) {
@@ -1886,8 +1886,7 @@
                     authModal.close(); 
                     showToast('Registrierung erfolgreich! Sie sind jetzt angemeldet.', 'success');
                 }, 100);
-            }
-            catch (error) {
+            } catch (error) {
                 let errorMessage = "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.";
                 if (error.code === 'auth/email-already-in-use') {
                     errorMessage = "Diese E-Mail-Adresse wird bereits verwendet.";
@@ -2184,6 +2183,9 @@
                 showToast('Bitte geben Sie einen Kommentartext ein.', 'warning');
                 return;
             }
+
+            // No longer disable the button here, as it's always clickable
+            // postCommentButton.disabled = true;
 
             const modelRef = doc(db, "models", modelId);
             const ratingRef = doc(db, `models/${modelId}/ratings`, currentUser.uid); 
