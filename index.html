@@ -53,12 +53,8 @@ body {
     /* FIX: Entfernt den weißen Rand */
     border: none;
 }
-.touch-indicator { animation: pulse 0.5s; }
-@keyframes pulse {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.2; }
-    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-}
+/* ENTFERNT: .touch-indicator styles und animation */
+
 input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
 input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
 input[type="color"]::-moz-color-swatch-wrapper { padding: 0; }
@@ -185,32 +181,23 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <div id="save-description" class="sr-only">Speichert das aktuelle Projekt als JSON-Datei</div>
     <button id="loadBtn" aria-label="Projekt laden" class="btn btn-sm btn-neutral">Projekt laden</button>
     <button id="exportStlBtn" aria-label="STL Export" class="btn btn-sm btn-neutral">STL Export</button>
-    <!-- ENTFERNT: OBJ Export Button -->
-    <!-- ENTFERNT: GLB Export Button -->
 
     <label for="fly-speed-slider" class="text-base-content">Fluggeschwindigkeit:</label>
     <input type="range" id="fly-speed-slider" min="0.01" max="1.0" step="0.01" value="0.1" aria-label="Fluggeschwindigkeit anpassen" class="range range-xs w-36">
     <span id="fly-speed-display" class="font-bold text-primary">0.10</span>
 
     <button id="resetCameraBtn" aria-label="Kamera zurücksetzen" class="btn btn-sm btn-neutral">Zur Szene zurückkehen</button>
-    <!-- ENTFERNT: Voxel-Idee generieren Button -->
 
     <button id="loadImageTemplateBtn" aria-label="Bild als Vorlage laden" class="btn btn-sm btn-neutral">Bild als Vorlage laden</button>
     <button id="removeImageTemplateBtn" class="btn btn-sm btn-neutral hidden" aria-label="Bildvorlage entfernen">Bildvorlage entfernen</button>
     <input type="file" id="imageFileInput" accept="image/*" class="hidden">
 
-    <!-- ENTFERNT: Vorlage laden Button -->
-    <!-- ENTFERNT: Vorlage entfernen Button -->
-
-    <button id="loginLogoutBtn" aria-label="Anmelden oder Abmelden" class="btn btn-sm btn-info">Anmelden</button>
-    <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
-    <button id="uploadToHubBtn" aria-label="Auf Hub hochladen" class="btn btn-sm btn-warning hidden">Auf Hub hochladen</button>
-    <button id="goToHubBtn" aria-label="Zum VoxelShaper Hub wechseln" class="btn btn-sm btn-secondary">Zum Hub</button>
+    <!-- ENTFERNT: Login, Upload, Hub Buttons -->
 </div>
 
 <div id="container" class="flex-1 relative border-0 box-border overflow-hidden touch-none">
     <canvas id="voxelCanvas" class="w-full h-full block box-border" tabindex="0"></canvas>
-    <div id="touch-indicator" class="touch-indicator absolute w-10 h-10 rounded-full bg-blue-500/30 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none hidden z-[2000]"></div>
+    <!-- ENTFERNT: touch-indicator div -->
     <input type="file" id="fileInput" accept=".json" class="hidden">
 </div>
 
@@ -226,10 +213,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     </div>
 </dialog>
 
-<!-- ENTFERNT: uploadProjectModal -->
-<!-- ENTFERNT: authModal -->
-<!-- ENTFERNT: ideaGeneratorModal -->
-<!-- ENTFERNT: templateChooserModal -->
+<!-- ENTFERNT: Alle weiteren Modals -->
 
 <div id="toast-container" class="toast toast-end z-50"></div>
 
@@ -251,74 +235,21 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     </button>
     <button class="mobile-btn" id="mobile-level-up" aria-label="Ebene erhöhen">⬆️</button>
     <button class="mobile-btn" id="mobile-level-down" aria-label="Ebene verringern">⬇️</button>
-
-    <!-- ENTFERNT: mobile-generate-idea Button -->
-    <!-- ENTFERNT: mobile-template Button -->
-    <!-- ENTFERNT: mobile-login-logout Button (Da das Login Modal entfernt wurde, ist dieser Button auch überflüssig) -->
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
-<!-- Die GLTFExporter-Skripte sind nicht mehr nötig, da GLB-Export entfernt wurde. -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script> -->
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import {
-        getAuth,
-        setPersistence,
-        browserLocalPersistence,
-        signInWithCustomToken,
-        onAuthStateChanged,
-        signOut,
-        // Removed GoogleAuthProvider, GithubAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword
-        // as login modals are removed and only custom token/anonymous login is implied by the setup.
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import {
-        getFirestore,
-        doc,
-        getDoc,
-        collection,
-        addDoc,
-        serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // ENTFERNT: Firebase Imports und Initialisierung für vereinfachte App
+    // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    // import { getAuth, setPersistence, browserLocalPersistence, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    // import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    window.firebase = {
-        initializeApp,
-        getAuth,
-        signInWithCustomToken,
-        onAuthStateChanged,
-        setPersistence,
-        browserLocalPersistence,
-        signOut,
-        // Removed specific auth providers and methods from window.firebase as they are not used anymore
-        // GoogleAuthProvider,
-        // GithubAuthProvider,
-        // signInWithPopup,
-        // createUserWithEmailAndPassword,
-        // signInWithEmailAndPassword,
-        getFirestore,
-        doc,
-        getDoc,
-        collection,
-        addDoc,
-        serverTimestamp
-    };
+    // ENTFERNT: window.firebase object
+    // ENTFERNT: firebaseConfig
 
-    // ENTFERNT: AI_API_KEY
-    // const AI_API_KEY = "AIzaSyD3uQ6BnGsliYAtR9r0jdBUq03KEfFO0"; 
-
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-        apiKey: "AIzaSyB9-mpyAu9W6oiVtB0fYG8E6YFvTAsjtAA", // Beispiel-API-Key, bitte durch deinen eigenen ersetzen
-        authDomain: "voxelshaper.firebaseapp.com",
-        projectId: "voxelshaper",
-        storageBucket: "voxelshaper.firebasestorage.app", 
-        messagingSenderId: "1053689247573",
-        appId: "1:1053689247573:web:f7960c7f8c2e8849e8e1dc",
-        measurementId: "G-QJCNKZ5DR"
-    };
-    window.firebaseConfig = firebaseConfig;
 </script>
 
 <script>
@@ -330,8 +261,6 @@ const VOX_MASK = (1 << VOX_BITS) - 1; // Maske für Voxelkoordinaten
 const SHIFT_X  = VOX_BITS * 2; // Shift-Wert für X-Koordinate
 const SHIFT_Y  = VOX_BITS; // Shift-Wert für Y-Koordinate
 
-// ENTFERNT: AI_API_KEY Konstanter Wert
-
 // Funktion zur Generierung eines eindeutigen Keys für Voxel
 function key(x, y, z) { return ((x << SHIFT_X) | (y << SHIFT_Y) | z) >>> 0; }
 // Funktion zum Parsen eines Voxel-Keys zurück in Koordinaten
@@ -340,9 +269,9 @@ function parseKey(k) { return [(k >>> SHIFT_X) & VOX_MASK, (k >>> SHIFT_Y) & VOX
 // Konstanten für Maus-/Touch-Interaktion
 const VOXEL_DRAG_THRESHOLD = 1;
 const PINCH_ZOOM_MULT = 40;
-const TAP_DIST_TH = 10;
+const TAP_DIST_TH = 10; // Maximale Distanz für einen "Tap"
 const MOVE_PX = 10; // Distanzschwelle für Drag-Erkennung
-const DT_MS = 250; // Zeit für Tap-Erkennung
+const DT_MS = 250; // Maximale Zeit für einen "Tap" (Millisekunden)
 
 // Geschwindigkeiten für Touch-Steuerung auf Mobilgeräten und Desktop
 const ROTATE_SPEED_TOUCH_MOBILE = 0.008; // Erhöht für direktere Reaktion
@@ -356,9 +285,11 @@ const PINCH_ZOOM_MULT_DESKTOP = 40;
 // Globale Variablen für Touch-Interaktion
 let activePointers = new Map(); // Speichert aktive Touch-Punkte
 let gestureState = { type: 'none', startDist: 0, startMid: { x: 0, y: 0 }, lastMid: { x: 0, y: 0 }, lastDist: 0, startTime: 0, initialPointerCount: 0 };
-let tapCandidate = null; // Kandidat für Tap-Geste
 let doubleTapDragActive = false; // Status für Doppeltipp-Drag
-let touchIndicator; // Visueller Indikator für Touch-Eingaben
+
+// Neue Flags zur besseren Unterscheidung von Touch-Gesten
+let isDraggingForVoxelAction = false; // True, wenn ein Touch-Drag zum Voxel-Platzieren/Löschen dient
+let isSingleTouchCameraRotating = false; // True, wenn ein Einzel-Touch die Kamera dreht
 
 // Three.js Szenen-Variablen
 let scene, cam, ren, gridHelper, boxHelper; // Szene, Kamera, Renderer, Gitterhelfer, Boxhelfer
@@ -407,7 +338,7 @@ let isPointerLocked = false; // Status für Pointer-Lock (Maussteuerung)
 let lastActionVoxelCoords = null; // Letzte Voxelkoordinaten bei Aktionen
 let initialClickPos = null; // Startposition des Klicks
 let initialRayHitCoords = null; // Rohe Voxelkoordinaten des ersten Raycast-Treffers beim Klick/Touch
-let isDragging = false; // Status für Dragging
+let isDragging = false; // Status für Dragging (generisch, wird für Maus und Voxel-Drag verwendet)
 let firstMoveAfterLock = true; // Erster Maus-Move nach Pointer-Lock
 let mouseMovementX = 0; // Mausbewegung in X-Richtung (für Pointer-Lock)
 let mouseMovementY = 0; // Mausbewegung in Y-Richtung (für Pointer-Lock)
@@ -463,7 +394,7 @@ let dragAxisLock = null; // Achsen-Sperre für Drag-Operationen
 let initialDragVoxelCoords = null; // Voxelkoordinaten zu Beginn des Drags (der erste tatsächlich geänderte Voxel)
 let initialDragYLevel = null; // Speichert die Y-Ebene zu Beginn eines Drag-Vorgangs im DRAW-Modus
 
-// Projektmetadaten (behalten, da sie für das Hub-Upload-Feature relevant sein könnten, auch wenn die UI-Buttons entfernt sind)
+// Projektmetadaten (Beibehalten für JSON-Speicherung, aber nicht mehr über UI bearbeitbar/anzeigbar)
 let projectTitle = '';
 let projectDescription = '';
 let projectCategory = 'Allgemein';
@@ -471,18 +402,6 @@ let projectTags = [];
 let projectRemixOf = '';
 let projectSourceJsonUrl = '';
 let projectVisibility = 'public';
-
-// ENTFERNT: Vordefinierte Kategorien für Uploads (nur noch relevant, wenn das Upload-Modal aktiv ist)
-// const predefinedCategories = ["Spielzeug", "Dekoration", "Funktional", "Kunst", "Allgemein", "Charaktere", "Fahrzeuge", "Natur", "Architektur", "Abstrakt"];
-
-// ENTFERNT: THREE.js Voxel-Exporter Utility Funktionen (OBJ, MTL) da OBJ/GLB Export entfernt wurde
-/*
-const VoxelShaperIO = {
-    voxToOBJ: function(voxModel, voxelSize) { ... },
-    saveBlob: function(data, filename) { ... },
-    VoxModel: function(width, height, depth, voxels) { ... }
-};
-*/
 
 // Hilfsfunktionen für Chunk-Koordinaten
 function getChunkCoords(gx, gy, gz) { return { cx: Math.floor(gx / CHUNK_SIZE), cy: Math.floor(gy / CHUNK_SIZE), cz: Math.floor(gz / CHUNK_SIZE) }; }
@@ -656,15 +575,30 @@ function handleGesture() {
 // Funktion zum Freigeben eines Pointers (Touch-Punkt)
 function releasePointer(id, eventType) {
     activePointers.delete(id);
+    // Nur zurücksetzen, wenn keine Pointer mehr aktiv sind oder weniger als 2 (für Multi-Touch-Gesten)
     if (activePointers.size < 2) {
         gestureState.type = 'none';
-        if (activePointers.size === 1) { const last = [...activePointers.values()][0]; gestureState.lastMid = { x: last.x, y: last.y }; }
+        if (activePointers.size === 1) { // Wenn noch ein Finger aktiv ist, aktualisiere lastMid
+            const last = [...activePointers.values()][0]; 
+            gestureState.lastMid = { x: last.x, y: last.y }; 
+        }
     }
+    // Komplette Zurücksetzung, wenn keine Pointer mehr aktiv sind
     if (activePointers.size === 0) {
-        doubleTapDragActive = false; lastActionVoxelCoords = null; touchIndicator.style.display = 'none';
-        initialDragVoxelWorldPos = null; dragAxisLock = null; initialDragVoxelCoords = null;
-        initialDragYLevel = null; // Reset Y-level lock
-        previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
+        doubleTapDragActive = false; 
+        lastActionVoxelCoords = null; 
+        // touchIndicator.style.display = 'none'; // ENTFERNT
+        initialDragVoxelWorldPos = null; 
+        dragAxisLock = null; 
+        initialDragVoxelCoords = null;
+        initialDragYLevel = null; 
+        previewLineInstancedMesh.count = 0; 
+        previewLineInstancedMesh.instanceMatrix.needsUpdate = true; 
+        previewLineVoxels = [];
+
+        // Flags für Touch-Gesten zurücksetzen
+        isDraggingForVoxelAction = false;
+        isSingleTouchCameraRotating = false;
     }
 }
 
@@ -916,23 +850,9 @@ function updatePreviewVoxel(x, y, z, visible) {
     }
 }
 
-// Globale Variablen für Vorlagen (ENTFERNT: templateInstancedMesh, templateVoxelGeometry, templateVoxelMaterial, templateVoxelMap)
-let templateInstancedMesh = null; // Behalten, falls templateImageMesh noch damit interagiert
-// const templateVoxelGeometry = new THREE.BoxGeometry(VS, VS, VS); 
-// const templateVoxelMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthTest: false });
-// templateVoxelMaterial.polygonOffset = true;
-// templateVoxelMaterial.polygonOffsetFactor = -2; 
-
-let templateVoxelMap = new Map(); // Behalten, falls templateImageMesh noch damit interagiert
-
-// ENTFERNT: Vordefinierte Vorlagen für die App
-/*
-const predefinedTemplates = [
-    { name: "Kleines Haus", description: "...", voxels: {...} },
-    { name: "Einfacher Baum", description: "...", voxels: {...} },
-    { name: "Auto-Umriss", description: "...", voxels: {...} }
-];
-*/
+// Globale Variablen für Vorlagen (nur Bildvorlage behalten)
+let templateInstancedMesh = null; // Nicht mehr für Voxel-Vorlagen verwendet
+let templateVoxelMap = new Map(); // Nicht mehr für Voxel-Vorlagen verwendet
 
 /**
  * Berechnet die rohen Voxelkoordinaten, die von einem Raycast getroffen wurden.
@@ -955,7 +875,8 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, cam);
 
-    // 1. Priorität: Treffen der Vorlage, wenn eine geladen ist (Code beibehalten, falls templateInstancedMesh durch Bildvorlagen-Logik verwendet wird, was unwahrscheinlich ist)
+    // 1. Priorität: Treffen der (entfernten) Voxel-Vorlage, falls noch irgendwo im Code referenziert
+    // Da Voxel-Vorlagen entfernt wurden, wird dieser Block effektiv nichts tun.
     if (templateInstancedMesh && templateInstancedMesh.count > 0) {
         const templateIntersects = raycaster.intersectObject(templateInstancedMesh);
         for (const hit of templateIntersects) {
@@ -979,7 +900,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
     // 2. Priorität: Treffen von existierenden Voxeln
     const objectsToIntersect = Array.from(chunks.values()).map(chunk => chunk.instancedMesh);
     if (templateImageMesh) {
-        templateImageMesh.raycast = function() {}; 
+        templateImageMesh.raycast = function() {}; // Bildvorlage soll nicht direkt Raycasts fangen
     }
 
     const intersects = raycaster.intersectObjects(objectsToIntersect);
@@ -1018,7 +939,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY, excludeVoxelsMap = null
 
     // Wenn ein lockedYLevel für den DRAW-Modus während eines Drags vorhanden ist,
     // überschreibe die Standard-Zeichenebene damit.
-    if (lockedYLevel !== null && currentMode === Modes.DRAW && isDragging) {
+    if (lockedYLevel !== null && currentMode === Modes.DRAW && isDraggingForVoxelAction) { // Geändert: isDragging zu isDraggingForVoxelAction
         planeNormal.set(0, 1, 0); // Die Zeichenebene ist immer horizontal (Y-Achse)
         planeConstant = -(lockedYLevel * VS); // Verwende die übergebene Locked Y-Ebene
         const tempDrawingPlane = new THREE.Plane(planeNormal, planeConstant);
@@ -1190,7 +1111,8 @@ function resetToDefaultProject() {
     presetColors[0] = '#E4002B'; presetColors[1] = '#00A040'; presetColors[2] = '#0057B8';
     localStorage.setItem('voxelPresetColor1', presetColors[0]); localStorage.setItem('voxelPresetColor2', presetColors[1]); localStorage.setItem('voxelPresetColor3', presetColors[2]);
     presetBoxes.forEach((box, i) => { box.value = presetColors[i]; box.classList.remove('active', 'border-primary', 'shadow-lg', 'shadow-primary/50'); });
-    activePresetIndex = -1; removeImageTemplate(true); /* ENTFERNT: removeTemplate(); */ history.length = 0; historyPointer = -1;
+    activePresetIndex = -1; removeImageTemplate(true); // removeTemplate() wurde entfernt
+    history.length = 0; historyPointer = -1;
     previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
     projectTitle = ''; projectDescription = ''; projectCategory = 'Allgemein'; projectTags = []; projectRemixOf = ''; projectSourceJsonUrl = ''; projectVisibility = 'public';
     rebuildHelpers(); resetCameraPosition(); showToast('Projekt zurückgesetzt', 'Das Projekt wurde auf den Standardzustand zurückgesetzt.', 'info', 5000);
@@ -1201,7 +1123,7 @@ function loadProjectData(projectData) {
     try {
         const loadedVoxels = projectData.projectData ? projectData.projectData.voxels : projectData.voxels;
         const loadedSettings = projectData.projectData ? projectData.projectData.settings : projectData.settings;
-        clearAllInternal(true); removeImageTemplate(true); /* ENTFERNT: removeTemplate(); */ // Löscht vorhandene Daten und Vorlagen
+        clearAllInternal(true); removeImageTemplate(true); // removeTemplate() wurde entfernt
 
         // Setzt Projektmetadaten
         projectTitle = projectData.title || ''; projectDescription = projectData.description || '';
@@ -1280,29 +1202,10 @@ function loadProjectData(projectData) {
     }
 }
 
-// Lädt ein Projekt aus dem VoxelShaper Hub über eine Model-ID (Funktion beibehalten, da sie nicht direkt durch UI-Entfernung beeinträchtigt wird)
-async function loadProjectFromModelId(modelId) {
-    showToast('Lade Projekt', `Lade Projekt mit ID: ${modelId}...`, 'info', 5000);
-    try {
-        const docSnap = await window.firebase.getDoc(window.firebase.doc(db, "models", modelId));
-        if (docSnap.exists()) {
-            const pData = docSnap.data();
-            const isPublic = pData.visibility === 'public';
-            const isOwner = auth.currentUser && auth.currentUser.uid === pData.uploaderUid;
-            if (isPublic || isOwner) {
-                if (pData && pData.projectData) {
-                    projectRemixOf = modelId; projectSourceJsonUrl = window.location.href;
-                    loadProjectData(pData);
-                    showToast('Projekt geladen', `Projekt "${docSnap.data().title}" erfolgreich geladen.`, 'success', 5000);
-                } else { showToast('Fehler', 'Projektdaten im Dokument nicht gefunden.', 'error', 5000); resetToDefaultProject(); }
-            } else { showToast('Zugriff verweigert', 'Sie haben keine Berechtigung, dieses private Projekt zu laden.', 'error', 5000); resetToDefaultProject(); }
-        } else { showToast('Projekt nicht gefunden', `Kein Projekt mit ID "${modelId}" gefunden.`, 'warning', 5000); resetToDefaultProject(); }
-    } catch (error) {
-        if (error.code === 'permission-denied') showToast('Zugriff verweigert', `Berechtigungsfehler beim Laden des Projekts. Stellen Sie sicher, dass das Modell öffentlich ist oder Sie der Eigentümer sind.`, 'error', 5000);
-        else showToast('Fehler', `Fehler beim Laden des Projekts: ${error.message}`, 'error', 5000);
-        resetToDefaultProject();
-    }
-}
+// ENTFERNT: loadProjectFromModelId (nicht mehr relevant ohne Hub-Anbindung in UI)
+/*
+async function loadProjectFromModelId(modelId) { ... }
+*/
 
 // Lädt ein Projekt aus einer lokalen JSON-Datei
 function loadJSON(event) {
@@ -1344,86 +1247,6 @@ async function exportSTL() {
     tempBoxGeometry.dispose(); if (mergedGeometry) mergedGeometry.dispose();
     showToast('Export erfolgreich', 'STL-Modell erfolgreich exportiert!', 'success', 5000);
 }
-
-// ENTFERNT: Exportiert das Modell als OBJ-Datei (mit MTL für Farben)
-/*
-async function exportOBJ() {
-    if (voxels.size === 0) { showToast('Export fehlgeschlagen', 'Keine Voxel zum Exportieren vorhanden!', 'warning', 5000); return; }
-    showToast('Exportiere OBJ', 'Erzeuge OBJ-Modell...', 'info', 5000);
-    const voxelsToExport = []; let maxX = 0, maxY = 0, maxZ = 0;
-    voxels.forEach((data, k) => {
-        const [x, y, z] = parseKey(k); voxelsToExport.push({ x, y, z, color: data.color });
-        maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); maxZ = Math.max(maxZ, z);
-    });
-    const voxModel = new VoxelShaperIO.VoxModel(maxX + 1, maxY + 1, maxZ + 1, voxelsToExport);
-    VoxelShaperIO.saveBlob(VoxelShaperIO.voxToOBJ(voxModel, VS), 'voxel_model.obj');
-    showToast('Export erfolgreich', 'OBJ-Modell erfolgreich mit Farben exportiert!', 'success', 5000);
-}
-*/
-
-// ENTFERNT: Exportiert das Modell als GLB-Datei
-/*
-async function exportGLB() {
-    if (voxels.size === 0) {
-        showToast('Export fehlgeschlagen', 'Keine Voxel zum Exportieren vorhanden!', 'warning', 5000);
-        return;
-    }
-    showToast('Exportiere GLB', 'Erzeuge GLB-Modell...', 'info', 5000);
-
-    if (typeof THREE.GLTFExporter === 'undefined') {
-        showToast('Export fehlgeschlagen', 'GLTFExporter-Bibliothek nicht geladen. Bitte versuchen Sie es erneut.', 'error', 5000);
-        return;
-    }
-
-    const exporter = new THREE.GLTFExporter();
-    const tempGroup = new THREE.Group();
-    const tempGeometry = new THREE.BoxGeometry(VS, VS, VS);
-
-    const materialCache = new Map();
-
-    voxels.forEach((data, k) => {
-        const [x, y, z] = parseKey(k);
-        const colorHex = data.color;
-
-        let material = materialCache.get(colorHex);
-        if (!material) {
-            material = new THREE.MeshStandardMaterial({ color: new THREE.Color(colorHex) });
-            materialCache.set(colorHex, material);
-        }
-
-        const mesh = new THREE.Mesh(tempGeometry, material);
-        mesh.position.set(x * VS + HALF, y * VS + HALF, z * VS + HALF);
-        tempGroup.add(mesh);
-    });
-
-    exporter.parse(
-        tempGroup,
-        function (result) {
-            const blob = new Blob([result], { type: 'model/gltf-binary' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'voxel_model.glb';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast('Export erfolgreich', 'GLB-Modell erfolgreich exportiert!', 'success', 5000);
-        },
-        function (error) {
-            showToast('Export fehlgeschlagen', `Fehler beim Exportieren des GLB-Modells: ${error.message}`, 'error', 5000);
-        },
-        { binary: true }
-    );
-
-    tempGeometry.dispose();
-    materialCache.forEach(mat => mat.dispose());
-    while(tempGroup.children.length > 0){
-        const object = tempGroup.children[0];
-        tempGroup.remove(object);
-    }
-}
-*/
 
 // Zeigt eine Toast-Benachrichtigung an
 function showToast(title, message, type = 'info', duration = 5000) {
@@ -1517,131 +1340,23 @@ function removeImageTemplate(fromLoad = false) {
     }
 }
 
-// ENTFERNT: Lädt eine vordefinierte Voxel-Vorlage in die Szene
-/*
-function loadTemplate(templateData) {
-    if (templateInstancedMesh) { scene.remove(templateInstancedMesh); templateInstancedMesh.geometry.dispose(); templateInstancedMesh.material.dispose(); templateInstancedMesh = null; }
-    templateVoxelMap.clear();
-    if (!templateData || !templateData.voxels || Object.keys(templateData.voxels).length === 0) {
-        showToast('Vorlage entfernt', 'Keine Vorlage geladen oder Vorlage entfernt.', 'info', 3000);
-        document.getElementById('removeTemplateBtn').classList.add('hidden'); return;
-    }
-    const maxTemplateInstances = Object.keys(templateData.voxels).length;
-    templateInstancedMesh = new THREE.InstancedMesh(templateVoxelGeometry, templateVoxelMaterial, maxTemplateInstances);
-    templateInstancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(maxTemplateInstances * 3), 3);
-    templateInstancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); templateInstancedMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
-    templateInstancedMesh.castShadow = false; templateInstancedMesh.receiveShadow = false; templateInstancedMesh.count = 0; templateInstancedMesh.renderOrder = -2;
-    for (const keyString in templateData.voxels) {
-        const [x, y, z] = keyString.split(',').map(Number); const color = templateData.voxels[keyString];
-        const gKey = key(x, y, z); templateVoxelMap.set(gKey, true);
-        const instanceId = templateInstancedMesh.count++;
-        dummy.position.set(x * VS + HALF, y * VS + HALF, z * VS + HALF); dummy.updateMatrix();
-        templateInstancedMesh.setMatrixAt(instanceId, dummy.matrix);
-        const c = new THREE.Color(color); templateInstancedMesh.instanceColor.setXYZ(instanceId, c.r, c.g, c.b);
-    }
-    templateInstancedMesh.instanceMatrix.needsUpdate = true; templateInstancedMesh.instanceColor.needsUpdate = true;
-    scene.add(templateInstancedMesh); document.getElementById('removeTemplateBtn').classList.remove('hidden');
-    showToast('Vorlage geladen', `Vorlage "${templateData.name}" geladen. Füllen Sie die transparenten Voxel aus!`, 'success', 5000);
-}
-*/
-
-// ENTFERNT: Entfernt die aktuell geladene Vorlage
-/*
-function removeTemplate() {
-    if (templateInstancedMesh) {
-        scene.remove(templateInstancedMesh); templateInstancedMesh.geometry.dispose(); templateInstancedMesh.material.dispose();
-        templateInstancedMesh = null; templateVoxelMap.clear(); document.getElementById('removeTemplateBtn').classList.add('hidden');
-        showToast('Vorlage entfernt', 'Transparente Vorlage wurde entfernt.', 'info', 3000);
-    }
-}
-*/
-
 function getCurrentBlockDimensions() {
     return { dimX: 1, dimY: 1, dimZ: 1 };
 }
 
-// Funktion für Login/Logout (Beibehalten, da sie die Firebase-Authentifizierung steuert, auch wenn die UI-Buttons weniger prominent sind)
-async function loginLogout() {
-    if (auth.currentUser) { try { await window.firebase.signOut(auth); showToast('Abgemeldet', 'Sie wurden erfolgreich abgemeldet.', 'info', 5000); } catch (e) { showToast('Fehler beim Abmelden', `Fehler: ${e.message}`, 'error', 5000); } }
-    // ENTFERNT: openAuthModal();
-}
-
-// ENTFERNT: Öffnet das Upload-Modal
+// ENTFERNT: loginLogout (da Firebase-Login-UI entfernt)
 /*
-function openUploadModal() {
-    if (!currentUserId) { openAuthModal(); return; }
-    if (voxels.size === 0) { showToast('Upload fehlgeschuldert', 'Die Szene ist leer. Bitte erstellen Sie zuerst ein Modell.', 'warning', 5000); return; }
-    document.getElementById('uploadTitle').value = projectTitle; document.getElementById('uploadDescription').value = projectDescription;
-    document.getElementById('uploadCategory').value = projectCategory; document.getElementById('uploadTags').value = projectTags.join(', ');
-    document.querySelector(`input[name="uploadVisibility"][value="${projectVisibility}"]`).checked = true;
-    const uploadCategorySelect = document.getElementById('uploadCategory');
-    uploadCategorySelect.innerHTML = '<option value="" disabled selected>Kategorie auswählen</option>';
-    predefinedCategories.forEach(cat => { const opt = document.createElement('option'); opt.value = cat; opt.textContent = cat; uploadCategorySelect.appendChild(opt); });
-    uploadCategorySelect.value = projectCategory;
-    document.getElementById('uploadProjectModal').showModal();
-}
+async function loginLogout() { ... }
 */
 
-// Lädt das Projekt in den Hub hoch (Firestore) (Beibehalten, da Firebase-Funktionalität nicht vollständig entfernt wurde)
-async function uploadProjectToHub() {
-    if (!currentUserId) { showToast('Fehler', 'Nicht angemeldet. Bitte melden Sie sich an, um hochzuladen.', 'error', 5000); return; }
-    if (voxels.size === 0) { showToast('Upload fehlgeschuldert', 'Die Szene ist leer. Bitte erstellen Sie zuerst ein Modell.', 'warning', 5000); return; }
-    // Variablen für Titel, Beschreibung, etc. müssen vom User Input kommen, aber da Modals entfernt wurden,
-    // werden hier Standardwerte oder leere Werte verwendet, es sei denn, eine andere UI wird hinzugefügt.
-    // Dies ist eine "Teil-Entfernung" der Funktion auf UI-Ebene.
-    const title = projectTitle || 'Unbenanntes Projekt'; // Nutze bestehenden Projekttitel
-    const description = projectDescription || 'Ohne Beschreibung'; // Nutze bestehende Beschreibung
-    const category = projectCategory || 'Allgemein'; // Nutze bestehende Kategorie
-    const tags = projectTags || [];
-    const visibility = projectVisibility || 'public';
-
-    showToast('Lade hoch...', 'Ihr Projekt wird hochgeladen. Bitte warten Sie...', 'info', 5000);
-    try {
-        const voxelMap = {}; voxels.forEach((v, k) => { const [gx, gy, gz] = parseKey(k); voxelMap[`${gx},${gy},${gz}`] = v.color; });
-        const firestoreSafeSettings = {
-            gridSize: GRID, cameraPosition: cam.position.toArray(), cameraQuaternion: cam.quaternion.toArray(),
-            activeDrawingLevel: activeDrawingLevel, currentDrawingAxis: currentDrawingAxis, currentColor: currentColor,
-            presetColors: presetColors, activePresetIndex: activePresetIndex, moveSpeed: moveSpeed,
-            templateImageData: null
-        };
-        const firestoreDocument = {
-            title: title, description: description, category: category, tags: tags, visibility: visibility,
-            remixOf: projectRemixOf || "", sourceJsonUrl: projectSourceJsonUrl || "",
-            fileName: `${title.replace(/\s+/g, "_")}.json`, downloads: 0, rating: 0, ratingCount: 0, verified: false,
-            userId: currentUserId, uploaderEmail: currentUser?.email || "", uploaderUid: currentUser?.uid || "",
-            uploaderPhotoURL: currentUser?.photoURL || "", timestamp: window.firebase.serverTimestamp(),
-            projectData: {
-                description: description, remixOf: projectRemixOf || "", sourceJsonUrl: projectSourceJsonUrl || "",
-                settings: firestoreSafeSettings, activeDrawingLevel: firestoreSafeSettings.activeDrawingLevel, activePresetIndex: firestoreSafeSettings.activePresetIndex,
-                cameraPosition: firestoreSafeSettings.cameraPosition, cameraQuaternion: firestoreSafeSettings.cameraQuaternion,
-                currentColor: firestoreSafeSettings.currentColor, currentDrawingAxis: firestoreSafeSettings.currentDrawingAxis,
-                gridSize: firestoreSafeSettings.gridSize, moveSpeed: firestoreSafeSettings.moveSpeed, presetColors: firestoreSafeSettings.presetColors, templateImageData: null, voxels: voxelMap
-            }
-        };
-        const docRef = await window.firebase.addDoc(window.firebase.collection(db, "models"), firestoreDocument);
-        projectTitle = title; projectDescription = description; projectCategory = category; projectTags = tags; projectVisibility = visibility;
-        if (!projectSourceJsonUrl) projectSourceJsonUrl = `https://hub.voxelshaper.com?modelId=${docRef.id}`;
-        showToast('Erfolgreich hochgeladen', `Ihr Projekt wurde erfolgreich hochgeladen! ID: ${docRef.id}`, 'success', 5000);
-    } catch (e) { showToast('Fehler beim Hochladen', `Fehler: ${e.message}`, 'error', 5000); }
-    // ENTFERNT: finally { document.getElementById('uploadProjectModal').close(); }
-}
-
-// ENTFERNT: Öffnet das Authentifizierungs-Modal
-// function openAuthModal() { document.getElementById('authModal').showModal(); document.getElementById('emailLoginForm').classList.add('hidden'); }
-// ENTFERNT: Schließt das Authentifizierungs-Modal
-// function closeAuthModal() { document.getElementById('authModal').close(); cvs.focus(); }
-
-// ENTFERNT: Funktionen für Firebase-Authentifizierung (Google, GitHub, E-Mail/Passwort)
+// ENTFERNT: uploadProjectToHub (da Upload-UI entfernt)
 /*
-window.signInWithGoogle = async function() { ... }
-window.signInWithGithub = async function() { ... }
-window.signInEmailPassword = async function() { ... }
-window.signUpEmailPassword = async function() { ... }
+async function uploadProjectToHub() { ... }
 */
 
-// Schließt alle Modals (Liste angepasst)
+// Schließt alle Modals (Liste angepasst, nur noch clearConfirmationModal)
 function closeAllModals() {
-    const modals = ['clearConfirmationModal']; // Nur noch dieses Modal existiert
+    const modals = ['clearConfirmationModal']; 
     modals.forEach(id => { const modal = document.getElementById(id); if (modal && modal.open) modal.close(); });
 }
 window.closeAllModals = closeAllModals;
@@ -1674,7 +1389,6 @@ const keyboard = {}; // Speichert den Zustand der Tastaturtasten
 // Handler für Tastendruck (Key Down)
 function onKeyDown(e) {
     // Wenn ein Modal geöffnet ist, nur Escape-Taste zur Schließung erlauben
-    // ENTFERNT: 'authModal', 'uploadProjectModal', 'ideaGeneratorModal', 'templateChooserModal'
     const activeModals = ['clearConfirmationModal'].some(id => document.getElementById(id).open);
     if (activeModals) { if (e.key === 'Escape') { closeAllModals(); e.preventDefault(); } return; }
     keyboard[e.key.toLowerCase()] = true; // Setzt die Taste auf gedrückt
@@ -1698,7 +1412,7 @@ function onKeyUp(e) {
 // Handler, wenn der Pointer das Canvas verlässt
 function onPointerLeave(e) {
     // Wenn ein Dragging aktiv ist und Voxel im aktuellen Strich sind, füge einen Batch-Befehl zur Historie hinzu
-    if (pointerIsDown && isDragging && currentStrokeVoxels.size > 0) {
+    if (pointerIsDown && isDragging && currentStrokeVoxels.size > 0) { // isDragging als generischer Drag-Indikator
         const oldState = [];
         const newState = [];
         for (const [gKey, change] of currentStrokeVoxels.entries()) {
@@ -1711,8 +1425,11 @@ function onPointerLeave(e) {
         }
     }
     // Setzt alle Dragging- und Pointer-bezogenen Zustände zurück
-    pointerIsDown = false;
-    isDragging = false;
+    pointerIsDown = false; // Für Maus
+    isDragging = false; // Generischer Drag-Flag
+    isDraggingForVoxelAction = false; // Spezifischer Voxel-Drag-Flag zurücksetzen
+    isSingleTouchCameraRotating = false; // Kamerarotations-Flag zurücksetzen
+
     doubleTapDragActive = false;
     lastActionVoxelCoords = null;
     initialClickPos = null;
@@ -1731,7 +1448,6 @@ function onPointerLeave(e) {
 let pointerIsDown = false; // Ob ein Pointer gedrückt ist (Maus oder Touch)
 let rightMouseButtonDown = false; // Ob die rechte Maustaste gedrückt ist
 let lastX, lastY; // Letzte X/Y-Koordinaten des Pointers
-let suppressNextTap = false; // Flag, um das nächste Tap-Ereignis zu unterdrücken (z.B. nach einem Drag)
 
 // Berechnet alle Voxel, die auf einer Linie zwischen zwei Punkten liegen (Bresenham-ähnlich)
 function getVoxelsOnLine(start, end) {
@@ -1772,57 +1488,53 @@ function onPointerUp(e) {
         return;
     }
     
-    // Berechnet die insgesamt zurückgelegte Distanz
+    // Berechnet die insgesamt zurückgelegte Distanz (für Tap-Erkennung)
     const totalMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
-    // Separate Drag-Erkennung für Touch vs. Maus
-    // Bei Touch: Wenn es ein einzelner Pointer ist und nicht primär eine Kamerarotationsgeste war, dann ist es ein Tap oder Voxel-Drag
-    const wasDrag = (e.pointerType === 'mouse' && totalMovedDist > MOVE_PX) || 
-                    (e.pointerType === 'touch' && isDragging); // isDragging wird in onPointerDown für Touch gesetzt
 
-    if (wasDrag) {
-        // Wenn es ein Drag war und Voxel im aktuellen Strich sind, füge einen Batch-Befehl zur Historie hinzu
-        if (currentStrokeVoxels.size > 0) {
-            const oldState = [];
-            const newState = [];
-            for (const [gKey, change] of currentStrokeVoxels.entries()) {
-                const [gx, gy, gz] = parseKey(gKey);
-                oldState.push({ gx, gy, gz, color: change.originalColor });
-                newState.push({ gx, gy, gz, color: change.finalColor });
-            }
-            if (oldState.length > 0) {
-                addCommand('batch', oldState, newState);
-            }
+    if (e.pointerType === 'touch') {
+        releasePointer(e.pointerId, e); // Pointer für Touch-Ereignisse freigeben
+
+        if (isSingleTouchCameraRotating) {
+            isSingleTouchCameraRotating = false; // Kamerarotation beendet
+            // Keine Voxel-Aktion, da es Kamerasteuerung war
+            return;
         }
-    } else { // Wenn es kein Drag war (also ein Klick/Tap)
-        // Führe die Voxel-Aktion nur aus, wenn es ein Tap mit einem einzelnen Pointer ist und keine Kamerarotation
-        if (e.pointerType === 'mouse' || (e.pointerType === 'touch' && activePointers.size === 1 && initialClickPos && performance.now() - gestureState.startTime < DT_MS && totalMovedDist < TAP_DIST_TH)) {
-            if (initialRayHitCoords) { // initialRayHitCoords kommt aus onPointerDown und enthält alle Trefferinfos
+
+        if (isDraggingForVoxelAction) { // Es war ein Touch-Voxel-Drag
+            if (currentStrokeVoxels.size > 0) {
+                const oldState = [];
+                const newState = [];
+                for (const [gKey, change] of currentStrokeVoxels.entries()) {
+                    const [gx, gy, gz] = parseKey(gKey);
+                    oldState.push({ gx, gy, gz, color: change.originalColor });
+                    newState.push({ gx, gy, gz, color: change.finalColor });
+                }
+                if (oldState.length > 0) {
+                    addCommand('batch', oldState, newState);
+                }
+            }
+        } else { // Es war ein Einzel-Touch, der weder Kamerarotation noch Voxel-Drag war -> Tap
+            if (initialRayHitCoords && performance.now() - gestureState.startTime < DT_MS && totalMovedDist < TAP_DIST_TH) {
+                // Führe Einzel-Voxel-Modifikation aus (Tap-Aktion)
                 let finalVoxelCoords = { ...initialRayHitCoords };
 
-                // Spezifische Behandlung für ADD-Modus bei Klick (nicht Drag)
                 if (currentMode === Modes.ADD) {
                     if (initialRayHitCoords.hitTemplate) {
-                        // Wenn eine Vorlage getroffen wurde, Aktion auf der Vorlage durchführen
-                        // finalVoxelCoords bleiben wie initialRayHitCoords (die Voxel-Position der Vorlage)
+                        // Bei Treffer auf Vorlage, Aktion auf Vorlage (Voxel-Position der Vorlage)
                     } else if (initialRayHitCoords.faceNormal) {
-                        // Wenn ein existierender Voxel getroffen wurde (nicht Vorlage), Voxel an der Seite des getroffenen Voxels hinzufügen
+                        // Voxel an der Seite des getroffenen Voxels hinzufügen
                         finalVoxelCoords.gx += initialRayHitCoords.faceNormal.x;
                         finalVoxelCoords.gy += initialRayHitCoords.faceNormal.y;
                         finalVoxelCoords.gz += initialRayHitCoords.faceNormal.z;
-                    } else {
-                        // Wenn nichts getroffen wurde (nur Zeichenebene), bleibt finalVoxelCoords der Ebenentreffer
                     }
                 }
-                // Für DELETE/DRAW bleibt finalVoxelCoords immer die Position des getroffenen Voxels (initialRayHitCoords)
+                // Für DELETE/DRAW bleibt finalVoxelCoords die Position des getroffenen Voxels
 
-
-                // Stellt sicher, dass die Koordinaten innerhalb des Rasters liegen
                 finalVoxelCoords.gx = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gx));
                 finalVoxelCoords.gy = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gy));
                 finalVoxelCoords.gz = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gz));
 
                 const gKey = key(finalVoxelCoords.gx, finalVoxelCoords.gy, finalVoxelCoords.gz);
-                // Speichert den ursprünglichen und den neuen Zustand des Voxels für Undo/Redo
                 const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
                 
                 performVoxelModification(finalVoxelCoords.gx, finalVoxelCoords.gy, finalVoxelCoords.gz, currentMode, currentColor);
@@ -1833,27 +1545,69 @@ function onPointerUp(e) {
                 }
             }
         }
+    } else { // Maus-Ereignis
+        const wasDrag = totalMovedDist > MOVE_PX; // War es ein Maus-Drag?
+        if (wasDrag) {
+            if (currentStrokeVoxels.size > 0) {
+                const oldState = [];
+                const newState = [];
+                for (const [gKey, change] of currentStrokeVoxels.entries()) {
+                    const [gx, gy, gz] = parseKey(gKey);
+                    oldState.push({ gx, gy, gz, color: change.originalColor });
+                    newState.push({ gx, gy, gz, color: change.finalColor });
+                }
+                if (oldState.length > 0) {
+                    addCommand('batch', oldState, newState);
+                }
+            }
+        } else { // Maus-Klick (kein Drag)
+            if (initialRayHitCoords) {
+                let finalVoxelCoords = { ...initialRayHitCoords };
+                if (currentMode === Modes.ADD) {
+                    if (initialRayHitCoords.hitTemplate) {
+                        // Aktion auf Vorlage
+                    } else if (initialRayHitCoords.faceNormal) {
+                        finalVoxelCoords.gx += initialRayHitCoords.faceNormal.x;
+                        finalVoxelCoords.gy += initialRayHitCoords.faceNormal.y;
+                        finalVoxelCoords.gz += initialRayHitCoords.faceNormal.z;
+                    }
+                }
+                finalVoxelCoords.gx = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gx));
+                finalVoxelCoords.gy = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gy));
+                finalVoxelCoords.gz = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gz));
+
+                const gKey = key(finalVoxelCoords.gx, finalVoxelCoords.gy, finalVoxelCoords.gz);
+                const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
+                performVoxelModification(finalVoxelCoords.gx, finalVoxelCoords.gy, finalVoxelCoords.gz, currentMode, currentColor);
+                const newColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
+                if (initialColor !== newColor || (currentMode === Modes.ADD && initialColor === null && newColor !== null)) {
+                    addCommand('batch', [{ gx: finalVoxelCoords.gx, gy: finalVoxelCoords.gy, gz: finalVoxelCoords.gz, color: initialColor }], [{ gx: finalVoxelCoords.gx, gy: finalVoxelCoords.gy, gz: finalVoxelCoords.gz, color: newColor }]);
+                }
+            }
+        }
     }
 
-    // Setzt alle Dragging- und Pointer-bezogenen Zustände zurück
+    // Globale Reset-Flags nach jeder Pointer-Up-Aktion
     pointerIsDown = false;
-    isDragging = false;
+    isDragging = false; // Generischer Drag-Flag
+    isDraggingForVoxelAction = false;
+    isSingleTouchCameraRotating = false;
+
     doubleTapDragActive = false;
     lastActionVoxelCoords = null;
     initialClickPos = null;
     initialRayHitCoords = null;
     voxelsAtDragStart = null;
     currentStrokeVoxels.clear();
-    updatePreviewVoxel(0, 0, 0, false); // Vorschau-Voxel ausblenden
-    previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
+    updatePreviewVoxel(0, 0, 0, false);
+    previewLineInstancedMesh.count = 0; 
+    previewLineInstancedMesh.instanceMatrix.needsUpdate = true; 
+    previewLineVoxels = [];
     dragAxisLock = null;
     initialDragVoxelCoords = null;
-    initialDragYLevel = null; // Reset Y-level lock on up
-    
-    if (e.pointerType === 'touch') {
-        releasePointer(e.pointerId, e); // Pointer für Touch-Ereignisse freigeben
-    }
+    initialDragYLevel = null;
 }
+
 
 // Handler für Pointer Down (Maustaste oder Touch gedrückt)
 function onPointerDown(e) {
@@ -1887,17 +1641,18 @@ function onPointerDown(e) {
 
     // Robusteres Touch-Handling
     if (e.pointerType === 'touch') {
-        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType }); // Speichert den aktiven Touch-Punkt
-        touchIndicator.style.display = 'block'; touchIndicator.style.left = `${e.clientX}px`; touchIndicator.style.top = `${e.clientY}px`; // Zeigt Touch-Indikator
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
         
-        if (activePointers.size === 1) { // Erster Finger (potenziell für Rotation oder Voxel-Aktion)
+        // Flags für neue Geste zurücksetzen
+        isDraggingForVoxelAction = false;
+        isSingleTouchCameraRotating = false;
+
+        if (activePointers.size === 1) { // Erster Finger
             gestureState.type = 'none'; // Initialisiere Geste als "keine"
             gestureState.startMid = gestureState.lastMid = { x: e.clientX, y: e.clientY };
             gestureState.startTime = performance.now(); // Starte Zeit für Tap-Erkennung
-            tapCandidate = { clientX: e.clientX, clientY: e.clientY }; // Als Tap-Kandidat markieren
             
-            // isDragging wird erst bei Bewegung in onPointerMove gesetzt.
-            // Der anfängliche Raycast-Treffer für einen möglichen Tap/Drag wird berechnet.
+            // Initialer Raycast für Tap/Drag Ziel. InitialRayHitCoords wird verwendet, wenn es ein Tap wird
             initialRayHitCoords = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
 
         } else if (activePointers.size > 1) { // Multi-Touch (Geste für Pan/Zoom)
@@ -1906,10 +1661,9 @@ function onPointerDown(e) {
             previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
             updatePreviewVoxel(0, 0, 0, false);
             doubleTapDragActive = false;
-            isDragging = false; // Drag-Status für Voxel-Aktionen zurücksetzen
+            isDragging = false; 
             initialDragVoxelCoords = null;
-            initialDragYLevel = null; // Y-Ebenen-Sperre zurücksetzen
-            tapCandidate = null; // Kein Tap bei Multi-Touch
+            initialDragYLevel = null; 
 
             const pointersArr = [...activePointers.values()];
             const [p0, p1] = pointersArr;
@@ -1918,12 +1672,12 @@ function onPointerDown(e) {
             gestureState.startDist = gestureState.lastDist = dist;
             gestureState.initialPointerCount = activePointers.size;
         }
+        voxelsAtDragStart = new Map(voxels); // Zustand für Undo/Redo festhalten
+        currentStrokeVoxels.clear(); // Leeren des aktuellen Strichs
         return; // Beende, weitere Logik wird in onPointerMove oder onPointerUp behandelt
     }
 
     // Vorhandene Logik für Mausklick (linke Maustaste)
-    // Dieser Teil geht jetzt davon aus, dass ein Mausklick für Voxel-Manipulationen vorgesehen ist,
-    // es sei denn, es ist ein Rechtsklick oder der Pointer ist gesperrt.
     voxelsAtDragStart = new Map(voxels); // Speichert den Voxel-Zustand zu Beginn des Drags
     currentStrokeVoxels.clear(); // Leert den aktuellen Zeichenstrich
     dragAxisLock = null;
@@ -1950,67 +1704,64 @@ function onPointerMove(e) {
     if (e.pointerType === 'touch' && activePointers.has(e.pointerId)) {
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
 
-        if (activePointers.size === 1) {
-            // Prüfen, ob es sich um eine Kamerarotation (Free-Look) oder einen Voxel-Drag handelt
+        if (activePointers.size === 1) { // Einzel-Touch
             const currentMovedDist = Math.hypot(e.clientX - gestureState.startMid.x, e.clientY - gestureState.startMid.y);
             
-            if (gestureState.type === 'none' && currentMovedDist > MOVE_PX) {
-                // Bei ausreichender Bewegung annehmen, dass es ein Drag ist. Bei Einzel-Touch bedeutet dies Kamerarotation.
-                // Oder, wenn es bereits als Voxel-Drag erkannt wurde, diesen fortsetzen.
-                if (!isDragging) { // Wenn noch kein Voxel-Drag aktiv ist, dann ist es Kamerarotation
-                    gestureState.type = 'rotate'; // Explizit als "rotieren" markieren
+            if (!isSingleTouchCameraRotating && !isDraggingForVoxelAction) { // Wenn noch keine Geste festgelegt ist
+                if (currentMovedDist > MOVE_PX) { // Bewegungsschwelle überschritten
+                    if (currentMode === Modes.ADD || currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
+                        isDraggingForVoxelAction = true; // Starte Voxel-Drag
+                        isDragging = true; // Generischen Drag-Flag setzen
+                        // Initialen Voxel im Strich setzen
+                        if (initialRayHitCoords) {
+                            let firstActionCoords = { ...initialRayHitCoords };
+                            if (currentMode === Modes.ADD && initialRayHitCoords.faceNormal && !initialRayHitCoords.hitTemplate) {
+                                firstActionCoords.gx += initialRayHitCoords.faceNormal.x;
+                                firstActionCoords.gy += initialRayHitCoords.faceNormal.y;
+                                firstActionCoords.gz += initialRayHitCoords.faceNormal.z;
+                            }
+                            firstActionCoords.gx = Math.max(0, Math.min(GRID - 1, firstActionCoords.gx));
+                            firstActionCoords.gy = Math.max(0, Math.min(GRID - 1, firstActionCoords.gy));
+                            firstActionCoords.gz = Math.max(0, Math.min(GRID - 1, firstActionCoords.gz));
+
+                            initialDragVoxelCoords = { ...firstActionCoords };
+                            lastActionVoxelCoords = { ...firstActionCoords };
+
+                            if (currentMode === Modes.DRAW) {
+                                initialDragYLevel = initialDragVoxelCoords.gy;
+                            }
+
+                            const gKey = key(firstActionCoords.gx, firstActionCoords.gy, firstActionCoords.gz);
+                            const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
+                            performVoxelModification(firstActionCoords.gx, firstActionCoords.gy, firstActionCoords.gz, currentMode, currentColor);
+                            const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
+                            currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
+                        }
+                    } else {
+                        isSingleTouchCameraRotating = true; // Starte Kamerarotation
+                    }
                 }
             }
 
-            if (gestureState.type === 'rotate') { // Einzel-Finger-Kamerarotation
-                handleGesture(); // Handhabt die Rotationslogik
-                updatePreviewVoxel(0, 0, 0, false); // Vorschau-Voxel ausblenden
+            if (isSingleTouchCameraRotating) {
+                handleGesture(); // Kamerarotation ausführen
+                updatePreviewVoxel(0, 0, 0, false); // Vorschau ausblenden
                 previewLineInstancedMesh.count = 0;
                 previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
                 previewLineVoxels = [];
-                isDragging = false; // Sicherstellen, dass kein Voxel-Drag während Kamerarotation aktiv ist
-                return;
-            } else {
-                // Wenn es keine Rotationsgeste ist, dann ist es ein potenzieller Voxel-Drag/Tap.
-                // Dies ermöglicht dem initialen Einzel-Tap, korrekt eine Voxel-Aktion zu starten.
-                // isDragging auf true setzen, wenn die Schwelle für die Voxel-Aktion überschritten wurde.
-                if (pointerIsDown && !isDragging && currentMovedDist > MOVE_PX) {
-                     isDragging = true;
-                     // Wenn es der Beginn eines Voxel-Drags ist (nicht Kamerarotation), Strich initialisieren.
-                     if (initialRayHitCoords) {
-                         let firstActionCoords = { ...initialRayHitCoords };
-                         if (currentMode === Modes.ADD && initialRayHitCoords.faceNormal && !initialRayHitCoords.hitTemplate) {
-                             firstActionCoords.gx += initialRayHitCoords.faceNormal.x;
-                             firstActionCoords.gy += initialRayHitCoords.faceNormal.y;
-                             firstActionCoords.gz += initialRayHitCoords.faceNormal.z;
-                         }
-                         firstActionCoords.gx = Math.max(0, Math.min(GRID - 1, firstActionCoords.gx));
-                         firstActionCoords.gy = Math.max(0, Math.min(GRID - 1, firstActionCoords.gy));
-                         firstActionCoords.gz = Math.max(0, Math.min(GRID - 1, firstActionCoords.gz));
-
-                         initialDragVoxelCoords = { ...firstActionCoords };
-                         lastActionVoxelCoords = { ...firstActionCoords };
-
-                         if (currentMode === Modes.DRAW) {
-                             initialDragYLevel = initialDragVoxelCoords.gy;
-                         }
-
-                         const gKey = key(firstActionCoords.gx, firstActionCoords.gy, firstActionCoords.gz);
-                         const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
-                         performVoxelModification(firstActionCoords.gx, firstActionCoords.gy, firstActionCoords.gz, currentMode, currentColor);
-                         const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
-                         currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
-                     }
-                }
+                return; // Beende, um Voxel-Logik zu überspringen
             }
-        } else if (activePointers.size > 1) { // Multi-Finger-Pan/Zoom
-            handleGesture();
-            updatePreviewVoxel(0, 0, 0, false);
+        } else if (activePointers.size > 1) { // Multi-Touch (Pan/Zoom)
+            isDraggingForVoxelAction = false;
+            isSingleTouchCameraRotating = false;
+            isDragging = false; // Generischen Drag-Flag zurücksetzen
+
+            handleGesture(); // Pan/Zoom ausführen
+            updatePreviewVoxel(0, 0, 0, false); // Vorschau ausblenden
             previewLineInstancedMesh.count = 0;
             previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
             previewLineVoxels = [];
-            isDragging = false; // Sicherstellen, dass kein Voxel-Drag bei Multi-Touch aktiv ist
-            return;
+            return; // Beende, um Voxel-Logik zu überspringen
         }
     }
 
@@ -2020,11 +1771,41 @@ function onPointerMove(e) {
     const currentMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
     const shouldStartDrag = pointerIsDown && (currentMovedDist > MOVE_PX);
 
+    // Initialisiere isDragging für Maus-Ereignisse, wenn die Schwelle überschritten wird
+    if (e.pointerType === 'mouse' && !isDragging && shouldStartDrag) {
+        isDragging = true;
+        // Für Maus: Initialen Voxel im Strich setzen, wenn Drag beginnt
+        if (initialRayHitCoords) {
+            let firstActionCoords = { ...initialRayHitCoords };
+            if (currentMode === Modes.ADD && initialRayHitCoords.faceNormal && !initialRayHitCoords.hitTemplate) {
+                firstActionCoords.gx += initialRayHitCoords.faceNormal.x;
+                firstActionCoords.gy += initialRayHitCoords.faceNormal.y;
+                firstActionCoords.gz += initialRayHitCoords.faceNormal.z;
+            }
+            firstActionCoords.gx = Math.max(0, Math.min(GRID - 1, firstActionCoords.gx));
+            firstActionCoords.gy = Math.max(0, Math.min(GRID - 1, firstActionCoords.gy));
+            firstActionCoords.gz = Math.max(0, Math.min(GRID - 1, firstActionCoords.gz));
+
+            initialDragVoxelCoords = { ...firstActionCoords };
+            lastActionVoxelCoords = { ...firstActionCoords };
+
+            if (currentMode === Modes.DRAW) {
+                initialDragYLevel = initialDragVoxelCoords.gy;
+            }
+
+            const gKey = key(firstActionCoords.gx, firstActionCoords.gy, firstActionCoords.gz);
+            const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
+            performVoxelModification(firstActionCoords.gx, firstActionCoords.gy, firstActionCoords.gz, currentMode, currentColor);
+            const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
+            currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
+        }
+    }
+
     let currentRayHit = calculateRayTargetVoxelCoords(
         e.clientX,
         e.clientY,
-        isDragging ? currentStrokeVoxels : null,
-        isDragging && currentMode === Modes.DRAW ? initialDragYLevel : null
+        (isDragging && e.pointerType === 'mouse') || isDraggingForVoxelAction ? currentStrokeVoxels : null, // Unterscheide Voxel-Drag-Typ
+        ((isDragging && e.pointerType === 'mouse') || isDraggingForVoxelAction) && currentMode === Modes.DRAW ? initialDragYLevel : null
     ); 
 
     let targetForVoxelAction = null; 
@@ -2046,7 +1827,7 @@ function onPointerMove(e) {
             gy_action += currentRayHit.faceNormal.y;
             gz_action += currentRayHit.faceNormal.z;
         }
-        if (isDragging && currentMode === Modes.DRAW && initialDragYLevel !== null) {
+        if (((isDragging && e.pointerType === 'mouse') || isDraggingForVoxelAction) && currentMode === Modes.DRAW && initialDragYLevel !== null) {
             gy_action = initialDragYLevel;
         }
         gx_action = Math.max(0, Math.min(GRID - 1, gx_action));
@@ -2075,135 +1856,108 @@ function onPointerMove(e) {
         voxelForPreview = { gx: gx_preview, gy: gy_preview, gz: gz_preview };
     }
     
-    // Führe Aktionen aus, wenn der Pointer gedrückt ist und ein Ziel gefunden wurde
-    if (pointerIsDown && targetForVoxelAction && (e.pointerType === 'mouse' || isDragging)) { // Nur für Maus oder wenn Touch-Drag aktiv ist
-        if (!isDragging && shouldStartDrag) { // Start des Drags erkennen (nur für Maus, bei Touch bereits in pointerdown gehandhabt)
-            isDragging = true;
-            lastActionVoxelCoords = { ...targetForVoxelAction };
+    // Führe Aktionen aus, wenn der Pointer gedrückt ist und ein Ziel gefunden wurde UND es ein Drag für Voxel-Aktionen ist
+    if (((pointerIsDown && e.pointerType === 'mouse') || isDraggingForVoxelAction) && targetForVoxelAction) { // Sicherstellen, dass targetForVoxelAction gültig ist
+        // Kontinuierliche Voxel-Modifikation während des Drags
+        const startPointForLine = lastActionVoxelCoords;
+        const endPointForLine = { ...targetForVoxelAction };
 
-            if (currentMode === Modes.DRAW) {
-                // Sicherstellen, dass initialDragVoxelCoords.gy existiert, wenn darauf zugegriffen wird
-                initialDragYLevel = initialDragVoxelCoords && Number.isFinite(initialDragVoxelCoords.gy) 
-                                    ? initialDragVoxelCoords.gy 
-                                    : targetForVoxelAction.gy;
+        let pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine);
+
+        if (currentMode === Modes.ADD) {
+            pathVoxels = pathVoxels.filter(voxel => {
+                const gKey = key(voxel.gx, voxel.gy, voxel.gz);
+                const hasExistingVoxel = voxels.has(gKey);
+                return !hasExistingVoxel; // Nur hinzufügen, wenn kein Voxel existiert (templateVoxelMap ist jetzt immer leer)
+            });
+        } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
+            pathVoxels = pathVoxels.filter(voxel => voxelsAtDragStart.has(key(voxel.gx, voxel.gy, voxel.gz)));
+        }
+        
+        let lastProcessedVoxel = null; // Um den tatsächlich letzten bearbeiteten Voxel zu verfolgen
+        for (let i = 0; i < pathVoxels.length; i++) {
+            const voxel = pathVoxels[i];
+            const gKey = key(voxel.gx, voxel.gy, voxel.gz);
+            const initialColorOfStroke = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
+            
+            performVoxelModification(voxel.gx, voxel.gy, voxel.gz, currentMode, currentColor);
+            
+            const finalColorAfterModification = voxels.has(gKey) ? voxels.get(gKey).color : null;
+
+            if (!currentStrokeVoxels.has(gKey)) {
+                 currentStrokeVoxels.set(gKey, { originalColor: initialColorOfStroke, finalColor: finalColorAfterModification });
+            } else {
+                currentStrokeVoxels.get(gKey).finalColor = finalColorAfterModification;
             }
+            lastProcessedVoxel = voxel; // Dies ist der letzte erfolgreich modifizierte Voxel
         }
 
-        if (isDragging) {
-            const startPointForLine = lastActionVoxelCoords;
-            const endPointForLine = { ...targetForVoxelAction };
+        // Aktualisiere lastActionVoxelCoords mit dem tatsächlich letzten bearbeiteten Voxel
+        if (lastProcessedVoxel) {
+            lastActionVoxelCoords = { ...lastProcessedVoxel };
+        } else if (startPointForLine) {
+            // Wenn keine Voxel modifiziert wurden (z.B. Filterung), aber ein Startpunkt existiert,
+            // halte den Startpunkt bei, um zukünftige Lücken zu vermeiden.
+            lastActionVoxelCoords = { ...startPointForLine };
+        }
+        
+        updatePreviewVoxel(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz, true);
+        previewLineInstancedMesh.count = 0; // Vorschau-Linie ausblenden
+        
+    } else { // Kein Pointer gedrückt oder Single-Touch ist Kamerarotation
+        previewLineInstancedMesh.count = 0;
+        previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
+        previewLineVoxels = [];
 
-            let pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine);
+        // Zeige Vorschau-Voxel nur, wenn keine Geste aktiv ist (d.h. nur Hover für Maus oder initialer Zustand für Touch)
+        if (!isSingleTouchCameraRotating && !isDraggingForVoxelAction) {
+            let hoverRayHit = calculateRayTargetVoxelCoords(
+                e.clientX,
+                e.clientY,
+                null,
+                currentMode === Modes.DRAW && initialDragYLevel !== null ? initialDragYLevel : null
+            );
 
-            if (currentMode === Modes.ADD) {
-                pathVoxels = pathVoxels.filter(voxel => {
-                    const gKey = key(voxel.gx, voxel.gy, voxel.gz);
-                    const isTemplateVoxel = templateVoxelMap.has(gKey);
-                    const hasExistingVoxel = voxels.has(gKey);
-                    return !hasExistingVoxel && (isTemplateVoxel || !templateInstancedMesh);
-                });
-            } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-                pathVoxels = pathVoxels.filter(voxel => voxelsAtDragStart.has(key(voxel.gx, voxel.gy, voxel.gz)));
-            }
+            let hoverVoxelForPreview = null;
 
-            for (let i = 0; i < pathVoxels.length; i++) {
-                const voxel = pathVoxels[i];
-                const gKey = key(voxel.gx, voxel.gy, voxel.gz);
-                const initialColorOfStroke = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
-                
-                performVoxelModification(voxel.gx, voxel.gy, voxel.gz, currentMode, currentColor);
-                
-                const finalColorAfterModification = voxels.has(gKey) ? voxels.get(gKey).color : null;
+            if (hoverRayHit && 
+                Number.isFinite(hoverRayHit.gx) && 
+                Number.isFinite(hoverRayHit.gy) && 
+                Number.isFinite(hoverRayHit.gz)) {
 
-                if (!currentStrokeVoxels.has(gKey)) {
-                     currentStrokeVoxels.set(gKey, { originalColor: initialColorOfStroke, finalColor: finalColorAfterModification });
-                } else {
-                    currentStrokeVoxels.get(gKey).finalColor = finalColorAfterModification;
+                let gx_hover_preview = hoverRayHit.gx;
+                let gy_hover_preview = hoverRayHit.gy;
+                let gz_hover_preview = hoverRayHit.gz;
+
+                if (currentMode === Modes.ADD && hoverRayHit.faceNormal && !hoverRayHit.hitTemplate) {
+                    gx_hover_preview += hoverRayHit.faceNormal.x;
+                    gy_hover_preview += hoverRayHit.faceNormal.y;
+                    gz_hover_preview += hoverRayHit.faceNormal.z;
                 }
+                gx_hover_preview = Math.max(0, Math.min(GRID - 1, gx_hover_preview));
+                gy_hover_preview = Math.max(0, Math.min(GRID - 1, gy_hover_preview));
+                gz_hover_preview = Math.max(0, Math.min(GRID - 1, gz_hover_preview));
+                hoverVoxelForPreview = { gx: gx_hover_preview, gy: gy_hover_preview, gz: gz_hover_preview };
             }
-            lastActionVoxelCoords = { ...endPointForLine };
-            updatePreviewVoxel(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz, true);
-            previewLineInstancedMesh.count = 0;
 
-        } else {
-            if (voxelForPreview) {
+            if (hoverVoxelForPreview) {
                 let showPreview = false;
-                const gKeyAtPreview = key(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz);
+                const gKeyAtPreview = key(hoverVoxelForPreview.gx, hoverVoxelForPreview.gy, hoverVoxelForPreview.gz);
                 const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
-                const isTemplateVoxel = templateVoxelMap.has(gKeyAtPreview);
+                const isTemplateVoxel = false; // templateVoxelMap ist jetzt immer leer
 
                 if (currentMode === Modes.ADD) {
                     showPreview = !hasVoxelAtPreview || isTemplateVoxel;
                 } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
                     showPreview = hasVoxelAtPreview;
                 }
-                updatePreviewVoxel(voxelForPreview.gx, voxelForPreview.gy, voxelForPreview.gz, showPreview);
+                updatePreviewVoxel(hoverVoxelForPreview.gx, hoverVoxelForPreview.gy, hoverVoxelForPreview.gz, showPreview);
             } else {
                 updatePreviewVoxel(0, 0, 0, false);
             }
-            previewLineInstancedMesh.count = 0;
-        }
-    } else { // Kein Pointer gedrückt oder Einzel-Touch nicht in 'rotate'-Geste
-        previewLineInstancedMesh.count = 0;
-        previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
-        previewLineVoxels = [];
-
-        let hoverRayHit = calculateRayTargetVoxelCoords(
-            e.clientX,
-            e.clientY,
-            null,
-            currentMode === Modes.DRAW && initialDragYLevel !== null ? initialDragYLevel : null
-        );
-
-        let hoverVoxelForPreview = null;
-
-        // Defensive Prüfung für hoverRayHit
-        if (hoverRayHit && 
-            Number.isFinite(hoverRayHit.gx) && 
-            Number.isFinite(hoverRayHit.gy) && 
-            Number.isFinite(hoverRayHit.gz)) {
-
-            let gx_hover_preview = hoverRayHit.gx;
-            let gy_hover_preview = hoverRayHit.gy;
-            let gz_hover_preview = hoverRayHit.gz;
-
-            if (currentMode === Modes.ADD && hoverRayHit.faceNormal && !hoverRayHit.hitTemplate) {
-                gx_hover_preview += hoverRayHit.faceNormal.x;
-                gy_hover_preview += hoverRayHit.faceNormal.y;
-                gz_hover_preview += hoverRayHit.faceNormal.z;
-            }
-            gx_hover_preview = Math.max(0, Math.min(GRID - 1, gx_hover_preview));
-            gy_hover_preview = Math.max(0, Math.min(GRID - 1, gy_hover_preview));
-            gz_hover_preview = Math.max(0, Math.min(GRID - 1, gz_hover_preview));
-            hoverVoxelForPreview = { gx: gx_hover_preview, gy: gy_hover_preview, gz: gz_hover_preview };
-        }
-
-        if (hoverVoxelForPreview) {
-            let showPreview = false;
-            const gKeyAtPreview = key(hoverVoxelForPreview.gx, hoverVoxelForPreview.gy, hoverVoxelForPreview.gz);
-            const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
-            const isTemplateVoxel = templateVoxelMap.has(gKeyAtPreview);
-
-            if (currentMode === Modes.ADD) {
-                showPreview = !hasVoxelAtPreview || isTemplateVoxel;
-            } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-                showPreview = hasVoxelAtPreview;
-            }
-            updatePreviewVoxel(hoverVoxelForPreview.gx, hoverVoxelForPreview.gy, hoverVoxelForPreview.gz, showPreview);
-        } else {
-            updatePreviewVoxel(0, 0, 0, false);
         }
     }
 }
-
-// ENTFERNT: Öffnet das Modal zur Generierung von KI-Ideen
-// function openIdeaGeneratorModal() { ... }
-
-// ENTFERNT: Generiert eine Voxel-Idee mithilfe der Gemini API
-// async function generateVoxelIdea() { ... }
-
-// ENTFERNT: Wendet die von der KI generierten Voxel-Daten an
-// function applyAIGeneratedVoxels(aiData) { ... }
 
 // Wechselt die Zeichenachse
 function cycleDrawingAxis() {
@@ -2234,15 +1988,12 @@ function moveDrawingLevel(direction) {
     showToast('Zeichenebene', `Ebene ${currentDrawingAxis.toUpperCase()}: ${level}`, 'info', 1500);
 }
 
-// ENTFERNT: Öffnet das Modal zur Auswahl einer Vorlage
-// function openTemplateChooserModal() { ... }
-
 
 window.onload = async function() {
     closeAllModals(); // Alle Modals beim Start schließen
     try {
         cvs = document.getElementById('voxelCanvas'); containerDiv = document.getElementById('container');
-        touchIndicator = document.getElementById('touch-indicator');
+        // touchIndicator = document.getElementById('touch-indicator'); // ENTFERNT
         toastContainer = document.getElementById('toast-container');
         scene = new THREE.Scene(); scene.background = new THREE.Color(0x282c34); // Szene und Hintergrundfarbe
         cam = new THREE.PerspectiveCamera(75, containerDiv.clientWidth / containerDiv.clientHeight, 0.1, 1000); // Kamera
@@ -2280,7 +2031,6 @@ window.onload = async function() {
         containerDiv.addEventListener('pointerenter', () => {
             // Fokus nur setzen, wenn nicht bereits auf einem Input-Element fokussiert oder ein Modal geöffnet ist
             const activeElement = document.activeElement;
-            // ENTFERNT: 'authModal', 'uploadProjectModal', 'ideaGeneratorModal', 'templateChooserModal'
             const isModalOpen = ['clearConfirmationModal'].some(id => document.getElementById(id).open);
             if (!isModalOpen && activeElement && !activeElement.tagName.match(/^(INPUT|TEXTAREA|SELECT|BUTTON)$/)) {
                 cvs.focus();
@@ -2375,8 +2125,6 @@ window.onload = async function() {
         document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('fileInput').addEventListener('change', loadJSON);
         document.getElementById('exportStlBtn').addEventListener('click', exportSTL);
-        // ENTFERNT: document.getElementById('exportObjBtn').addEventListener('click', exportOBJ);
-        // ENTFERNT: document.getElementById('exportGlbBtn').addEventListener('click', exportGLB);
 
         // Fluggeschwindigkeits-Slider
         document.getElementById('fly-speed-slider').addEventListener('input', (e) => {
@@ -2384,16 +2132,9 @@ window.onload = async function() {
         });
 
         document.getElementById('resetCameraBtn').addEventListener('click', resetCameraPosition);
-        // ENTFERNT: document.getElementById('generateVoxelIdeaBtn').addEventListener('click', openIdeaGeneratorModal);
         document.getElementById('loadImageTemplateBtn').addEventListener('click', loadImageTemplate);
         document.getElementById('imageFileInput').addEventListener('change', handleImageFileSelect);
         document.getElementById('removeImageTemplateBtn').addEventListener('click', removeImageTemplate);
-
-        // ENTFERNT: Vorlagen-Funktionen
-        // document.getElementById('loadTemplateBtn').addEventListener('click', openTemplateChooserModal);
-        // document.getElementById('removeTemplateBtn').addEventListener('click', removeTemplate);
-        // document.getElementById('templateChooserCloseBtn').addEventListener('click', () => document.getElementById('templateChooserModal').close());
-        // document.getElementById('templateChooserModal').addEventListener('click', (e) => { if (e.target === document.getElementById('templateChooserModal')) document.getElementById('templateChooserModal').close(); });
 
         // Menü-Umschaltung für Mobilgeräte
         document.getElementById('menuToggle').addEventListener('click', () => {
@@ -2487,82 +2228,19 @@ window.onload = async function() {
         document.getElementById('mobile-level-up').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(1); });
         document.getElementById('mobile-level-down').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(-1); });
 
-        // ENTFERNT: document.getElementById('mobile-generate-idea').addEventListener('click', (e) => { e.stopPropagation(); openIdeaGeneratorModal(); });
-        // ENTFERNT: document.getElementById('mobile-template').addEventListener('click', (e) => { e.stopPropagation(); openTemplateChooserModal(); });
-        // ENTFERNT: document.getElementById('mobile-login-logout').addEventListener('click', (e) => { e.stopPropagation(); loginLogout(); });
+        // ENTFERNT: Login-Button, Upload-Button, Hub-Link für Desktop und Mobile (da Firebase-Login-UI entfernt)
+        // document.getElementById('loginLogoutBtn').addEventListener('click', loginLogout);
+        // document.getElementById('uploadToHubBtn').addEventListener('click', openUploadModal);
+        // document.getElementById('goToHubBtn').addEventListener('click', () => window.open('https://hub.voxelshaper.com', '_blank'));
+        // document.getElementById('mobile-login-logout').addEventListener('click', ...);
 
-        // Initialisiert die UI-Elemente mit gespeicherten Werten
-        document.getElementById('grid-size-slider').value = GRID; document.getElementById('grid-size-display').textContent = `${GRID}×${GRID}×${GRID}`;
-        document.getElementById('color-picker').value = currentColor;
-        document.getElementById('fly-speed-slider').value = moveSpeed; document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2);
-        
-        document.getElementById('mobile-mode-icon').className = ModeIcons[currentMode];
-        document.getElementById('mobile-axis-icon').className = AxisIcons[currentDrawingAxis];
+        // ENTFERNT: Firebase-Initialisierung und Authentifizierungs-Logik
+        // const app = window.firebase.initializeApp(window.firebaseConfig);
+        // auth = window.firebase.getAuth(app); db = window.firebase.getFirestore(app);
+        // ... (onAuthStateChanged, etc.)
 
-        // Firebase Initialisierung und Authentifizierung
-        const app = window.firebase.initializeApp(window.firebaseConfig);
-        auth = window.firebase.getAuth(app); db = window.firebase.getFirestore(app);
-        const loginLogoutBtn = document.getElementById('loginLogoutBtn');
-        const uploadToHubBtn = document.getElementById('uploadToHubBtn');
-        const userIdDisplay = document.getElementById('userIdDisplay');
-        const goToHubBtn = document.getElementById('goToHubBtn');
-        let projectLoadedFromUrl = false;
-
-        // ENTFERNT: predefinedCategories.forEach(cat => { const opt = document.createElement('option'); opt.value = cat; opt.textContent = cat; document.getElementById('uploadCategory').appendChild(opt); });
-
-        window.firebase.setPersistence(auth, window.firebase.browserLocalPersistence)
-            .then(async () => {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try { await window.firebase.signInWithCustomToken(auth, __initial_auth_token); }
-                    catch (e) { showToast('Anmeldefehler', `Fehler beim Anmelden mit Token: ${e.message}. Bitte versuchen Sie es erneut.`, 'error', 5000); }
-                } else {
-                }
-
-                window.firebase.onAuthStateChanged(auth, async (user) => {
-                    currentUserId = user ? user.uid : null; currentUser = user;
-                    loginLogoutBtn.textContent = user ? 'Abmelden' : 'Anmelden';
-                    // userIdDisplay.innerHTML = user ? `<img src="${user.photoURL || 'https://placehold.co/24x24/cccccc/000000?text=U'}" alt="User Avatar" class="w-6 h-6 rounded-full align-middle">` : ''; // Avatar entfernt für Vereinfachung
-                    userIdDisplay.innerHTML = user ? `User ID: ${user.uid.substring(0, 8)}...` : ''; // Vereinfachte User ID Anzeige
-                    uploadToHubBtn.classList.toggle('hidden', !user); // Upload-Button hängt weiterhin vom Login ab
-                    // document.getElementById('mobile-login-logout').textContent = user ? '🚪' : '?'; // Mobiler Login-Button entfernt
-                    if (user) closeAllModals(); // Nur noch 'clearConfirmationModal' wird geschlossen
-
-                    if (!projectLoadedFromUrl) {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const modelId = urlParams.get('modelId'); const encodedJson = urlParams.get('projectJson');
-                        if (modelId) { await loadProjectFromModelId(modelId); projectLoadedFromUrl = true; }
-                        else if (encodedJson) {
-                            try {
-                                const decodedJson = decodeURIComponent(encodedJson);
-                                loadProjectData(JSON.parse(decodedJson));
-                                showToast('Projekt geladen', 'Projekt erfolgreich aus URL-Parameter geladen.', 'success', 5000);
-                                projectLoadedFromUrl = true;
-                            } catch (e) { showToast('Fehler', 'Fehler beim Laden des Projekts aus der URL. Ungültige oder beschädigte Projektdaten. Fehler: ' + e.message, 'error', 5000); resetToDefaultProject(); }
-                        } else { projectRemixOf = ''; projectSourceJsonUrl = ''; }
-                    }
-                });
-                animate();
-            })
-            .catch((e) => { showToast('Anmeldefehler', `Fehler bei der Anmeldungspersistenz: ${e.message}.`, 'error', 10000); animate(); });
-
-        document.getElementById('goToHubBtn').addEventListener('click', () => window.open('https://hub.voxelshaper.com', '_blank'));
-        loginLogoutBtn.addEventListener('click', loginLogout);
-        // ENTFERNT: document.getElementById('authModal').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('authModalCloseBtn').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('signInGoogleBtn').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('signInGithubBtn').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('emailSignInBtn').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('emailSignUpBtn').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('showEmailLoginFormBtn').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('uploadToHubBtn').addEventListener('click', openUploadModal);
-        // ENTFERNT: document.getElementById('uploadProjectModal').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('uploadConfirmBtn').addEventListener('click', uploadProjectToHub);
-        // ENTFERNT: document.getElementById('uploadCancelBtn').addEventListener('click', ...);
-
-        // ENTFERNT: document.getElementById('generateIdeaConfirmBtn').addEventListener('click', generateVoxelIdea);
-        // ENTFERNT: document.getElementById('ideaGeneratorCloseBtn').addEventListener('click', ...);
-        // ENTFERNT: document.getElementById('ideaGeneratorModal').addEventListener('click', ...);
-
+        // Da Firebase entfernt wurde, kann die App nun direkt animieren
+        animate();
     } catch (e) { showToast('Schwerer Fehler', `Ein unerwarteter Fehler ist aufgetreten: ${e.message}.`, 'error', 10000); }
 };
 
