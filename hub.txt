@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoxelShaper - Community 3D Modelle</title>
+    <!-- DaisyUI & Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome für Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .voxel-bg {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        }
+        .model-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #2d3748;
+        }
+        .model-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        .rating-stars {
+            color: #fbbf24;
+            /* Ensure no line break for stars */
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        }
+        .voxel-logo {
+            font-family: 'Arial Black', sans-serif;
+            letter-spacing: -1px;
+            text-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+        .model-preview {
+            height: 200px;
+            background-color: #2d3748;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative; /* For canvas positioning */
+            color: #aaa; /* Fallback text color */
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .model-preview canvas {
+            width: 100%;
+            height: 200px; /* Explicit height for canvas */
+            display: block;
+        }
+        /* Removed .voxel-grid and .voxel as they are replaced by Three.js renderer */
+    </style>
+</head>
+<body class="voxel-bg min-h-screen text-gray-100">
+    <!-- Navigation -->
+    <div class="navbar bg-base-200 border-b border-gray-700 px-4 py-3">
+        <div class="flex-1">
+            <a href="#" class="voxel-logo text-2xl font-bold text-blue-400">
+                <i class="fas fa-cube mr-2"></i>VoxelShaper
+            </a>
+            <div class="hidden md:flex ml-10">
+                <a href="#" class="btn btn-ghost btn-sm">Entdecken</a>
+                <a href="#" class="btn btn-ghost btn-sm">Beliebt</a>
+                <a href="#" class="btn btn-ghost btn-sm">Neu</a>
+                <a href="#" class="btn btn-ghost btn-sm">Kategorien</a>
+            </div>
+        </div>
+        <div class="flex-none gap-4">
+            <div class="form-control hidden md:block">
+                <input type="text" placeholder="Suche..." class="input input-bordered input-sm w-48 bg-gray-700 border-gray-600" />
+            </div>
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+                    <i class="fas fa-bell text-xl"></i>
+                </div>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-gray-800 rounded-box w-64 mt-4">
+                    <li class="text-center py-4 text-gray-400">Keine Benachrichtigungen</li>
+                </ul>
+            </div>
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" id="user-menu-button" class="btn btn-ghost btn-circle avatar placeholder">
+                    <div class="bg-gray-600 text-gray-300 rounded-full w-10">
+                        <span><i class="fas fa-user"></i></span>
+                    </div>
+                </div>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-gray-800 rounded-box w-52 mt-4">
+                    <li id="login-button"><a><i class="fas fa-sign-in-alt mr-2"></i>Anmelden</a></li>
+                    <li id="profile-button" class="hidden"><a><i class="fas fa-user mr-2"></i>Profil</a></li>
+                    <li id="logout-button" class="hidden"><a><i class="fas fa-sign-out-alt mr-2"></i>Abmelden</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hauptinhalt -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Community-Modelle</h1>
+            <button id="upload-model-button" class="btn btn-primary">
+                <i class="fas fa-upload mr-2"></i>Modell hochladen
+            </button>
+        </div>
+
+        <!-- Filter & Sortierung -->
+        <div class="bg-base-200 rounded-lg p-4 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <div>
+                    <span class="text-gray-400 mr-2">Filter:</span>
+                    <select class="select select-bordered select-sm bg-gray-700 border-gray-600">
+                        <option>Alle Kategorien</option>
+                        <option>Spielzeug</option>
+                        <option>Dekoration</option>
+                        <option>Funktional</option>
+                        <option>Kunst</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="text-gray-400 mr-2">Sortieren:</span>
+                    <select class="select select-bordered select-sm bg-gray-700 border-gray-600">
+                        <option>Beliebteste</option>
+                        <option>Neueste</option>
+                        <option>Am besten bewertet</option>
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-gray-400 mr-2">Lizenz:</span>
+                    <div class="flex gap-2">
+                        <button class="btn btn-xs">Alle</button>
+                        <button class="btn btn-xs btn-outline">CC BY</button>
+                        <button class="btn btn-xs btn-outline">CC BY-SA</button>
+                        <button class="btn btn-xs btn-outline">CC0</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modelle Grid -->
+        <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Modelle werden hier dynamisch geladen -->
+        </div>
+
+        <!-- Ladeindikator und "Mehr laden"-Button -->
+        <div id="load-more-container" class="flex flex-col items-center justify-center mt-10">
+            <span id="loading-spinner" class="loading loading-spinner loading-lg text-primary hidden"></span>
+            <button id="load-more-button" class="btn btn-primary mt-4 hidden">
+                Mehr Modelle laden
+            </button>
+            <p id="no-more-models" class="text-gray-400 mt-4 hidden">Keine weiteren Modelle verfügbar.</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer p-10 bg-gray-900 text-gray-400 mt-16">
+        <div class="container mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="footer-title text-white">VoxelShaper</h3>
+                    <p class="mt-4">Die Community für 3D-Voxelmodelle. Teile, entdecke und drucke einzigartige Kreationen.</p>
+                    <div class="flex gap-4 mt-4">
+                        <a href="#"><i class="fab fa-discord text-xl"></i></a>
+                        <a href="#"><i class="fab fa-twitter text-xl"></i></a>
+                        <a href="#"><i class="fab fa-instagram text-xl"></i></a>
+                        <a href="#"><i class="fab fa-github text-xl"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="footer-title">Ressourcen</h3>
+                    <a class="link link-hover mt-4">Blog</a>
+                    <a class="link link-hover">Tutorials</a>
+                    <a class="link link-hover">Dokumentation</a>
+                    <a class="link link-hover">API</a>
+                </div>
+                <div>
+                    <h3 class="footer-title">Community</h3>
+                    <a class="link link-hover mt-4">Forum</a>
+                    <a class="link link-hover">Events</a>
+                    <a class="link link-hover">Mitwirkende</a>
+                    <a class="link link-hover">Partner</a>
+                </div>
+                <div>
+                    <h3 class="footer-title">Rechtliches</h3>
+                    <a class="link link-hover mt-4">AGB</a>
+                    <a class="link link-hover">Datenschutz</a>
+                    <a class="link link-hover">Lizenzierung</a>
+                    <a class="link link-hover">Cookie-Richtlinie</a>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-12 pt-6 text-center">
+                <p>© 2023 VoxelShaper. Alle Rechte vorbehalten.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase Login Modal -->
+    <dialog id="auth-modal" class="modal">
+        <div class="modal-box bg-gray-800">
+            <h3 class="font-bold text-lg text-center">Anmeldung bei VoxelShaper</h3>
+            <p class="py-4 text-center">Melde dich an, um Modelle zu bewerten, herunterzuladen und eigene Kreationen zu teilen.</p>
+            <div class="modal-action flex flex-col items-center w-full">
+                <form method="dialog" class="w-full">
+                    <div class="flex flex-col gap-3 w-full">
+                        <input id="email-input" type="email" placeholder="E-Mail" class="input input-bordered w-full bg-gray-700 border-gray-600" autocomplete="email" />
+                        <input id="password-input" type="password" placeholder="Passwort" class="input input-bordered w-full bg-gray-700 border-gray-600" autocomplete="current-password" />
+                        <button id="firebase-login" class="btn btn-primary w-full">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Anmelden
+                        </button>
+                        <button id="firebase-signup" class="btn btn-secondary w-full">
+                            <i class="fas fa-user-plus mr-2"></i> Registrieren
+                        </button>
+                        <div class="divider text-gray-500">ODER</div>
+                        <button id="google-login" class="btn btn-info w-full text-white">
+                            <i class="fab fa-google mr-2"></i> Mit Google anmelden
+                        </button>
+                        <button id="github-login" class="btn w-full bg-gray-700 hover:bg-gray-600 text-white border-none">
+                            <i class="fab fa-github mr-2"></i> Mit GitHub anmelden
+                        </button>
+                        <button class="btn btn-outline w-full" onclick="document.getElementById('auth-modal').close()">Abbrechen</button>
+                    </div>
+                    <p id="auth-error-message" class="text-red-500 text-sm mt-4 text-center hidden"></p>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Upload Model Modal -->
+    <dialog id="upload-modal" class="modal">
+        <div class="modal-box bg-gray-800">
+            <h3 class="font-bold text-lg">Modell hochladen</h3>
+            <p class="py-4">Lade dein 3D-Voxelmodell hoch und teile es mit der Community.</p>
+            <div class="modal-action">
+                <form method="dialog" class="w-full">
+                    <!-- Step 1: Project JSON Upload -->
+                    <div id="json-upload-step" class="flex flex-col gap-3">
+                        <label for="project-json-input" class="label">
+                            <span class="label-text text-gray-400">1. Projektdatei (.json) hochladen (Pflichtfeld)</span>
+                        </label>
+                        <input id="project-json-input" type="file" class="file-input file-input-bordered w-full bg-gray-700 border-gray-600" accept=".json" required />
+                        <p id="json-error-message" class="text-red-500 text-sm mt-2 hidden"></p>
+                        <button type="button" id="load-json-button" class="btn btn-primary w-full mt-4">
+                            <i class="fas fa-file-upload mr-2"></i> Projektdatei laden
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Model Details (initially hidden) -->
+                    <div id="model-details-step" class="flex flex-col gap-3 mt-6 hidden">
+                        <div class="divider text-gray-500">2. Modell Details</div>
+                        <input id="model-title-input" type="text" placeholder="Modell Titel" class="input input-bordered w-full bg-gray-700 border-gray-600" required />
+                        <textarea id="model-description-input" placeholder="Modell Beschreibung" class="textarea textarea-bordered w-full bg-gray-700 border-gray-600 h-24"></textarea>
+                        
+                        <!-- Removed 3D Model File Input -->
+                        
+                        <input id="remix-of-input" type="text" placeholder="Remix von (optional)" class="input input-bordered w-full bg-gray-700 border-gray-600" />
+                        <!-- sourceJsonUrlInput is no longer needed as a URL input if JSON is embedded -->
+                        <!-- <input id="source-json-url-input" type="url" placeholder="Source JSON URL (optional)" class="input input-bordered w-full bg-gray-700 border-gray-600" readonly /> -->
+                        <input id="tags-input" type="text" placeholder="Tags (Komma-getrennt, z.B. Tier, Auto)" class="input input-bordered w-full bg-gray-700 border-gray-600" />
+                        
+                        <select id="visibility-select" class="select select-bordered w-full bg-gray-700 border-gray-600">
+                            <option value="public">Öffentlich</option>
+                            <option value="private">Privat</option>
+                        </select>
+
+                        <button id="upload-submit-button" class="btn btn-primary w-full mt-4" disabled>
+                            <i class="fas fa-upload mr-2"></i> Modell hochladen
+                        </button>
+                    </div>
+                    <button class="btn btn-outline w-full mt-4" onclick="document.getElementById('upload-modal').close()">Abbrechen</button>
+                    <p id="upload-error-message" class="text-red-500 text-sm mt-2 hidden"></p>
+                    <p id="upload-success-message" class="text-green-500 text-sm mt-2 hidden"></p>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Three.js Libraries (non-module imports) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+    <!-- OrbitControls non-module version -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            onAuthStateChanged,
+            signOut,
+            GoogleAuthProvider, 
+            signInWithPopup,
+            GithubAuthProvider 
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            serverTimestamp,
+            query, 
+            orderBy, 
+            limit, 
+            getDocs, 
+            startAfter,
+            where,
+            doc, 
+            getDoc 
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+        // THREE and OrbitControls are now globally available via script tags, no import needed here.
+
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9-mpyAu9W6oiVtB0fYG8E6YFvTAsjtAA",
+            authDomain: "voxelshaper.firebaseapp.com",
+            projectId: "voxelshaper",
+            storageBucket: "voxelshaper.firebasestorage.app", 
+            messagingSenderId: "1053689247573",
+            appId: "1:1053689247573:web:f7960c7f8c2e8849e8e1dc",
+            measurementId: "G-QJ5CNKZ5DR"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Variables for infinite scrolling
+        const MODELS_PER_LOAD = 8;
+        let lastVisible = null;
+        let isLoadingModels = false; 
+
+        // UI Elemente
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const profileButton = document.getElementById('profile-button');
+        const userMenuButton = document.getElementById('user-menu-button');
+        const authModal = document.getElementById('auth-modal');
+        const firebaseLoginButton = document.getElementById('firebase-login');
+        const firebaseSignupButton = document.getElementById('firebase-signup');
+        const googleLoginButton = document.getElementById('google-login'); 
+        const githubLoginButton = document.getElementById('github-login'); 
+        const emailInput = document.getElementById('email-input');
+        const passwordInput = document.getElementById('password-input');
+        const authErrorMessage = document.getElementById('auth-error-message');
+
+        // Upload Modal Elemente
+        const uploadModelButton = document.getElementById('upload-model-button');
+        const uploadModal = document.getElementById('upload-modal');
+        const jsonUploadStep = document.getElementById('json-upload-step'); 
+        const modelDetailsStep = document.getElementById('model-details-step'); 
+        const loadJsonButton = document.getElementById('load-json-button'); 
+        const jsonErrorMessage = document.getElementById('json-error-message'); 
+
+        const modelTitleInput = document.getElementById('model-title-input');
+        const modelDescriptionInput = document.getElementById('model-description-input');
+        const projectJsonInput = document.getElementById('project-json-input'); 
+        const remixOfInput = document.getElementById('remix-of-input'); 
+        const tagsInput = document.getElementById('tags-input'); 
+        const visibilitySelect = document.getElementById('visibility-select'); 
+        const uploadSubmitButton = document.getElementById('upload-submit-button');
+        const uploadErrorMessage = document.getElementById('upload-error-message');
+        const uploadSuccessMessage = document.getElementById('upload-success-message');
+
+        // Modellelemente für die endlose Liste
+        const modelsGrid = document.getElementById('models-grid');
+        const loadMoreButton = document.getElementById('load-more-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const noMoreModelsMessage = document.getElementById('no-more-models');
+
+        // Auth Providers
+        const googleProvider = new GoogleAuthProvider();
+        const githubProvider = new GithubAuthProvider(); 
+
+        // Variable to store parsed project JSON data
+        let currentProjectJsonData = null;
+        let currentProjectJsonFile = null; // To store the actual file for its name
+
+        // Funktion zum Anzeigen von Nachrichten (Fehler/Erfolg)
+        function showMessage(element, message, isError = true) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+            if (isError) {
+                element.classList.remove('text-green-500');
+                element.classList.add('text-red-500');
+            } else {
+                element.classList.remove('text-red-500');
+                element.classList.add('text-green-500');
+            }
+        }
+
+        // Funktion zum Verbergen von Nachrichten
+        function hideMessage(element) {
+            element.classList.add('hidden');
+            element.textContent = '';
+        }
+
+        // UI basierend auf Login-Status aktualisieren
+        function updateUI(user) {
+            if (user) {
+                loginButton.classList.add('hidden');
+                logoutButton.classList.remove('hidden');
+                profileButton.classList.remove('hidden');
+                
+                // Display user's profile picture or initial
+                let avatarContent;
+                if (user.photoURL) {
+                    avatarContent = `<img src="${user.photoURL}" alt="Profilbild" class="w-full h-full object-cover rounded-full">`;
+                } else if (user.email) {
+                    avatarContent = `<span class="text-white">${user.email.charAt(0).toUpperCase()}</span>`;
+                } else {
+                    avatarContent = `<span><i class="fas fa-user"></i></span>`;
+                }
+
+                userMenuButton.innerHTML = `
+                    <div class="avatar">
+                        <div class="w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                            ${avatarContent}
+                        </div>
+                    </div>
+                `;
+            } else {
+                loginButton.classList.remove('hidden');
+                logoutButton.classList.add('hidden');
+                profileButton.classList.add('hidden');
+                
+                userMenuButton.innerHTML = `
+                    <div class="bg-gray-600 text-gray-300 rounded-full w-10">
+                        <span><i class="fas fa-user"></i></span>
+                    </div>
+                `;
+            }
+        }
+
+        // Three.js Voxel Renderer für Vorschaukarten
+        // Dies ist eine vereinfachte Version Ihres Renderers, optimiert für kleine Vorschauen
+        class VoxelPreviewRenderer {
+            constructor(canvasElement, voxelsData, gridSize = 10) {
+                this.canvas = canvasElement;
+                this.voxelsData = voxelsData; // { "x,y,z": "#color" }
+                this.gridSize = gridSize;
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null; // OrbitControls
+                this.animationFrameId = null;
+                this.instancedMesh = null; // Store instancedMesh as a class property
+                this.isAnimating = false; // New flag to control animation
+                this.init();
+            }
+
+            init() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x2d3748); // Hintergrundfarbe der Vorschau
+
+                // Kamera - setze eine generische Kamera, die in loadVoxels angepasst wird
+                const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000); // Erhöhter Far-Plane für größere Modelle
+
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+                this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+
+                // Lichter
+                const ambientLight = new THREE.AmbientLight(0x606060); // Slightly brighter ambient light
+                this.scene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0); // Brighter directional light
+                directionalLight.position.set(1, 1, 1).normalize();
+                this.scene.add(directionalLight);
+
+                // Initialize OrbitControls for debugging
+                // THREE.OrbitControls is now available globally
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true; // smooth camera movement
+                this.controls.dampingFactor = 0.05;
+                this.controls.screenSpacePanning = false;
+                this.controls.minDistance = 1;
+                this.controls.maxDistance = 500;
+                this.controls.update(); // Update controls once after initial camera setup
+
+                this.loadVoxels(); // Rufe loadVoxels auf, um die Szene zu füllen und die Kamera zu positionieren
+                // Do NOT call this.animate() directly here. It will be called on hover.
+            }
+
+            loadVoxels() {
+                console.log("VoxelPreviewRenderer loadVoxels - actual voxelsData:", this.voxelsData);
+                const voxelKeys = Object.keys(this.voxelsData || {}); // Stelle sicher, dass voxelsData ein Objekt ist
+                
+                // Dispose vorhandener InstancedMesh, um Speicherlecks bei erneutem Rendern zu vermeiden
+                this.scene.children.forEach(child => {
+                    if (child.isInstancedMesh) {
+                        child.geometry.dispose();
+                        child.material.dispose();
+                        this.scene.remove(child);
+                    }
+                });
+                this.instancedMesh = null; // Reset the class property
+
+                if (!this.voxelsData || voxelKeys.length === 0) {
+                    console.warn("Keine Voxeldaten zum Laden für die Vorschau. Szene wird geleert.");
+                    // Zeige eine Fallback-Nachricht an, wenn keine Voxel vorhanden sind
+                    this.canvas.style.display = 'none'; // Verstecke Canvas
+                    const parentDiv = this.canvas.parentElement;
+                    let messageDiv = parentDiv.querySelector('.preview-message');
+                    if (!messageDiv) {
+                        messageDiv = document.createElement('div');
+                        messageDiv.className = 'preview-message absolute inset-0 flex items-center justify-center text-gray-400 text-sm';
+                        parentDiv.appendChild(messageDiv);
+                    }
+                    messageDiv.textContent = 'Keine Vorschau verfügbar (keine Voxeldaten)';
+                    return; // Nichts zu rendern
+                } else {
+                    this.canvas.style.display = 'block'; // Zeige Canvas
+                    const parentDiv = this.canvas.parentElement;
+                    const messageDiv = parentDiv.querySelector('.preview-message');
+                    if (messageDiv) {
+                        messageDiv.remove(); // Entferne Fallback-Nachricht
+                    }
+                }
+
+                const voxelGeometry = new THREE.BoxGeometry(1, 1, 1);
+                const dummy = new THREE.Object3D();
+                // Verwende ein Standardmaterial für bessere Lichtinteraktion
+                const meshMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0.1 });
+
+                const maxInstances = voxelKeys.length;
+                const instancedMesh = new THREE.InstancedMesh(voxelGeometry, meshMaterial, maxInstances);
+                instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(maxInstances * 3), 3);
+                instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+                instancedMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+                
+                let instanceId = 0;
+                // Verfolge Min/Max-Koordinaten, um das wahre Modellzentrum/-größe zu berechnen
+                let minX = Infinity, minY = Infinity, minZ = Infinity;
+                let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+                for (const key of voxelKeys) { // Iteriere direkt über die Schlüssel
+                    const parts = key.split(',').map(Number);
+                    if (parts.length === 3) {
+                        const [x, y, z] = parts;
+                        const colorHex = this.voxelsData[key];
+                        const color = new THREE.Color(colorHex);
+
+                        dummy.position.set(x + 0.5, y + 0.5, z + 0.5); // Zentriere das Voxel
+                        dummy.updateMatrix();
+                        instancedMesh.setMatrixAt(instanceId, dummy.matrix);
+                        instancedMesh.instanceColor.setXYZ(instanceId, color.r, color.g, color.b);
+                        instanceId++;
+
+                        // Aktualisiere Min/Max für die Bounding Box Berechnung
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        minZ = Math.min(minZ, z);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                        maxZ = Math.max(maxZ, z);
+                    }
+                }
+                instancedMesh.count = instanceId;
+                instancedMesh.instanceMatrix.needsUpdate = true;
+                instancedMesh.instanceColor.needsUpdate = true;
+                this.scene.add(instancedMesh);
+                this.instancedMesh = instancedMesh; // Store the mesh for animation
+
+                // Berechne die Bounding Box basierend auf Min/Max-Koordinaten
+                const modelBoundingBox = new THREE.Box3(
+                    new THREE.Vector3(minX, minY, minZ),
+                    new THREE.Vector3(maxX + 1, maxY + 1, maxZ + 1) // +1 für Voxelgröße
+                );
+                const modelCenter = new THREE.Vector3();
+                modelBoundingBox.getCenter(modelCenter);
+                const modelSize = new THREE.Vector3();
+                modelBoundingBox.getSize(modelSize);
+
+                console.log("Model Bounding Box:", modelBoundingBox);
+                console.log("Model Center:", modelCenter);
+                console.log("Model Size:", modelSize);
+
+
+                // Zentriere das Modell in der Szene
+                instancedMesh.position.sub(modelCenter);
+
+                // Passe die Kameraposition an, um das Modell einzurahmen
+                const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
+                const fov = this.camera.fov * (Math.PI / 180);
+                let cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                cameraDistance *= 1.8; // Increased padding
+                cameraDistance = Math.max(cameraDistance, 5); // Ensure a minimum distance
+
+                // Positioniere die Kamera in einer isometrischen Ansicht, die auf das zentrierte Modell blickt
+                // Start with a slight offset to see the model from an angle by default
+                this.camera.position.set(modelCenter.x + cameraDistance * 0.8, modelCenter.y + cameraDistance * 0.5, modelCenter.z + cameraDistance * 1.0);
+                this.camera.lookAt(modelCenter);
+                this.camera.updateProjectionMatrix();
+
+                // Update OrbitControls target
+                this.controls.target.copy(modelCenter);
+                this.controls.update();
+                this.renderer.render(this.scene, this.camera); // Initial render to show static preview
+            }
+
+            // Start animation loop
+            startAnimation() {
+                if (!this.isAnimating) {
+                    this.isAnimating = true;
+                    this.animate();
+                }
+            }
+
+            // Stop animation loop
+            stopAnimation() {
+                if (this.isAnimating) {
+                    cancelAnimationFrame(this.animationFrameId);
+                    this.isAnimating = false;
+                }
+            }
+
+            animate() {
+                // This creates the continuous rendering loop
+                this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+                
+                // Update controls for smooth camera movement
+                if (this.controls) {
+                    this.controls.update();
+                }
+
+                this.renderer.render(this.scene, this.camera);
+
+                // Apply rotation here if instancedMesh exists and rotation is desired
+                const rotationSpeed = 0.005;
+                if (this.instancedMesh) {
+                    this.instancedMesh.rotation.y += rotationSpeed;
+                }
+            }
+
+            dispose() {
+                this.stopAnimation(); // Ensure animation is stopped on dispose
+                this.scene.traverse((object) => {
+                    if (object.isMesh) {
+                        object.geometry.dispose();
+                        object.material.dispose();
+                    }
+                });
+                this.renderer.dispose();
+                if (this.controls) {
+                    this.controls.dispose();
+                }
+                // Canvas nicht aus dem DOM entfernen, da es Teil der Karte ist
+                // this.canvas.remove(); 
+            }
+        }
+
+
+        // Funktion zum Erstellen einer Modellkarte
+        function createModelCard(model) {
+            const card = document.createElement('div');
+            card.className = 'model-card card bg-gray-800 rounded-xl overflow-hidden';
+            
+            const rating = model.ratingCount > 0 ? (model.rating / model.ratingCount).toFixed(1) : '0.0';
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5;
+            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+            let starsHtml = '';
+            for (let i = 0; i < fullStars; i++) starsHtml += '<i class="fas fa-star"></i>';
+            if (halfStar) starsHtml += '<i class="fas fa-star-half-alt"></i>';
+            for (let i = 0; i < emptyStars; i++) starsHtml += '<i class="far fa-star"></i>';
+
+            const uploadDate = model.timestamp ? new Date(model.timestamp.toDate()).toLocaleDateString('de-DE') : 'Unbekannt';
+
+            // Determine uploader avatar content
+            let uploaderAvatarHtml;
+            if (model.uploaderPhotoURL) {
+                uploaderAvatarHtml = `<img src="${model.uploaderPhotoURL}" alt="Profilbild" class="w-full h-full object-cover rounded-full">`;
+            } else if (model.uploaderEmail) {
+                uploaderAvatarHtml = `<span class="text-white">${model.uploaderEmail.charAt(0).toUpperCase()}</span>`;
+            } else {
+                uploaderAvatarHtml = `<span><i class="fas fa-user"></i></span>`;
+            }
+
+
+            card.innerHTML = `
+                <div class="model-preview">
+                    <canvas class="voxel-preview-canvas"></canvas>
+                </div>
+                <div class="card-body p-4">
+                    <div class="flex justify-between">
+                        <h2 class="card-title text-lg">${model.title}</h2>
+                        <div class="badge badge-outline badge-primary">${model.category || 'Allgemein'}</div>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-2">${model.description}</p>
+                    <div class="mt-4 flex flex-wrap gap-2 justify-between items-center">
+                        <div>
+                            <div class="rating-stars">
+                                ${starsHtml}
+                                <span class="text-gray-400 ml-2">${rating}</span>
+                            </div>
+                            <div class="text-gray-400 text-sm mt-1">${model.downloads || 0} Downloads</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-primary btn-sm download-button" data-model-id="${model.id}" data-model-title="${model.title}">
+                                <i class="fas fa-download mr-1"></i> Download Projekt (JSON)
+                            </button>
+                            <button class="btn btn-secondary btn-sm open-voxelshaper-button" data-model-id="${model.id}">
+                                <i class="fas fa-external-link-alt mr-1"></i> In VoxelShaper öffnen
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center text-sm text-gray-400">
+                        <div class="avatar">
+                            <div class="w-8 rounded-full bg-gray-700 flex items-center justify-center">
+                                ${uploaderAvatarHtml}
+                            </div>
+                        </div>
+                        <span class="ml-2">${model.uploaderEmail ? model.uploaderEmail.split('@')[0] : 'Unbekannt'}</span>
+                        <span class="ml-auto">${uploadDate}</span>
+                    </div>
+                </div>
+            `;
+            // Add event listener for the download button on the newly created card
+            card.querySelector('.download-button').addEventListener('click', function() {
+                handleDownload(this.dataset.modelId, this.dataset.modelTitle);
+            });
+
+            // Add event listener for the new "Open in VoxelShaper" button
+            card.querySelector('.open-voxelshaper-button').addEventListener('click', function() {
+                handleOpenOnVoxelShaper(this.dataset.modelId);
+            });
+
+            // Initialize the Three.js renderer for this card
+            const previewCanvas = card.querySelector('.voxel-preview-canvas');
+            const modelPreviewDiv = card.querySelector('.model-preview'); // Get the parent div for hover events
+
+            // Pass the voxels data from the model directly, now from model.projectData.voxels
+            const voxelsData = (model.projectData && model.projectData.voxels) ? model.projectData.voxels : {};
+            const gridSize = (model.projectData && model.projectData.settings && model.projectData.settings.gridSize) ? model.projectData.settings.gridSize : 10;
+            
+            let previewRendererInstance = null; // Store the renderer instance
+
+            let retryCount = 0;
+            const MAX_RETRIES = 20; // Max 20 retries * 50ms = 1 second
+
+            function initializePreviewRendererWithRetry() {
+                if (previewCanvas.clientWidth === 0 || previewCanvas.clientHeight === 0) {
+                    if (retryCount < MAX_RETRIES) {
+                        retryCount++;
+                        setTimeout(initializePreviewRendererWithRetry, 50);
+                    } else {
+                        console.warn("VoxelPreviewRenderer: Canvas hat keine Größe nach maximalen Wiederholungen für Modell", model.id);
+                        previewCanvas.style.display = 'none';
+                        const parentDiv = previewCanvas.parentElement;
+                        let messageDiv = parentDiv.querySelector('.preview-message');
+                        if (!messageDiv) {
+                            messageDiv = document.createElement('div');
+                            messageDiv.className = 'preview-message absolute inset-0 flex items-center justify-center text-gray-400 text-sm';
+                            parentDiv.appendChild(messageDiv);
+                        }
+                        messageDiv.textContent = 'Vorschau nicht verfügbar (Canvas-Größe 0).';
+                    }
+                } else {
+                    try {
+                        previewRendererInstance = new VoxelPreviewRenderer(previewCanvas, voxelsData, gridSize);
+                        // Initial render of the static scene
+                        previewRendererInstance.renderer.render(previewRendererInstance.scene, previewRendererInstance.camera);
+
+                        // Add hover event listeners
+                        modelPreviewDiv.addEventListener('mouseenter', () => {
+                            if (previewRendererInstance) {
+                                previewRendererInstance.startAnimation();
+                            }
+                        });
+                        modelPreviewDiv.addEventListener('mouseleave', () => {
+                            if (previewRendererInstance) {
+                                previewRendererInstance.stopAnimation();
+                                // Re-render static scene after stopping animation to ensure correct static view
+                                previewRendererInstance.renderer.render(previewRendererInstance.scene, previewRendererInstance.camera);
+                            }
+                        });
+
+                    } catch (error) {
+                        console.error("Fehler beim Initialisieren des VoxelPreviewRenderers für Modell", model.id, ":", error);
+                        previewCanvas.style.display = 'none';
+                        const parentDiv = previewCanvas.parentElement;
+                        let messageDiv = parentDiv.querySelector('.preview-message');
+                        if (!messageDiv) {
+                            messageDiv = document.createElement('div');
+                            messageDiv.className = 'preview-message absolute inset-0 flex items-center justify-center text-red-400 text-sm';
+                            parentDiv.appendChild(messageDiv);
+                        }
+                        messageDiv.textContent = 'Fehler beim Laden der Vorschau.';
+                    }
+                }
+            }
+
+            // Initial call to start the delayed initialization
+            initializePreviewRendererWithRetry();
+
+            return card;
+        }
+
+        // Funktion zum Laden von Modellen aus Firestore
+        async function fetchModels() {
+            if (isLoadingModels) return;
+            isLoadingModels = true;
+            loadingSpinner.classList.remove('hidden');
+            loadMoreButton.classList.add('hidden');
+            noMoreModelsMessage.classList.add('hidden');
+
+            try {
+                let modelsQuery = query(
+                    collection(db, "models"), 
+                    where("verified", "==", true), // Filter for verified models
+                    where("visibility", "==", "public"), // Filter for public models
+                    orderBy("timestamp", "desc"), // Order by timestamp, newest first
+                    limit(MODELS_PER_LOAD)
+                );
+
+                if (lastVisible) {
+                    modelsQuery = query(
+                        collection(db, "models"), 
+                        where("verified", "==", true), // Filter for verified models
+                        where("visibility", "==", "public"), // Filter for public models
+                        orderBy("timestamp", "desc"),
+                        startAfter(lastVisible),
+                        limit(MODELS_PER_LOAD)
+                    );
+                }
+
+                const documentSnapshots = await getDocs(modelsQuery);
+                const newModels = [];
+                documentSnapshots.forEach((doc) => {
+                    newModels.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (newModels.length > 0) {
+                    newModels.forEach(model => {
+                        modelsGrid.appendChild(createModelCard(model));
+                    });
+                    lastVisible = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+                    loadMoreButton.classList.remove('hidden'); // Show load more button if there might be more
+                } else {
+                    noMoreModelsMessage.classList.remove('hidden'); // Show no more models message
+                }
+
+                // Hide load more button if fewer models than limit were returned, implying end of list
+                if (documentSnapshots.docs.length < MODELS_PER_LOAD) {
+                    loadMoreButton.classList.add('hidden');
+                    noMoreModelsMessage.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error("Error fetching models:", error);
+                // Display error message to user
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-error mt-4';
+                errorDiv.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Fehler beim Laden der Modelle: ${error.message}. Bitte überprüfen Sie Ihre Firebase Firestore Sicherheitsregeln. Stellen Sie sicher, dass Lesezugriff für die 'models'-Sammlung erlaubt ist, z.B. 'allow read: if resource.data.verified == true && resource.data.visibility == "public";'. Möglicherweise müssen Sie auch einen Index für die Abfrage 'where("verified", "==", true).where("visibility", "==", "public").orderBy("timestamp", "desc")' erstellen.</span>
+                `;
+                modelsGrid.appendChild(errorDiv);
+                loadMoreButton.classList.add('hidden'); // Hide load more button on error
+            } finally {
+                isLoadingModels = false;
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // Firebase Auth State Listener
+        onAuthStateChanged(auth, (user) => {
+            updateUI(user); 
+            fetchModels(); 
+        });
+
+        // Login-Handler
+        loginButton.addEventListener('click', () => {
+            hideMessage(authErrorMessage);
+            authModal.showModal();
+        });
+
+        // Firebase Login
+        firebaseLoginButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            hideMessage(authErrorMessage);
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // UI wird durch onAuthStateChanged aktualisiert
+            } catch (error) {
+                console.error("Firebase Login Error:", error.code, error.message);
+                let errorMessage = "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = "Ungültige E-Mail oder Passwort.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "Ungültiges E-Mail-Format.";
+                }
+                showMessage(authErrorMessage, errorMessage);
+            }
+        });
+
+        // Firebase Registrierung
+        firebaseSignupButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            hideMessage(authErrorMessage);
+            const email = emailInput.value;
+            const password = password.value;
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                // UI wird durch onAuthStateChanged aktualisiert
+            } catch (error) {
+                console.error("Firebase Signup Error:", error.code, error.message);
+                let errorMessage = "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = "Diese E-Mail-Adresse wird bereits verwendet.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = "Das Passwort sollte mindestens 6 Zeichen lang sein.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "Ungültiges E-Mail-Format.";
+                }
+                showMessage(authErrorMessage, errorMessage);
+            }
+        });
+
+        // Firebase Google Login
+        googleLoginButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            hideMessage(authErrorMessage);
+            try {
+                await signInWithPopup(auth, googleProvider);
+                // UI wird durch onAuthStateChanged aktualisiert
+            } catch (error) {
+                console.error("Firebase Google Login Error:", error.code, error.message);
+                // Log the current origin to help the user debug
+                console.log("Current window origin (add this to Firebase authorized domains if necessary):", window.location.origin);
+
+                let errorMessage = "Anmeldung mit Google fehlgeschlagen. Bitte versuchen Sie es erneut.";
+                if (error.code === 'auth/popup-closed-by-user') {
+                    errorMessage = "Anmeldung abgebrochen (Popup geschlossen).";
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    errorMessage = "Anmeldeanfrage wurde abgebrochen (erneuter Versuch zu schnell).";
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = "Google-Anmeldung ist in Ihrem Firebase-Projekt nicht aktiviert. Bitte überprüfen Sie die Firebase Console.";
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = "Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.";
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    errorMessage = `Fehler: Nicht autorisierte Domain. Bitte fügen Sie "${window.location.origin}" zu den autorisierten Domains in Ihrer Firebase Console hinzu (Authentifizierung -> Einstellungen).`;
+                } else {
+                    errorMessage = `Anmeldung fehlgeschlagen: ${error.message}.`;
+                }
+                showMessage(authErrorMessage, errorMessage);
+            }
+        });
+
+        // Firebase GitHub Login
+        githubLoginButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            hideMessage(authErrorMessage);
+            try {
+                await signInWithPopup(auth, githubProvider);
+                // UI wird durch onAuthStateChanged aktualisiert
+            } catch (error) {
+                console.error("Firebase GitHub Login Error:", error.code, error.message);
+                // Log the current origin to help the user debug
+                console.log("Current window origin (add this to Firebase authorized domains if necessary):", window.location.origin);
+
+                let errorMessage = "Anmeldung mit GitHub fehlgeschlagen. Bitte versuchen Sie es erneut.";
+                if (error.code === 'auth/popup-closed-by-user') {
+                    errorMessage = "Anmeldung abgebrochen (Popup geschlossen).";
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    errorMessage = "Anmeldeanfrage wurde abgebrochen (erneuter Versuch zu schnell).";
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = "GitHub-Anmeldung ist in Ihrem Firebase-Projekt nicht aktiviert. Bitte überprüfen Sie die Firebase Console.";
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = "Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.";
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    errorMessage = `Fehler: Nicht autorisierte Domain. Bitte fügen Sie "${window.location.origin}" zu den autorisierten Domains in Ihrer Firebase Console hinzu (Authentifizierung -> Einstellungen).`;
+                } else {
+                    errorMessage = `Anmeldung fehlgeschlagen: ${error.message}.`;
+                }
+                showMessage(authErrorMessage, errorMessage);
+            }
+        });
+
+
+        // Firebase Logout
+        logoutButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await signOut(auth);
+                // UI wird durch onAuthStateChanged aktualisiert
+            } catch (error) {
+                console.error("Firebase Logout Error:", error.message);
+            }
+        });
+
+        // Upload Model Button Handler
+        uploadModelButton.addEventListener('click', () => {
+            if (!auth.currentUser) {
+                authModal.showModal();
+                showMessage(authErrorMessage, 'Bitte melden Sie sich an, um Modelle hochzuladen.', true);
+            } else {
+                hideMessage(uploadErrorMessage);
+                hideMessage(uploadSuccessMessage);
+                // Reset all fields and show only the JSON upload step
+                modelTitleInput.value = ''; 
+                modelDescriptionInput.value = ''; 
+                projectJsonInput.value = ''; 
+                remixOfInput.value = ''; 
+                // sourceJsonUrlInput is removed from HTML
+                tagsInput.value = ''; 
+                visibilitySelect.value = 'public'; 
+                uploadSubmitButton.disabled = true; // Disable upload button until JSON is loaded
+                
+                jsonUploadStep.classList.remove('hidden');
+                modelDetailsStep.classList.add('hidden');
+                hideMessage(jsonErrorMessage); // Clear JSON specific error messages
+                
+                uploadModal.showModal();
+            }
+        });
+
+        // Event Listener for "Projektdatei laden" button
+        loadJsonButton.addEventListener('click', () => {
+            const file = projectJsonInput.files[0];
+            if (!file) {
+                showMessage(jsonErrorMessage, 'Bitte wählen Sie eine Projektdatei aus.', true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    currentProjectJsonData = JSON.parse(event.target.result);
+                    currentProjectJsonFile = file; // Store the file itself for its name
+
+                    // Populate fields from JSON
+                    modelTitleInput.value = currentProjectJsonData.title || '';
+                    modelDescriptionInput.value = currentProjectJsonData.description || '';
+                    remixOfInput.value = currentProjectJsonData.remixOf || '';
+                    // sourceJsonUrlInput is removed from HTML, so no need to set its value
+                    if (currentProjectJsonData.tags && Array.isArray(currentProjectJsonData.tags)) {
+                        tagsInput.value = currentProjectJsonData.tags.join(', ');
+                    } else {
+                        tagsInput.value = '';
+                    }
+                    if (currentProjectJsonData.visibility) {
+                        const optionExists = Array.from(visibilitySelect.options).some(option => option.value === currentProjectJsonData.visibility);
+                        if (optionExists) {
+                            visibilitySelect.value = currentProjectJsonData.visibility;
+                        } else {
+                            visibilitySelect.value = 'public'; // Default if invalid
+                        }
+                    } else {
+                        visibilitySelect.value = 'public'; // Default if not present
+                    }
+
+                    hideMessage(jsonErrorMessage);
+                    jsonUploadStep.classList.add('hidden'); // Hide JSON upload step
+                    modelDetailsStep.classList.remove('hidden'); // Show model details step
+                    uploadSubmitButton.disabled = false; // Enable upload button
+                } catch (error) {
+                    console.error("Error parsing project JSON:", error);
+                    showMessage(jsonErrorMessage, 'Fehler beim Lesen der Projektdatei. Bitte stellen Sie sicher, dass es sich um eine gültige JSON-Datei handelt.', true);
+                    // Reset fields and disable upload button on error
+                    modelTitleInput.value = '';
+                    modelDescriptionInput.value = '';
+                    remixOfInput.value = '';
+                    // sourceJsonUrlInput is removed from HTML
+                    tagsInput.value = '';
+                    visibilitySelect.value = 'public';
+                    uploadSubmitButton.disabled = true;
+                    currentProjectJsonData = null;
+                    currentProjectJsonFile = null;
+                }
+            };
+            reader.onerror = () => {
+                showMessage(jsonErrorMessage, 'Fehler beim Lesen der Datei.', true);
+                uploadSubmitButton.disabled = true;
+                currentProjectJsonData = null;
+                currentProjectJsonFile = null;
+            };
+            reader.readAsText(file);
+        });
+
+        // Handle Model Upload
+        uploadSubmitButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            hideMessage(uploadErrorMessage);
+            hideMessage(uploadSuccessMessage);
+
+            const title = modelTitleInput.value.trim();
+            const description = modelDescriptionInput.value.trim();
+            
+            const remixOf = remixOfInput.value.trim(); 
+            const tags = tagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag !== ''); 
+            const visibility = visibilitySelect.value; 
+
+            // Ensure project JSON data is loaded
+            if (!currentProjectJsonData || !currentProjectJsonFile) {
+                showMessage(uploadErrorMessage, 'Bitte laden Sie zuerst die Projektdatei.', true);
+                return;
+            }
+
+            if (!auth.currentUser) {
+                showMessage(uploadErrorMessage, 'Sie müssen angemeldet sein, um ein Modell hochzuladen.', true);
+                return;
+            }
+
+            try {
+                // Store JSON content directly in Firestore
+                await addDoc(collection(db, "models"), { 
+                    // Top-level fields (for querying and display)
+                    title: title, // From input, pre-filled by JSON
+                    description: description, // From input
+                    remixOf: remixOf, // From input
+                    tags: tags, // From input
+                    visibility: visibility, // From input
+
+                    // Backend-managed fields
+                    fileName: currentProjectJsonFile.name, // Name of the JSON file
+                    uploaderUid: auth.currentUser.uid,
+                    uploaderEmail: auth.currentUser.email,
+                    uploaderPhotoURL: auth.currentUser.photoURL || null, // Save uploader's photo URL
+                    timestamp: serverTimestamp(),
+                    downloads: 0, // Always start at 0
+                    rating: 0,
+                    ratingCount: 0,
+                    verified: false,
+
+                    // Store the original parsed JSON content under a specific key
+                    projectData: currentProjectJsonData // This includes voxels and settings
+                });
+
+                showMessage(uploadSuccessMessage, 'Modell erfolgreich hochgeladen!', false);
+                uploadModal.close(); 
+                // Clear the models grid and reset lastVisible to fetch from scratch
+                modelsGrid.innerHTML = '';
+                lastVisible = null;
+                fetchModels(); // Refresh the list to show the newly uploaded model (if it's public and verified)
+            } catch (error) {
+                console.error("Model Upload Error:", error);
+                // Check for Firestore specific errors, e.g., document size limit
+                if (error.code === 'resource-exhausted') {
+                    showMessage(uploadErrorMessage, `Fehler beim Hochladen des Modells: Die Projektdatei ist zu groß. Firestore-Dokumente dürfen maximal 1 MB groß sein.`, true);
+                } else {
+                    showMessage(uploadErrorMessage, `Fehler beim Hochladen des Modells: ${error.message}`, true);
+                }
+            }
+        });
+
+        // Download-Handler
+        async function handleDownload(modelId, modelTitle) {
+            if (!auth.currentUser) { 
+                authModal.showModal();
+            } else {
+                const downloadMessage = document.createElement('div');
+                downloadMessage.className = 'alert alert-info fixed bottom-4 right-4 z-50 w-80';
+                downloadMessage.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Download von "${modelTitle}" gestartet!</span>
+                `;
+                document.body.appendChild(downloadMessage);
+                setTimeout(() => downloadMessage.remove(), 3000); 
+
+                try {
+                    // Fetch the document to get the full projectContent
+                    const docRef = doc(db, "models", modelId);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const modelData = docSnap.data();
+                        // Get the original project JSON from the 'projectData' field
+                        const projectJsonForDownload = modelData.projectData; 
+                        
+                        if (projectJsonForDownload) {
+                            const jsonString = JSON.stringify(projectJsonForDownload, null, 2);
+                            const blob = new Blob([jsonString], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${modelTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`; // Sanitize filename
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        } else {
+                             console.error("Project data not found in document for download.");
+                             const errorMessage = document.createElement('div');
+                             errorMessage.className = 'alert alert-error fixed bottom-4 right-4 z-50 w-80';
+                             errorMessage.innerHTML = `
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                 <span>Fehler beim Download: Projektdaten nicht gefunden.</span>
+                             `;
+                             document.body.appendChild(errorMessage);
+                             setTimeout(() => errorMessage.remove(), 3000);
+                        }
+
+                    } else {
+                        console.error("No such document!");
+                        // Show an error message to the user
+                        const errorMessage = document.createElement('div');
+                        errorMessage.className = 'alert alert-error fixed bottom-4 right-4 z-50 w-80';
+                        errorMessage.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Fehler beim Download: Modell nicht gefunden.</span>
+                        `;
+                        document.body.appendChild(errorMessage);
+                        setTimeout(() => errorMessage.remove(), 3000);
+                    }
+                } catch (error) {
+                    console.error("Error downloading model JSON:", error);
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'alert alert-error fixed bottom-4 right-4 z-50 w-80';
+                    errorMessage.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span>Fehler beim Download der Projektdatei: ${error.message}</span>
+                    `;
+                    document.body.appendChild(errorMessage);
+                    setTimeout(() => errorMessage.remove(), 3000);
+                }
+            }
+        }
+
+        // Handler to open project on voxelshaper.com
+        async function handleOpenOnVoxelShaper(modelId) {
+            if (!auth.currentUser) {
+                authModal.showModal();
+                showMessage(authErrorMessage, 'Bitte melden Sie sich an, um Modelle in VoxelShaper zu öffnen.', true);
+                return;
+            }
+
+            const openMessage = document.createElement('div');
+            openMessage.className = 'alert alert-info fixed bottom-4 right-4 z-50 w-80';
+            openMessage.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Öffne Modell in VoxelShaper...</span>
+            `;
+            document.body.appendChild(openMessage);
+            setTimeout(() => openMessage.remove(), 3000);
+
+            try {
+                const docRef = doc(db, "models", modelId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const modelData = docSnap.data();
+                    const projectJson = modelData.projectData;
+
+                    if (projectJson) {
+                        const jsonString = JSON.stringify(projectJson);
+                        const encodedJson = encodeURIComponent(jsonString);
+                        
+                        // Construct the URL for voxelshaper.com with the projectJson parameter
+                        // Note: This assumes voxelshaper.com is set up to receive and parse this parameter.
+                        const voxelShaperUrl = `https://voxelshaper.com/?projectJson=${encodedJson}`;
+                        window.open(voxelShaperUrl, '_blank'); // Open in a new tab
+                    } else {
+                        console.error("Project data not found in document for opening in VoxelShaper.");
+                        const errorMessage = document.createElement('div');
+                        errorMessage.className = 'alert alert-error fixed bottom-4 right-4 z-50 w-80';
+                        errorMessage.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Fehler: Projektdaten zum Öffnen nicht gefunden.</span>
+                        `;
+                        document.body.appendChild(errorMessage);
+                        setTimeout(() => errorMessage.remove(), 3000);
+                    }
+                } else {
+                    console.error("No such document found for model ID:", modelId);
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'alert alert-error fixed bottom-4 right-4 z-50 w-80';
+                    errorMessage.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span>Fehler: Modell nicht gefunden.</span>
+                    `;
+                    document.body.appendChild(errorMessage);
+                    setTimeout(() => errorMessage.remove(), 3000);
+                }
+            } catch (error) {
+                console.error("Error opening model in VoxelShaper:", error);
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'alert alert-error fixed bottom-4 right-4 z-50 w-80';
+                errorMessage.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Fehler beim Öffnen des Modells: ${error.message}</span>
+                `;
+                document.body.appendChild(errorMessage);
+                setTimeout(() => errorMessage.remove(), 3000);
+            }
+        }
+
+        // Event Listener für den "Mehr laden"-Button
+        loadMoreButton.addEventListener('click', fetchModels);
+
+        // Initiales Laden der Modelle, sobald Firebase Auth initialisiert ist
+        onAuthStateChanged(auth, (user) => {
+            updateUI(user); 
+            fetchModels(); 
+        });
+
+        // Initiales Laden der Modelle, wenn die Seite geladen wird (falls onAuthStateChanged nicht sofort feuert)
+        document.addEventListener('DOMContentLoaded', () => {
+             if (!auth.currentUser) { 
+                 fetchModels();
+             }
+        });
+
+    </script>
+</body>
+</html>
