@@ -273,7 +273,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 </dialog>
 
 <dialog id="glbExportModal" class="modal">
-    <div class="modal-box bg-base-200 text-base-content p-8 shadow-xl max-w-md w-11/12 text-left">
+    <div class="modal-box bg-base-200 text-base-content p-8 text-left shadow-xl max-w-md w-11/12">
         <h3 class="font-bold text-lg text-primary text-center mb-6">GLB Export Optionen</h3>
         <div class="form-control mb-4">
             <label class="label cursor-pointer">
@@ -305,7 +305,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 
 <!-- Unified Export Options Modal -->
 <dialog id="unifiedExportModal" class="modal">
-    <div class="modal-box bg-base-200 text-base-content p-8 shadow-xl max-w-md w-11/12 text-left">
+    <div class="modal-box bg-base-200 text-base-content p-8 text-left shadow-xl max-w-md w-11/12">
         <h3 class="font-bold text-lg text-primary text-center mb-6">Export Optionen</h3>
         
         <div class="form-control mb-4">
@@ -885,11 +885,13 @@ class VoxelChunk {
      */
     recolorVoxel(gx, gy, gz, newColorHex) {
         const lKey = this.getLocalKey(gx, gy, gz);
-        if (!this.voxels.has(lKey)) return; // Voxel not found in this chunk
+        if (!this.voxels.has(lKey)) return;
 
-        const { instanceId } = this.voxels.get(lKey);
-        this.voxels.set(lKey, { color: newColorHex, instanceId: instanceId });
-        this.updateInstanceColor(instanceId, newColorHex);
+        const voxelData = this.voxels.get(lKey);
+        voxelData.color = newColorHex; // Directly update the color property of the existing object
+
+        // Now update the actual instance's color in the InstancedMesh
+        this.updateInstanceColor(voxelData.instanceId, newColorHex);
     }
 
     /**
@@ -1240,13 +1242,21 @@ function _removeSingleVoxel(gx, gy, gz) {
  */
 function _recolorSingleVoxel(gx, gy, gz, newColorHex) {
     const gKey = key(gx, gy, gz);
-    if (!voxels.has(gKey)) return; // Voxel not found in this chunk
+    if (!voxels.has(gKey)) return;
 
-    voxels.set(gKey, { color: newColorHex });
+    const voxelData = voxels.get(gKey); // Get the actual object reference
+    voxelData.color = newColorHex; // Directly update the color property
+
+    // Now update the actual instance's color in the InstancedMesh
     const { cx, cy, cz } = getChunkCoords(gx, gy, gz);
     const cKey = getChunkKey(cx, cy, cz);
     if (chunks.has(cKey)) {
-        chunks.get(cKey).recolorVoxel(gx, gy, gz, newColorHex);
+        const chunk = chunks.get(cKey);
+        const lKey = chunk.getLocalKey(gx, gy, gz);
+        if (chunk.voxels.has(lKey)) {
+            const instanceId = chunk.voxels.get(lKey).instanceId;
+            chunk.updateInstanceColor(instanceId, newColorHex);
+        }
     }
 }
 
@@ -1334,134 +1344,86 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, cam);
 
-    // If there's a fixed drawing layer active, intersect only with that plane
+    let planeNormal = new THREE.Vector3();
+    let planeConstant = 0;
+    let targetLayer = activeDrawingLevel[currentDrawingAxis]; // Default to active drawing level
+
+    // If there's a fixed drawing layer active, prioritize it
     if (fixedDrawingLayer !== null) {
-        let planeNormal = new THREE.Vector3();
-        let planeConstant = 0;
-
-        // Determine the plane based on fixedDrawingLayer and currentDrawingAxis
-        if (currentDrawingAxis === 'y') {
-            planeNormal.set(0, 1, 0);
-            planeConstant = -(fixedDrawingLayer * VS);
-        } else if (currentDrawingAxis === 'x') {
-            planeNormal.set(1, 0, 0);
-            planeConstant = -(fixedDrawingLayer * VS);
-        } else if (currentDrawingAxis === 'z') {
-            planeNormal.set(0, 0, 1);
-            planeConstant = -(fixedDrawingLayer * VS);
-        }
-
-        const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
-        const intersectionPoint = new THREE.Vector3();
-
-        if (raycaster.ray.intersectPlane(drawingPlane, intersectionPoint)) {
-            if (!Number.isFinite(intersectionPoint.x) || !Number.isFinite(intersectionPoint.y) || !Number.isFinite(intersectionPoint.z)) {
-                return null;
-            }
-
-            let gx = Math.floor(intersectionPoint.x / VS);
-            let gy = Math.floor(intersectionPoint.y / VS);
-            let gz = Math.floor(intersectionPoint.z / VS);
-
-            // Force coordinates to the fixed drawing layer
-            if (currentDrawingAxis === 'y') gy = fixedDrawingLayer;
-            else if (currentDrawingAxis === 'x') gx = fixedDrawingLayer;
-            else if (currentDrawingAxis === 'z') gz = fixedDrawingLayer;
-
-            gx = Number(gx);
-            gy = Number(gy);
-            gz = Number(gz);
-
-            if (!Number.isFinite(gx) || !Number.isFinite(gy) || !Number.isFinite(gz)) {
-                return null;
-            }
-            // When intersecting with a fixed plane, we are "hitting" the plane, not necessarily an existing voxel.
-            // So hitExistingVoxel is false. FaceNormal is not relevant here directly.
-            return { gx, gy, gz, faceNormal: null, hitExistingVoxel: false };
-        }
-        return null; // No intersection with fixed drawing plane
+        targetLayer = fixedDrawingLayer;
     }
 
-    // Normal raycasting if no fixed drawing layer
-    const objectsToIntersect = Array.from(chunks.values()).map(chunk => chunk.instancedMesh);
-    // Temporarily disable raycasting for image template to avoid interference
-    if (templateImageMesh) {
-        templateImageMesh.raycast = function() {}; 
+    if (currentDrawingAxis === 'y') {
+        planeNormal.set(0, 1, 0);
+        planeConstant = -(targetLayer * VS);
+    } else if (currentDrawingAxis === 'x') {
+        planeNormal.set(1, 0, 0);
+        planeConstant = -(targetLayer * VS);
+    } else if (currentDrawingAxis === 'z') {
+        planeNormal.set(0, 0, 1);
+        planeConstant = -(targetLayer * VS);
     }
 
-    const intersects = raycaster.intersectObjects(objectsToIntersect);
+    const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
+    const intersectionPoint = new THREE.Vector3();
 
-    if (intersects.length > 0) {
-        // Hit an existing voxel
-        const hit = intersects[0];
-        const hitNormal = hit.face.normal.clone();
-        const intersectionPoint = hit.point;
-
-        // Basic check for valid numbers
+    // Try to intersect with the determined drawing plane
+    if (raycaster.ray.intersectPlane(drawingPlane, intersectionPoint)) {
         if (!Number.isFinite(intersectionPoint.x) || !Number.isFinite(intersectionPoint.y) || !Number.isFinite(intersectionPoint.z)) {
             return null;
         }
 
-        // Adjust point slightly inwards along normal to get the voxel it belongs to
-        const epsilon = 0.001;
-        const adjustedPoint = intersectionPoint.clone().addScaledVector(hitNormal, -epsilon);
+        let gx = Math.floor(intersectionPoint.x / VS);
+        let gy = Math.floor(intersectionPoint.y / VS);
+        let gz = Math.floor(intersectionPoint.z / VS);
 
-        const hitVoxelX = Math.floor(adjustedPoint.x / VS);
-        const hitVoxelY = Math.floor(adjustedPoint.y / VS);
-        const hitVoxelZ = Math.floor(adjustedPoint.z / VS);
-        
-        const result = { gx: Number(hitVoxelX), gy: Number(hitVoxelY), gz: Number(hitVoxelZ), faceNormal: hitNormal, hitExistingVoxel: true };
-        if (!Number.isFinite(result.gx) || !Number.isFinite(result.gy) || !Number.isFinite(result.gz)) {
-            return null; // Ensure coordinates are valid numbers
-        }
-        return result;
-    } else {
-        // No voxel hit, try to intersect with the drawing plane
-        let planeNormal = new THREE.Vector3();
-        let planeConstant = 0;
+        // Force coordinates to the target layer (either fixed or active drawing level)
+        if (currentDrawingAxis === 'y') gy = targetLayer;
+        else if (currentDrawingAxis === 'x') gx = targetLayer;
+        else if (currentDrawingAxis === 'z') gz = targetLayer;
 
-        // Define drawing plane based on current axis and level
-        if (currentDrawingAxis === 'y') {
-            planeNormal.set(0, 1, 0);
-            planeConstant = -(activeDrawingLevel.y * VS);
-        } else if (currentDrawingAxis === 'x') {
-            planeNormal.set(1, 0, 0);
-            planeConstant = -(activeDrawingLevel.x * VS);
-        } else if (currentDrawingAxis === 'z') {
-            planeNormal.set(0, 0, 1);
-            planeConstant = -(activeDrawingLevel.z * VS);
+        gx = Number(gx);
+        gy = Number(gy);
+        gz = Number(gz);
+
+        if (!Number.isFinite(gx) || !Number.isFinite(gy) || !Number.isFinite(gz)) {
+            return null;
         }
 
-        const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
-        const intersectionPoint = new THREE.Vector3();
-
-        if (raycaster.ray.intersectPlane(drawingPlane, intersectionPoint)) {
-            if (!Number.isFinite(intersectionPoint.x) || !Number.isFinite(intersectionPoint.y) || !Number.isFinite(intersectionPoint.z)) {
-                return null;
+        // If fixedDrawingLayer IS null, we are in hover or initial click state.
+        // In this case, we need to check for intersection with existing voxels to get face normal for ADD mode
+        // or to correctly target an existing voxel for DELETE/DRAW.
+        if (fixedDrawingLayer === null) {
+            const objectsToIntersect = Array.from(chunks.values()).map(chunk => chunk.instancedMesh);
+            if (templateImageMesh) {
+                // Ensure raycasting for image template is not permanently disabled
+                templateImageMesh.raycast = function() {}; 
             }
+            const intersects = raycaster.intersectObjects(objectsToIntersect);
 
-            let gx = Math.floor(intersectionPoint.x / VS);
-            let gy = Math.floor(intersectionPoint.y / VS);
-            let gz = Math.floor(intersectionPoint.z / VS);
-
-            // Force coordinates to the active drawing level
-            if (currentDrawingAxis === 'y') gy = activeDrawingLevel.y;
-            else if (currentDrawingAxis === 'x') gx = activeDrawingLevel.x;
-            else if (currentDrawingAxis === 'z') gz = activeDrawingLevel.z;
-
-            gx = Number(gx);
-            gy = Number(gy);
-            gz = Number(gz);
-
-            if (!Number.isFinite(gx) || !Number.isFinite(gy) || !Number.isFinite(gz)) {
-                return null; // Ensure coordinates are valid numbers
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                const hitNormal = hit.face.normal.clone();
+                const adjustedPoint = hit.point.clone().addScaledVector(hitNormal, -0.001); // Small offset to get voxel behind face
+                
+                return {
+                    gx: Math.floor(adjustedPoint.x / VS),
+                    gy: Math.floor(adjustedPoint.y / VS),
+                    gz: Math.floor(adjustedPoint.z / VS),
+                    faceNormal: hitNormal,
+                    hitExistingVoxel: true
+                };
+            } else {
+                 // If no existing voxel is hit, return the intersection with the active drawing plane
+                 return { gx, gy, gz, faceNormal: null, hitExistingVoxel: false };
             }
-
-            const result = { gx, gy, gz, faceNormal: null, hitExistingVoxel: false };
-            return result;
+        } else {
+            // If fixedDrawingLayer is NOT null, it means we are in a drag operation and we should ONLY consider the plane.
+            // We return the calculated point on the fixed plane, without checking for existing voxels under the cursor.
+            return { gx, gy, gz, faceNormal: null, hitExistingVoxel: false };
         }
     }
-    return null; // No intersection found
+    return null; // No intersection with any relevant plane
 }
 
 /**
@@ -2048,6 +2010,7 @@ async function exportSTL(filename, scaleFactorPerVoxel) {
 async function exportOBJ(filename, scaleFactorPerVoxel) {
     if (voxels.size === 0) { showToast('Export fehlgeschlagen', 'Keine Voxel zum Exportieren vorhanden!', 'warning', 5000); return; }
     showToast('Exportiere OBJ', 'Erzeuge OBJ-Modell...', 'info', 5000);
+
     const voxelsToExport = [];
     let maxX = 0, maxY = 0, maxZ = 0;
     // Collect all voxels and determine max dimensions
@@ -2058,13 +2021,22 @@ async function exportOBJ(filename, scaleFactorPerVoxel) {
         maxY = Math.max(maxY, y);
         maxZ = Math.max(maxZ, z);
     });
-    // Create a VoxelModel object and export to OBJ/MTL
-    const voxModel = new VoxelShaperIO.VoxModel(maxX + 1, maxY + 1, maxZ + 1, voxelsToExport, filename);
-    const objData = VoxelShaperIO.voxToOBJ(voxModel, VS, scaleFactorPerVoxel); // Pass scaleFactor to OBJ exporter
 
-    // Create and download OBJ and MTL files
-    downloadBlob(new Blob([objData.obj], { type: 'text/plain' }), `${filename}.obj`);
-    downloadBlob(new Blob([objData.mtl], { type: 'text/plain' }), `${filename}.mtl`);
+    const date = new Date();
+    const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+    const zipFilename = `${filename}_${dateStr}.zip`;
+    const objMtlBaseFilename = `${filename}_${dateStr}`; // Name for .obj and .mtl inside the zip
+
+    // Create a VoxelModel object and export to OBJ/MTL
+    const voxModel = new VoxelShaperIO.VoxModel(maxX + 1, maxY + 1, maxZ + 1, voxelsToExport, objMtlBaseFilename); // Pass base filename
+    const objData = VoxelShaperIO.voxToOBJ(voxModel, VS, scaleFactorPerVoxel); // Pass scaleFactor for scaling
+
+    const zip = new JSZip();
+    zip.file(`${objMtlBaseFilename}.obj`, objData.obj);
+    zip.file(`${objMtlBaseFilename}.mtl`, objData.mtl);
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    downloadBlob(blob, zipFilename);
 
     showToast('Export erfolgreich', 'OBJ-Modell erfolgreich mit Farben exportiert!', 'success', 5000);
 }
@@ -2485,7 +2457,7 @@ function openUploadModal() {
 /** Uploads the current project to Firestore. */
 async function uploadProjectToHub() {
     if (!currentUserId) {
-        showToast('Fehler', 'Nicht angemeldet. Bitte melden Sie sich an, um hochzuladen.', 'error', 5000);
+        openAuthModal(); // If not logged in, prompt login
         return;
     }
     if (voxels.size === 0) {
@@ -2498,7 +2470,7 @@ async function uploadProjectToHub() {
     const description = document.getElementById('uploadDescription').value.trim();
     const category = document.getElementById('uploadCategory').value;
     const tags = document.getElementById('uploadTags').value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
-    const visibility = document.querySelector('input[name="uploadVisibility"]:checked').value;
+    const visibility = document.querySelector(`input[name="uploadVisibility"]:checked`).value;
 
     if (!title) { showToast('Fehler', 'Bitte geben Sie einen Titel für Ihr Projekt ein.', 'warning', 5000); return; }
     if (!category) { showToast('Fehler', 'Bitte wählen Sie eine Kategorie für Ihr Projekt aus.', 'warning', 5000); return; }
@@ -2752,6 +2724,10 @@ function onPointerLeave(e) {
     previewLineVoxels = [];
     dragAxisLock = null;
     initialDragVoxelCoords = null;
+    
+    if (e.pointerType === 'touch') {
+        releasePointer(e.pointerId, e);
+    }
 }
 
 let pointerIsDown = false; // Flag if primary pointer is down
@@ -2836,12 +2812,14 @@ function onPointerUp(e) {
             }
         } else {
             // It was a click (no drag, or drag below threshold), perform single voxel modification
-            if (initialTargetVoxelCoords) {
+            // Note: The initial modification for a single tap/click is handled here.
+            // For a drag, the first modification is handled when isDragging becomes true in onPointerMove.
+            if (initialTargetVoxelCoords) { // Ensure there was a valid target at pointerdown
                 const finalVoxelCoords = { ...initialTargetVoxelCoords };
 
-                // For ADD mode, if a face was hit, adjust to add to the next voxel
+                // If adding, and a face was hit, adjust to add to the next voxel
                 const rawTargetAtDown = calculateRayTargetVoxelCoords(initialClickPos.x, initialClickPos.y);
-                if (currentMode === Modes.ADD && rawTargetAtDown && rawTargetAtDown.faceNormal) {
+                if (currentMode === Modes.ADD && rawTargetAtDown && rawTargetAtDown.hitExistingVoxel && rawTargetAtDown.faceNormal) {
                     finalVoxelCoords.gx = rawTargetAtDown.gx + rawTargetAtDown.faceNormal.x;
                     finalVoxelCoords.gy = rawTargetAtDown.gy + rawTargetAtDown.faceNormal.y;
                     finalVoxelCoords.gz = rawTargetAtDown.gz + rawTargetAtDown.faceNormal.z;
@@ -2850,11 +2828,18 @@ function onPointerUp(e) {
                     finalVoxelCoords.gy = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gy));
                     finalVoxelCoords.gz = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gz));
                 }
+                // Ensure the single voxel modification respects the fixed drawing layer if one was set.
+                // This is especially relevant if fixedDrawingLayer was set by the initial target but no drag occurred.
+                if (fixedDrawingLayer !== null) {
+                    finalVoxelCoords[currentDrawingAxis] = fixedDrawingLayer;
+                }
 
                 const gKey = key(finalVoxelCoords.gx, finalVoxelCoords.gy, finalVoxelCoords.gz);
                 const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
                 performVoxelModification(finalVoxelCoords.gx, finalVoxelCoords.gy, finalVoxelCoords.gz, currentMode, currentColor);
                 const newColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
+                
+                // Add to history if an actual change occurred
                 if (initialColor !== newColor || (currentMode === Modes.ADD && initialColor === null && newColor !== null)) {
                     addCommand('batch', [{ gx: finalVoxelCoords.gx, gy: finalVoxelCoords.gy, gz: finalVoxelCoords.gz, color: initialColor }], [{ gx: finalVoxelCoords.gx, gy: finalVoxelCoords.gy, gz: finalVoxelCoords.gz, color: newColor }]);
                 }
@@ -2977,14 +2962,9 @@ function onPointerDown(e) {
             else if (currentDrawingAxis === 'x') fixedDrawingLayer = initialTargetVoxelCoords.gx;
             else if (currentDrawingAxis === 'z') fixedDrawingLayer = initialTargetVoxelCoords.gz;
 
-            lastActionVoxelCoords = { ...initialTargetVoxelCoords };
-            initialDragVoxelCoords = { ...initialTargetVoxelCoords };
-            // Perform initial modification for the single voxel tap/start of stroke
-            const gKey = key(initialTargetVoxelCoords.gx, initialTargetVoxelCoords.gy, initialTargetVoxelCoords.gz);
-            const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
-            performVoxelModification(initialTargetVoxelCoords.gx, initialTargetVoxelCoords.gy, initialTargetVoxelCoords.gz, currentMode, currentColor);
-            const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
-            currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
+            // No direct modification here. The modification will happen either onPointerUp for a click
+            // or onPointerMove when a drag is detected.
+            // lastActionVoxelCoords and initialDragVoxelCoords will be set then.
         } else {
             isCameraPointer = true; // Single touch, not in drawing mode, assumed to be camera rotation
             gestureState.type = 'rotate';
@@ -3000,10 +2980,13 @@ function onPointerDown(e) {
         if (currentDrawingAxis === 'y') fixedDrawingLayer = initialTargetVoxelCoords.gy;
         else if (currentDrawingAxis === 'x') fixedDrawingLayer = initialTargetVoxelCoords.gx;
         else if (currentDrawingAxis === 'z') fixedDrawingLayer = initialTargetVoxelCoords.gz;
-
-        updatePreviewVoxel(0, 0, 0, false); // Hide preview while dragging
+        
+        // No direct modification here. The modification will happen either onPointerUp for a click
+        // or onPointerMove when a drag is detected.
+        // lastActionVoxelCoords and initialDragVoxelCoords will be set then.
+        
+        updatePreviewVoxel(0, 0, 0, false); // Hide preview while dragging (it will be updated by onPointerMove)
         previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
-        // initialDragVoxelCoords and lastActionVoxelCoords will be set in onPointerMove when drag starts for mouse
     }
 }
 
@@ -3054,22 +3037,29 @@ function onPointerMove(e) {
             // Drag officially starts now
             isDragging = true;
             
-            // For mouse, initialDragVoxelCoords and lastActionVoxelCoords are set here,
-            // and the first modification is performed. For touch, this was done in onPointerDown.
-            if (!initialDragVoxelCoords) { // This condition will be true for mouse drags only
-                initialDragVoxelCoords = { ...initialTargetVoxelCoords };
-                lastActionVoxelCoords = { ...initialTargetVoxelCoords };
-                
-                // Perform initial modification for mouse drag start (voxel under click when drag starts)
-                const gKey = key(initialDragVoxelCoords.gx, initialDragVoxelCoords.gy, initialDragVoxelCoords.gz);
-                const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
-                performVoxelModification(initialDragVoxelCoords.gx, initialDragVoxelCoords.gy, initialDragVoxelCoords.gz, currentMode, currentColor);
-                const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
-                currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
-            }
+            // Set initial drag coords and last action coords for line drawing
+            initialDragVoxelCoords = { ...initialTargetVoxelCoords };
+            lastActionVoxelCoords = { ...initialTargetVoxelCoords };
+            
+            // Perform the *first* voxel modification for the drag stroke here.
+            // This ensures it happens once the drag officially begins.
+            const gKey = key(initialTargetVoxelCoords.gx, initialTargetVoxelCoords.gy, initialTargetVoxelCoords.gz);
+            const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
+            performVoxelModification(initialTargetVoxelCoords.gx, initialTargetVoxelCoords.gy, initialTargetVoxelCoords.gz, currentMode, currentColor);
+            const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
+            currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
         }
 
         if (isDragging) {
+            // Only draw line if the current target is different from the last action
+            if (lastActionVoxelCoords.gx === currentTargetVoxelCoords.gx &&
+                lastActionVoxelCoords.gy === currentTargetVoxelCoords.gy &&
+                lastActionVoxelCoords.gz === currentTargetVoxelCoords.gz) {
+                // No movement in voxel space, just update preview and return
+                updatePreviewVoxel(currentTargetVoxelCoords.gx, currentTargetVoxelCoords.gy, currentTargetVoxelCoords.gz, true);
+                return;
+            }
+
             // Continue the stroke
             const startPointForLine = lastActionVoxelCoords;
             const endPointForLine = { ...currentTargetVoxelCoords };
@@ -3618,3 +3608,4 @@ function animate() {
 
     ren.render(scene, cam); // Render the scene
 }
+</script></body></html>
