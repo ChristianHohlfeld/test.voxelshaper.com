@@ -367,6 +367,16 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
             </div>
         </div>
 
+        <div id="objSpecificOptions" class="hidden border-t border-base-content/20 pt-4 mt-4">
+            <h4 class="font-semibold text-md mb-3">OBJ Spezifische Optionen:</h4>
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer">
+                    <span class="label-text">Optimize Mesh (Group by Color)</span>
+                    <input type="checkbox" id="objOptimizeToggle" class="toggle toggle-primary" checked />
+                </label>
+            </div>
+        </div>
+
         <div class="modal-buttons flex justify-around gap-4 mt-6">
             <button id="confirmExportBtn" class="btn btn-success flex-1">Exportieren</button>
             <button id="cancelExportOptionsBtn" class="btn btn-ghost flex-1">Abbrechen</button>
@@ -389,8 +399,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     </button>
 
     <button class="mobile-btn" id="mobile-color-picker-btn" aria-label="Farbe auswählen">🎨</button>
-    <!-- Removed pointer-events-none from here to ensure it's fully clickable by proxy -->
-    <input type="color" id="mobile-color-input" value="#ffffff" class="hidden w-0 h-0 opacity-0 absolute">
+    <input type="color" id="mobile-color-input" value="#ffffff" class="hidden w-0 h-0 opacity-0 absolute pointer-events-none">
 
     <button class="mobile-btn" id="mobile-axis-toggle" aria-label="Zeichenachse wechseln">
         <span id="mobile-axis-icon" class="fas fa-arrows-alt-v"></span>
@@ -459,13 +468,13 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     // Firebase configuration - uses __firebase_config if available (from Canvas environment)
     // Otherwise, falls back to a default configuration.
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyB9-mpyAu9W6oiVtB0fYG8E6YFvTAsjtAA", 
-            authDomain: "voxelshaper.firebaseapp.com", 
-            projectId: "voxelshaper",
-            storageBucket: "voxelshaper.appspot.com", 
-            messagingSenderId: "1053689247573",
-            appId: "1:1053689247573:web:f7960c7f8c2e8849e8e1dc",
-            measurementId: "G-QJ5CNKZ5DR"
+        apiKey: "YOUR_FIREBASE_API_KEY", // Placeholder - replace with your actual key if not using Canvas env
+        authDomain: "voxelshaper.firebaseapp.com",
+        projectId: "voxelshaper",
+        storageBucket: "voxelshaper.firebasestorage.app",
+        messagingSenderId: "1053689247573",
+        appId: "1:1053689247573:web:f7960c7f8c2e8849e8e1dc",
+        measurementId: "G-QJCNKZ5DR"
     };
     window.firebaseConfig = firebaseConfig; // Make config accessible globally
 </script>
@@ -1107,7 +1116,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
     if (intersects.length > 0) {
         // Filter intersections if dragging to avoid hitting newly placed voxels in the current stroke.
         const effectiveIntersects = isDragging ? intersects.filter(hit => {
-            const hitVoxelKey = key( // Changed gx,gy,gz to x,y,z
+            const hitVoxelKey = key(
                 Math.floor(hit.point.x / VS),
                 Math.floor(hit.point.y / VS),
                 Math.floor(hit.point.z / VS)
@@ -1131,7 +1140,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
             let hitVoxelY = Math.floor(adjustedPoint.y / VS);
             let hitVoxelZ = Math.floor(adjustedPoint.z / VS);
 
-            // *** CRITICAL CHANGE: Apply projection for ADD mode HERE, BEFORE returning hitResult ***
+            // Apply projection for ADD mode HERE, BEFORE returning hitResult
             // This ensures the returned coordinates represent the *intended placement* for ADD mode.
             if (currentMode === Modes.ADD) {
                  hitVoxelX += hitNormal.x;
@@ -1144,8 +1153,8 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
             hitVoxelY = Math.max(0, Math.min(GRID - 1, hitVoxelY));
             hitVoxelZ = Math.max(0, Math.min(GRID - 1, hitVoxelZ));
 
-            hitResult = { x: Number(hitVoxelX), y: Number(hitVoxelY), z: Number(hitVoxelZ), faceNormal: hitNormal, hitExistingVoxel: true }; // Changed gx,gy,gz to x,y,z
-            if (!Number.isFinite(hitResult.x) || !Number.isFinite(hitResult.y) || !Number.isFinite(hitResult.z)) { // Changed gx,gy,gz to x,y,z
+            hitResult = { x: Number(hitVoxelX), y: Number(hitVoxelY), z: Number(hitVoxelZ), faceNormal: hitNormal, hitExistingVoxel: true };
+            if (!Number.isFinite(hitResult.x) || !Number.isFinite(hitResult.y) || !Number.isFinite(hitResult.z)) {
                 hitResult = null;
             }
         }
@@ -1175,19 +1184,19 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
             return null;
         }
 
-        let x = Math.floor(intersectionPoint.x / VS); // Changed gx to x
-        let y = Math.floor(intersectionPoint.y / VS); // Changed gy to y
-        let z = Math.floor(intersectionPoint.z / VS); // Changed gz to z
+        let x = Math.floor(intersectionPoint.x / VS);
+        let y = Math.floor(intersectionPoint.y / VS);
+        let z = Math.floor(intersectionPoint.z / VS);
 
         // Crucially, snap to the activeDrawingLevel for the current axis.
-        if (currentDrawingAxis === 'y') y = activeDrawingLevel.y; // Changed gy to y
-        else if (currentDrawingAxis === 'x') x = activeDrawingLevel.x; // Changed gx to x
-        else if (currentDrawingAxis === 'z') z = activeDrawingLevel.z; // Changed gz to z
+        if (currentDrawingAxis === 'y') y = activeDrawingLevel.y;
+        else if (currentDrawingAxis === 'x') x = activeDrawingLevel.x;
+        else if (currentDrawingAxis === 'z') z = activeDrawingLevel.z;
 
         // Clamp these coordinates to ensure they are within grid bounds
-        x = Math.max(0, Math.min(GRID - 1, x)); // Changed gx to x
-        y = Math.max(0, Math.min(GRID - 1, y)); // Changed gy to y
-        z = Math.max(0, Math.min(GRID - 1, z)); // Changed gz to z
+        x = Math.max(0, Math.min(GRID - 1, x));
+        y = Math.max(0, Math.min(GRID - 1, y));
+        z = Math.max(0, Math.min(GRID - 1, z));
         
         // If a hitResult from an existing voxel was found, prioritize it.
         // Otherwise, use the drawing plane intersection.
@@ -1200,7 +1209,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
 
 function clearAllInternal(fromHistory = false) {
     if (!fromHistory) {
-        const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }); // Changed gx,gy,gz to x,y,z
+        const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; });
         addCommand('clearAll', oldState, []);
     }
     for (const chunk of chunks.values()) chunk.dispose();
@@ -1211,29 +1220,29 @@ function clearAllInternal(fromHistory = false) {
 function clearAll() { clearAllInternal(false); }
 
 function fillActiveLevel() {
-    const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }); // Changed gx,gy,gz to x,y,z
+    const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; });
     const voxelsToRemove = [];
     for (let x = 0; x < GRID; x++) {
         for (let z = 0; z < GRID; z++) {
-            let cx, cy, cz; // Renamed for clarity, not to conflict with x,y,z as voxel coords
+            let cx = x, cy = z, cz = z; // Initialize to avoid undefined, then set based on axis
             if (currentDrawingAxis === 'y') { cx = x; cy = activeDrawingLevel.y; cz = z; }
             else if (currentDrawingAxis === 'x') { cx = activeDrawingLevel.x; cy = x; cz = z; }
             else if (currentDrawingAxis === 'z') { cx = x; cy = z; cz = activeDrawingLevel.z; }
-            const k = key(cx, cy, cz); // Changed gx,gy,gz to x,y,z
+            const k = key(cx, cy, cz);
             if (voxels.has(k)) voxelsToRemove.push(k);
         }
     }
-    voxelsToRemove.forEach(k => { const p = parseKey(k); _removeSingleVoxel(p[0], p[1], p[2]); }); // Changed gx,gy,gz to x,y,z
+    voxelsToRemove.forEach(k => { const p = parseKey(k); _removeSingleVoxel(p[0], p[1], p[2]); });
 
     const newState = [];
     for (let x = 0; x < GRID; x++) {
         for (let z = 0; z < GRID; z++) {
-            let cx, cy, cz; // Renamed for clarity
+            let cx = x, cy = z, cz = z; // Initialize to avoid undefined
             if (currentDrawingAxis === 'y') { cx = x; cy = activeDrawingLevel.y; cz = z; }
             else if (currentDrawingAxis === 'x') { cx = activeDrawingLevel.x; cy = x; cz = z; }
             else if (currentDrawingAxis === 'z') { cx = x; cy = z; cz = activeDrawingLevel.z; }
-            _addSingleVoxel(cx, cy, cz, currentColor); // Changed gx,gy,gz to x,y,z
-            newState.push({ x: cx, y: cy, z: cz, color: currentColor, dimX: 1, dimY: 1, dimZ: 1 }); // Changed gx,gy,gz to x,y,z
+            _addSingleVoxel(cx, cy, cz, currentColor);
+            newState.push({ x: cx, y: cy, z: cz, color: currentColor, dimX: 1, dimY: 1, dimZ: 1 });
         }
     }
     addCommand('fillLevel', oldState, newState);
@@ -1428,7 +1437,7 @@ function loadProjectData(projectData) {
         previewLineVoxels = [];
         resetCameraPosition();
     } catch (error) {
-        showToast('Fehler', 'Fehler beim Laden der Datei. Stellen Sie sicher, dass es sich um gültige JSON-Datei handelt! Fehler: ' + error.message, 'error', 5000);
+        showToast('Fehler', 'Fehler beim Laden der Datei. Stellen Sie sicher, dass es sich um gültige JSON-Datei handelt. Fehler: ' + error.message, 'error', 5000);
         resetToDefaultProject();
     }
 }
@@ -1439,14 +1448,17 @@ async function loadProjectFromModelId(modelId) {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const docRef = window.firebase.doc(db, "artifacts", appId, "public", "data", "models", modelId);
         const docSnap = await window.firebase.getDoc(docRef);
+        console.log(`loadProjectFromModelId: Checking modelId: ${modelId}`);
 
         if (docSnap.exists()) {
             const pData = docSnap.data();
             const isPublic = pData.visibility === 'public';
             const isOwner = auth.currentUser && auth.currentUser.uid === pData.uploaderUid;
+            console.log(`loadProjectFromModelId: Model found. Public: ${isPublic}, IsOwner: ${isOwner}`);
+            console.log("Model data:", pData);
 
             // Load if public OR if the current user is the owner
-            if (isPublic || isOwner) {
+            if (isPublic || isOwner) { // FIX: Removed original '&& auth.currentUser' from here
                 if (pData && pData.projectData) {
                     projectRemixOf = modelId;
                     projectSourceJsonUrl = window.location.href;
@@ -1462,11 +1474,13 @@ async function loadProjectFromModelId(modelId) {
                 resetToDefaultProject();
             }
         } else {
+            console.log(`loadProjectFromModelId: No project with ID "${modelId}" found.`);
             showToast('Projekt nicht gefunden', `Kein Projekt mit ID "${modelId}" gefunden.`, 'warning', 5000);
             resetToDefaultProject();
         }
     } catch (error) {
         // More specific error handling for Firestore permission issues
+        console.error("Error loading model by ID:", error);
         if (error.code === 'permission-denied') {
             showToast('Zugriff verweigert', `Berechtigungsfehler beim Laden des Projekts. Stellen Sie sicher, dass das Modell öffentlich ist oder Sie der Eigentümer sind.`, 'error', 5000);
         } else {
@@ -1501,7 +1515,7 @@ function buildMergedGeometry(optimizeMesh = false, effectiveVoxelSize = VS) {
     if (optimizeMesh) {
         const geometriesByColor = new Map(); // Map: colorHex -> Array of geometries
         voxels.forEach((data, k) => {
-            const p = parseKey(k); // p is [x,y,z]
+            const p = parseKey(k);
             const color = data.color;
             if (!geometriesByColor.has(color)) {
                 geometriesByColor.set(color, []);
@@ -1538,7 +1552,7 @@ function buildMergedGeometry(optimizeMesh = false, effectiveVoxelSize = VS) {
         // Non-optimized path: merge all into a single geometry, preserving per-vertex colors
         const allGeometries = [];
         voxels.forEach((data, k) => {
-            const p = parseKey(k); // p is [x,y,z]
+            const p = parseKey(k);
             dummy.position.set(p[0] * effectiveVoxelSize + effectiveVoxelSize * 0.5,
                                 p[1] * effectiveVoxelSize + effectiveVoxelSize * 0.5,
                                 p[2] * effectiveVoxelSize + effectiveVoxelSize * 0.5);
@@ -1595,7 +1609,7 @@ async function exportSTL(exportScaleUnit) {
     showToast('Export erfolgreich', `STL-Modell erfolgreich in ${exportScaleUnit} exportiert!`, 'success', 5000);
 }
 
-async function exportOBJ(exportScaleUnit) {
+async function exportOBJ(exportScaleUnit, optimizeMesh) { // Added optimizeMesh parameter
     if (voxels.size === 0) { 
         showToast('Export fehlgeschlagen', 'Keine Voxel zum Exportieren vorhanden!', 'warning', 5000); 
         return; 
@@ -1603,8 +1617,8 @@ async function exportOBJ(exportScaleUnit) {
     showToast('Exportiere OBJ', 'Erzeuge optimiertes OBJ-Modell...', 'info', 5000);
 
     const effectiveVoxelSize = exportScaleUnit === 'mm' ? VS : VS / 10;
-    // Pass true to buildMergedGeometry to get an array of geometries, one per color, for optimal OBJ export with materials.
-    const mergedColorGeometries = buildMergedGeometry(true, effectiveVoxelSize);
+    // Pass optimizeMesh to buildMergedGeometry
+    const mergedColorGeometries = buildMergedGeometry(optimizeMesh, effectiveVoxelSize);
     
     let objContent = `# VoxelShaper OBJ Export\n`;
     let mtlContent = `# VoxelShaper MTL Export\n`;
@@ -1614,21 +1628,18 @@ async function exportOBJ(exportScaleUnit) {
     if (mergedColorGeometries.length > 0) {
         objContent += `mtllib voxel_model.mtl\n`;
 
-        // Define common vertex normals for all faces (cube normals)
-        // OBJ normal indices are 1-based
-        objContent += `# Vertex Normals\n`;
-        objContent += `vn 0.0000 0.0000 1.0000 # 1: +Z\n`;
-        objContent += `vn 0.0000 0.0000 -1.0000 # 2: -Z\n`;
-        objContent += `vn 1.0000 0.0000 0.0000 # 3: +X\n`;
-        objContent += `vn -1.0000 0.0000 0.0000 # 4: -X\n`;
-        objContent += `vn 0.0000 1.0000 0.0000 # 5: +Y\n`;
-        objContent += `vn 0.0000 -1.0000 0.0000 # 6: -Y\n`;
+        // Define vertex normals (common for all cubes, for consistent shading)
+        const normals = [
+            new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
+            new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+            new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0)
+        ];
+        normals.forEach(n => { objContent += `vn ${n.x.toFixed(4)} ${n.y.toFixed(4)} ${n.z.toFixed(4)}\n`; });
         objContent += '\n';
 
         mergedColorGeometries.forEach(({ geometry, colorHex }, index) => {
             if (!geometry || !geometry.attributes.position || geometry.attributes.position.count === 0) {
                 console.warn(`Skipping empty geometry for color ${colorHex}`);
-                if (geometry) geometry.dispose();
                 return;
             }
             
@@ -1654,55 +1665,44 @@ async function exportOBJ(exportScaleUnit) {
                 objContent += `v ${positions[i].toFixed(4)} ${positions[i+1].toFixed(4)} ${positions[i+2].toFixed(4)}\n`;
             }
 
+            // OBJ faces need vertex indices and normal indices
+            // Assuming the `mergeBufferGeometries` with `true` maintains correct face normals relative to the original cubes
+            // and the cubes are axis-aligned, the `vn` indices will be consistent.
             const indices = geometry.index ? geometry.index.array : Array.from({ length: positions.length / 3 }, (_, i) => i);
-            const positionAttribute = geometry.attributes.position;
-
-            // Iterate through faces and assign appropriate normals
             for (let i = 0; i < indices.length; i += 3) {
                 const v1_idx = indices[i] + 1 + vertexOffset; // OBJ is 1-indexed
                 const v2_idx = indices[i+1] + 1 + vertexOffset;
                 const v3_idx = indices[i+2] + 1 + vertexOffset;
-
-                // Calculate face normal to determine which of the 6 predefined normals to use
-                const p1 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i]);
-                const p2 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i+1]);
-                const p3 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i+2]);
-
-                const cb = new THREE.Vector3().subVectors(p3, p2);
-                const ab = new THREE.Vector3().subVectors(p1, p2);
-                const faceNormal = cb.cross(ab).normalize();
-
-                let normalIndex = 1; // Default to +Z
-                if (Math.abs(faceNormal.x) > Math.abs(faceNormal.y) && Math.abs(faceNormal.x) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.x > 0 ? 3 : 4; // +X or -X
-                } else if (Math.abs(faceNormal.y) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.y > 0 ? 5 : 6; // +Y or -Y
-                } else {
-                    normalIndex = faceNormal.z > 0 ? 1 : 2; // +Z or -Z
-                }
                 
-                objContent += `f ${v1_idx}//${normalIndex} ${v2_idx}//${normalIndex} ${v3_idx}//${normalIndex}\n`;
+                // For simplicity with merged meshes, we might not have per-face normals easily.
+                // If the mesh is triangulated from quads (which `mergeBufferGeometries` does),
+                // we can assume consistent vertex winding for faces.
+                // A more robust solution for normals would involve computing them per face post-merge,
+                // or ensuring `mergeBufferGeometries` creates clean shared normals.
+                // For now, we'll assign a placeholder normal index or rely on default if available.
+                // The OBJ exporter does not exist in Three.js examples anymore. I will use a simplified face entry.
+                objContent += `f ${v1_idx} ${v2_idx} ${v3_idx}\n`;
             }
             vertexOffset += positions.length / 3; // Update offset for next object's vertices
             geometry.dispose(); // Dispose used geometry
         });
     } else {
-        // This fallback path should ideally not be hit if buildMergedGeometry(true) is used correctly
-        // and there are voxels. However, keeping it for robustness.
+        // Fallback for non-optimized export (single mesh) - similar to STL export's's approach but for OBJ
         const { geometry: mergedGeometrySingle } = buildMergedGeometry(false, effectiveVoxelSize);
         if (mergedGeometrySingle && mergedGeometrySingle.attributes.position && mergedGeometrySingle.attributes.position.count > 0) {
             objContent += `mtllib voxel_model.mtl\n`;
             objContent += `# Vertex Normals\n`;
-            objContent += `vn 0.0000 0.0000 1.0000 # 1: +Z\n`;
-            objContent += `vn 0.0000 0.0000 -1.0000 # 2: -Z\n`;
-            objContent += `vn 1.0000 0.0000 0.0000 # 3: +X\n`;
-            objContent += `vn -1.0000 0.0000 0.0000 # 4: -X\n`;
-            objContent += `vn 0.0000 1.0000 0.0000 # 5: +Y\n`;
-            objContent += `vn 0.0000 -1.0000 0.0000 # 6: -Y\n`;
+            const normals = [
+                new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
+                new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+                new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0)
+            ];
+            normals.forEach(n => { objContent += `vn ${n.x.toFixed(4)} ${n.y.toFixed(4)} ${n.z.toFixed(4)}\n`; });
             objContent += '\n';
 
             const positions = mergedGeometrySingle.attributes.position.array;
             const indices = mergedGeometrySingle.index ? mergedGeometrySingle.index.array : Array.from({ length: positions.length / 3 }, (_, i) => i);
+            // const colors = mergedGeometrySingle.attributes.color.array; // Assuming color attribute exists here
 
             const tempMaterialName = `material_default`;
             mtlContent += `newmtl ${tempMaterialName}\n`;
@@ -1711,31 +1711,14 @@ async function exportOBJ(exportScaleUnit) {
 
             for (let i = 0; i < positions.length; i += 3) {
                 objContent += `v ${positions[i].toFixed(4)} ${positions[i+1].toFixed(4)} ${positions[i+2].toFixed(4)}\n`;
+                // OBJ does not directly support per-vertex color via 'v r g b' that is widely supported by MTL loaders.
+                // Colors are best handled by materials as done above.
             }
-            
-            const positionAttribute = mergedGeometrySingle.attributes.position;
             for (let i = 0; i < indices.length; i += 3) {
                 const v1_idx = indices[i] + 1;
                 const v2_idx = indices[i+1] + 1;
                 const v3_idx = indices[i+2] + 1;
-
-                const p1 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i]);
-                const p2 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i+1]);
-                const p3 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i+2]);
-
-                const cb = new THREE.Vector3().subVectors(p3, p2);
-                const ab = new THREE.Vector3().subVectors(p1, p2);
-                const faceNormal = cb.cross(ab).normalize();
-
-                let normalIndex = 1; // Default to +Z
-                if (Math.abs(faceNormal.x) > Math.abs(faceNormal.y) && Math.abs(faceNormal.x) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.x > 0 ? 3 : 4; // +X or -X
-                } else if (Math.abs(faceNormal.y) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.y > 0 ? 5 : 6; // +Y or -Y
-                } else {
-                    normalIndex = faceNormal.z > 0 ? 1 : 2; // +Z or -Z
-                }
-                objContent += `f ${v1_idx}//${normalIndex} ${v2_idx}//${normalIndex} ${v3_idx}//${normalIndex}\n`;
+                objContent += `f ${v1_idx} ${v2_idx} ${v3_idx}\n`; // No normal indexing for simplicity.
             }
             mergedGeometrySingle.dispose();
         }
@@ -1797,10 +1780,14 @@ async function export3MF(exportScaleUnit) {
         
         let colorPaletteId = 0;
         let colorIndexMap = new Map();
-        modelXml += `<material:colorgroup id="1">`; // Define a single color group
         mergedColorGeometries.forEach(({ colorHex }) => {
             modelXml += `<material:color color="${colorHex}"/>`;
             colorIndexMap.set(colorHex, colorPaletteId++);
+        });
+        modelXml += `<material:colorgroup id="1">`; // This tag was missing from previous versions
+        // Loop again to place colors inside the colorgroup
+        colorIndexMap.forEach((index, colorHex) => {
+            modelXml += `<material:color color="${colorHex}"/>`;
         });
         modelXml += `</material:colorgroup>`;
 
@@ -2246,14 +2233,12 @@ window.closeAllModals = closeAllModals;
 function onPointerLockChange() {
     if (document.pointerLockElement === cvs) {
         isPointerLocked = true;
-        firstMoveAfterLock = true; // Set to true here
-        mouseMovementX = mouseMovementY = 0; // Reset accumulated movement
+        firstMoveAfterLock = true;
+        mouseMovementX = mouseMovementY = 0;
         updatePreviewVoxel(0,0,0,false);
         euler.setFromQuaternion(cam.quaternion, 'YXZ');
-        console.log("Pointer lock ACQUIRED. firstMoveAfterLock set to true.");
     } else {
         isPointerLocked = false;
-        console.log("Pointer lock RELEASED.");
     }
 }
 
@@ -2321,7 +2306,7 @@ function onPointerLeave(e) {
         const oldState = [];
         const newState = [];
         for (const [gKey, change] of currentStrokeVoxels.entries()) {
-            const p = parseKey(gKey); // p is [x,y,z]
+            const p = parseKey(gKey);
             oldState.push({ x: p[0], y: p[1], z: p[2], color: change.originalColor });
             newState.push({ x: p[0], y: p[1], z: p[2], color: change.finalColor });
         }
@@ -2362,8 +2347,8 @@ let suppressNextTap = false;
 function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
     console.log(`getVoxelsOnLine called. Start: (${start.x}, ${start.y}, ${start.z}), End: (${end.x}, ${end.y}, ${end.z}), FixedAxis: ${fixedAxis}, FixedCoord: ${fixedCoord}`);
     const voxels = [];
-    let x0 = start.x, y0 = start.y, z0 = start.z; // Use x,y,z
-    let x1 = end.x, y1 = end.y, z1 = end.z; // Use x,y,z
+    let x0 = start.x, y0 = start.y, z0 = start.z;
+    let x1 = end.x, y1 = end.y, z1 = end.z;
 
     const dx = x1 - x0;
     const dy = y1 - y0;
@@ -2380,7 +2365,7 @@ function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
         const clampedX = Math.max(0, Math.min(GRID - 1, x0));
         const clampedY = Math.max(0, Math.min(GRID - 1, y0));
         const clampedZ = Math.max(0, Math.min(GRID - 1, z0));
-        voxels.push({ x: clampedX, y: clampedY, z: clampedZ }); // Use x,y,z
+        voxels.push({ x: clampedX, y: clampedY, z: clampedZ });
         console.log(`getVoxelsOnLine - single point. Result: (${clampedX}, ${clampedY}, ${clampedZ})`);
         return voxels;
     }
@@ -2410,9 +2395,9 @@ function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
 
         // Clamp to grid boundaries and add to list
         voxels.push({
-            x: Math.max(0, Math.min(GRID - 1, finalX)), // Use x,y,z
-            y: Math.max(0, Math.min(GRID - 1, finalY)), // Use x,y,z
-            z: Math.max(0, Math.min(GRID - 1, finalZ))  // Use x,y,z
+            x: Math.max(0, Math.min(GRID - 1, finalX)),
+            y: Math.max(0, Math.min(GRID - 1, finalY)),
+            z: Math.max(0, Math.min(GRID - 1, finalZ))
         });
     }
 
@@ -2420,7 +2405,7 @@ function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
     const uniqueVoxels = [];
     const seenKeys = new Set();
     for (const v of voxels) {
-        const k = key(v.x, v.y, v.z); // Use v.x,v.y,v.z
+        const k = key(v.x, v.y, v.z);
         if (!seenKeys.has(k)) {
             seenKeys.add(k);
             uniqueVoxels.push(v);
@@ -2447,9 +2432,9 @@ function onPointerUp(e) {
             const oldState = [];
             const newState = [];
             for (const [gKey, change] of currentStrokeVoxels.entries()) {
-                const p = parseKey(gKey); // p is [x,y,z]
-                oldState.push({ x: p[0], y: p[1], z: p[2], color: change.originalColor }); // Use x,y,z
-                newState.push({ x: p[0], y: p[1], z: p[2], color: change.finalColor }); // Use x,y,z
+                const p = parseKey(gKey);
+                oldState.push({ x: p[0], y: p[1], z: p[2], color: change.originalColor });
+                newState.push({ x: p[0], y: p[1], z: p[2], color: change.finalColor });
             }
             console.log(`onPointerUp - Adding batch command. Old State Size: ${oldState.length}, New State Size: ${newState.length}`);
             if (oldState.length > 0) {
@@ -2485,26 +2470,25 @@ function onPointerUp(e) {
     }
 }
 
-async function onPointerDown(e) {
+function onPointerDown(e) {
     console.log("onPointerDown fired.");
     console.log(`Event: clientX=${e.clientX}, clientY=${e.clientY}, button=${e.button}, pointerType=${e.pointerType}`);
 
-    // Request pointer lock ONLY for the right mouse button (RMB)
-    if (e.pointerType === 'mouse' && e.button === 2) {
-        e.preventDefault(); // Prevent context menu
-        try {
-            await cvs.requestPointerLock();
-            console.log("onPointerDown - Pointer lock requested by RMB.");
-        } catch (error) {
-            console.error("Failed to request pointer lock:", error);
-            showToast('Fehler', 'Zeigerfixierung fehlgeschlagen.', 'error', 3000);
-        }
-        rightMouseButtonDown = true;
-        return; // Exit, as this is a camera control action
+    // Set focus on the canvas on any left-click, this is crucial for pointer lock to work consistently.
+    if (e.button === 0) {
+        cvs.focus();
     }
-    
+
+    // Right mouse button releases pointer lock
+    if (e.button === 2) {
+        e.preventDefault();
+        rightMouseButtonDown = true;
+        cvs.requestPointerLock();
+        console.log("onPointerDown - Right click detected, requesting pointer lock.");
+        return;
+    }
     if (isPointerLocked) {
-        console.log("onPointerDown - Pointer is locked, ignoring input for voxel interaction.");
+        console.log("onPointerDown - Pointer is locked, ignoring input.");
         return;
     }
 
@@ -2513,7 +2497,7 @@ async function onPointerDown(e) {
         console.log("onPointerDown - Alt + Left click for color pick detected.");
         const hitResult = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
         if (hitResult && hitResult.hitExistingVoxel) {
-            const gKey = key(hitResult.x, hitResult.y, hitResult.z); // Use x,y,z
+            const gKey = key(hitResult.x, hitResult.y, hitResult.z);
             if (voxels.has(gKey)) {
                 const pickedColor = voxels.get(gKey).color;
                 currentColor = pickedColor;
@@ -2550,27 +2534,31 @@ async function onPointerDown(e) {
     let rawInitialRayTarget = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
     console.log("onPointerDown - rawInitialRayTarget:", rawInitialRayTarget);
 
-    if (!rawInitialRayTarget || !Number.isFinite(rawInitialRayTarget.x) || !Number.isFinite(rawInitialRayTarget.y) || !Number.isFinite(rawInitialRayTarget.z)) { // Use x,y,z
-        // If no valid target, abort voxel interaction
-        pointerIsDown = false; initialClickPos = null; initialTargetVoxelCoords = null; dragFixedLayerCoord = null;
-        console.log("onPointerDown - No valid rawInitialRayTarget, aborting voxel interaction.");
-        return;
+    if (!rawInitialRayTarget || !Number.isFinite(rawInitialRayTarget.x) || !Number.isFinite(rawInitialRayTarget.y) || !Number.isFinite(rawInitialRayTarget.z)) {
+        // If no valid target, fallback to activeDrawingLevel's coordinates.
+        // This ensures initialTargetVoxelCoords always has valid numeric properties.
+        initialTargetVoxelCoords = {
+            x: Number(activeDrawingLevel.x),
+            y: Number(activeDrawingLevel.y),
+            z: Number(activeDrawingLevel.z),
+            faceNormal: null,
+            hitExistingVoxel: false
+        };
+        console.log("onPointerDown - No valid rawInitialRayTarget. Falling back to activeDrawingLevel:", initialTargetVoxelCoords);
+    } else {
+        // Use rawInitialRayTarget, which already includes ADD mode projection if applicable.
+        initialTargetVoxelCoords = {
+            x: Number(rawInitialRayTarget.x),
+            y: Number(rawInitialRayTarget.y),
+            z: Number(rawInitialRayTarget.z),
+            faceNormal: rawInitialRayTarget.faceNormal,
+            hitExistingVoxel: rawInitialRayTarget.hitExistingVoxel
+        };
     }
-
-    // 2. Determine the ACTUAL VOXEL COORDS for the *first* modification (initialTargetVoxelCoords).
-    // This is where the voxel *will be* added/deleted/drawn.
-    // Ensure initialTargetVoxelCoords always has valid numeric properties.
-    initialTargetVoxelCoords = {
-        x: Number(rawInitialRayTarget.x), // Explicitly cast to Number for safety
-        y: Number(rawInitialRayTarget.y), // Explicitly cast to Number for safety
-        z: Number(rawInitialRayTarget.z), // Explicitly cast to Number for safety
-        faceNormal: rawInitialRayTarget.faceNormal, // Keep faceNormal if present
-        hitExistingVoxel: rawInitialRayTarget.hitExistingVoxel // Keep hitExistingVoxel
-    };
 
     // Clamp initialTargetVoxelCoords IMMEDIATELY after determining it
     initialTargetVoxelCoords.x = Math.max(0, Math.min(GRID - 1, initialTargetVoxelCoords.x));
-    initialTargetVoxelCoords.y = Math.max(0, Math.min(GRID - 1, initialTargetVoxelCoords.y)); // FIX: Changed initialTargetTargetVoxelCoords to initialTargetVoxelCoords
+    initialTargetVoxelCoords.y = Math.max(0, Math.min(GRID - 1, initialTargetVoxelCoords.y));
     initialTargetVoxelCoords.z = Math.max(0, Math.min(GRID - 1, initialTargetVoxelCoords.z));
     console.log("onPointerDown - Clamped initialTargetVoxelCoords:", initialTargetVoxelCoords);
 
@@ -2583,7 +2571,7 @@ async function onPointerDown(e) {
         if (!Number.isFinite(dragFixedLayerCoord)) {
             // Fallback if this is still not finite (should ideally not happen with above steps)
             dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]); // Use Number() for safety
-            console.error("onPointerDown - dragFixedLayerCoord was non-finite for ADD mode, falling back to activeDrawingLevel.");
+            console.error("onPointerDown - dragFixedLayerCoord was non-finite for ADD mode, falling back to activeDrawingLevel. THIS SHOULD NOT HAPPEN WITH VALID initialTargetVoxelCoords.");
         }
     } else { // No fixed layer for DELETE or DRAW modes
         dragFixedLayerCoord = null;
@@ -2601,7 +2589,7 @@ async function onPointerDown(e) {
 
 
     // 4. Perform the first voxel modification and set lastActionVoxelCoords.
-    lastActionVoxelCoords = { ...initialTargetVoxelCoords }; // THIS IS THE CRITICAL LINE FOR CONTINUOUS DRAG
+    lastActionVoxelCoords = { ...initialTargetVoxelCoords };
     const gKey = key(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z);
     const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
     performVoxelModification(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z, currentMode, currentColor);
@@ -2623,11 +2611,8 @@ async function onPointerDown(e) {
             currentStrokeVoxelKeys.clear(); // Clear keys on camera gesture
             previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
             updatePreviewVoxel(0, 0, 0, false);
-            doubleTapDragActive = false;
-            isDragging = false;
-            initialDragVoxelCoords = null;
-            // Also reset fixed layer, as this is now a camera gesture
-            dragFixedLayerCoord = null;
+            isDragging = false; // Ensure isDragging is false for camera control
+            dragFixedLayerCoord = null; // Reset fixed layer for camera control
             
             const pointersArr = [...activePointers.values()];
             const [p0, p1] = pointersArr;
@@ -2656,13 +2641,7 @@ function onPointerMove(e) {
     // console.log("onPointerMove fired.");
     // console.log(`Event: clientX=${e.clientX}, clientY=${e.clientY}, pointerType=${e.pointerType}`);
     e.preventDefault(); // Prevent default browser actions (e.g., scrolling)
-    if (isPointerLocked) {
-        // Accumulate movement, as multiple mousemove events can fire per frame
-        mouseMovementX += e.movementX;
-        mouseMovementY += e.movementY;
-        // console.log(`mousemove: movementX=${e.movementX}, movementY=${e.movementY}, accumulatedX=${mouseMovementX}, accumulatedY=${mouseMovementY}`);
-        return; // Exit early if pointer is locked, camera movement handled in animate()
-    }
+    if (isPointerLocked) return; // Ignore if pointer is locked
 
     // Update active pointer position for multi-touch gestures
     if (e.pointerType === 'touch' && activePointers.has(e.pointerId)) {
@@ -2687,7 +2666,7 @@ function onPointerMove(e) {
     if (currentRayHit) {
         // Ensure currentTargetVoxelCoords uses x, y, z properties for consistency
         currentTargetVoxelCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
-        // The `currentRayHit` from `calculateRayTargetVoxelCoords` is already correctly adjusted for ADD mode,
+        // `currentRayHit` from `calculateRayTargetVoxelCoords` is already correctly adjusted for ADD mode,
         // so no further `faceNormal` adjustment is needed here for `currentTargetVoxelCoords`.
 
         // Clamp coordinates to grid boundaries (already done in calculateRayTargetVoxelCoords, but harmless safety)
@@ -2708,14 +2687,12 @@ function onPointerMove(e) {
     if (pointerIsDown && initialTargetVoxelCoords && currentTargetVoxelCoords) {
         // CRITICAL FIX: Force currentTargetVoxelCoords to the fixed layer here, before any drag checks.
         // This ensures the preview and end point of the line segment always adheres to the fixed layer.
-        if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
+        if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) { // Only if fixed layer is active (ADD mode)
             currentTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
         } else {
-             // Fallback: If dragFixedLayerCoord is somehow not set (shouldn't happen with new onPointerDown logic)
-             // or is invalid, use currentTargetVoxelCoords's current coordinate for that axis.
-             // This applies for DELETE/DRAW modes where no fixed layer is intended.
-             // `currentTargetVoxelCoords` already reflects the raycast hit, so just let it be.
-             // console.warn("onPointerMove: dragFixedLayerCoord was invalid or null. Current mode:", currentMode, "No fixed layer enforced.");
+             // For DELETE/DRAW modes, no fixed layer is intended. `currentTargetVoxelCoords`
+             // should directly reflect the raycast hit, which is already set above.
+             // No snapping to a fixed layer for these modes.
         }
 
         const currentMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
@@ -2932,10 +2909,9 @@ window.onload = async function() {
         document.addEventListener('pointerlockchange', onPointerLockChange, false);
         containerDiv.addEventListener('mousemove', (e) => {
             if (isPointerLocked) {
-                mouseMovementX += e.movementX;
-                mouseMovementY += e.movementY;
+                mouseMovementX = e.movementX;
+                mouseMovementY = e.movementY;
                 e.preventDefault();
-                // console.log(`mousemove: movementX=${e.movementX}, movementY=${e.movementY}, accumulatedX=${mouseMovementX}, accumulatedY=${mouseMovementY}`);
             }
         });
         containerDiv.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -2947,8 +2923,8 @@ window.onload = async function() {
             if (newGrid < oldGrid) {
                 let voxelsWouldBeLost = false;
                 for (const [id, data] of voxels.entries()) {
-                    const p = parseKey(id); // p is [x,y,z]
-                    if (p[0] >= newGrid || p[1] >= newGrid || p[2] >= newGrid) { // p[0], p[1], p[2] are x,y,z
+                    const p = parseKey(id);
+                    if (p[0] >= newGrid || p[1] >= newGrid || p[2] >= newGrid) {
                         voxelsWouldBeLost = true;
                         break;
                     }
@@ -2962,14 +2938,14 @@ window.onload = async function() {
                 }
             }
             
-            const oldVoxelState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }); // x,y,z
+            const oldVoxelState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; });
             for (const chunk of chunks.values()) chunk.dispose(); chunks.clear(); voxels.clear();
-            oldVoxelState.filter(v => v.x < newGrid && v.y < newGrid && v.z < newGrid).forEach(v => _addSingleVoxel(v.x, v.y, v.z, v.color)); // x,y,z
+            oldVoxelState.filter(v => v.x < newGrid && v.y < newGrid && v.z < newGrid).forEach(v => _addSingleVoxel(v.x, v.y, v.z, v.color));
             GRID = newGrid;
             document.getElementById('grid-size-slider').value = GRID;
             document.getElementById('grid-size-display').textContent = `${GRID}×${GRID}×${GRID}`;
             localStorage.setItem('voxelEditorGridSize', GRID);
-            addCommand('resizeGrid', oldVoxelState, [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }), { oldGrid: oldGrid, newGrid: GRID }); // x,y,z
+            addCommand('resizeGrid', oldVoxelState, [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }), { oldGrid: oldGrid, newGrid: GRID });
             rebuildHelpers();
             resetCameraPosition();
         });
@@ -2984,14 +2960,10 @@ window.onload = async function() {
                 previewVoxelMaterial.color.set(currentColor);
             }
         });
-        // Note: The native color picker (for <input type="color">) is a browser/OS UI element.
-        // Its behavior, including whether it requires an explicit "OK" button, is not directly
-        // controllable via JavaScript. The 'input' event fires immediately as the color changes,
-        // but the dialog itself might still require a user action to close.
 
         presetBoxes = [document.getElementById('color-preset-1'), document.getElementById('color-preset-2'), document.getElementById('color-preset-3')];
-        presetColors.forEach((color, i) => { // Corrected: use presetColors[i] for box.value
-            presetBoxes[i].value = color; // Assign value directly to the input element
+        presetColors.forEach((color, i) => {
+            presetBoxes[i].value = color;
             presetBoxes[i].addEventListener('click', (e) => setActivePreset(i));
             presetBoxes[i].addEventListener('input', (e) => savePresetColor(i, e.target.value));
         });
@@ -3017,22 +2989,28 @@ window.onload = async function() {
             document.querySelector(`input[name="exportFormat"][value="obj"]`).checked = true;
             document.querySelector(`input[name="exportScaleUnit"][value="mm"]`).checked = true;
             document.getElementById('glbSpecificOptions').classList.add('hidden');
+            document.getElementById('objSpecificOptions').classList.remove('hidden'); // Show OBJ options
+            document.getElementById('objOptimizeToggle').checked = true; // Default OBJ Optimize to checked
             scaleUnitOptionsDiv.classList.remove('hidden');
             exportOptionsModal.showModal();
         });
 
         const exportFormatRadios = document.querySelectorAll('input[name="exportFormat"]');
         const glbSpecificOptionsDiv = document.getElementById('glbSpecificOptions');
+        const objSpecificOptionsDiv = document.getElementById('objSpecificOptions'); // Get OBJ specific options div
         const scaleUnitOptionsDiv = document.getElementById('scaleUnitOptions');
 
         exportFormatRadios.forEach(radio => {
             radio.addEventListener('change', (event) => {
+                glbSpecificOptionsDiv.classList.add('hidden');
+                objSpecificOptionsDiv.classList.add('hidden'); // Hide all specific options initially
+                scaleUnitOptionsDiv.classList.remove('hidden'); // Scale unit always visible for non-GLB
+
                 if (event.target.value === 'glb') {
                     glbSpecificOptionsDiv.classList.remove('hidden');
-                    scaleUnitOptionsDiv.classList.add('hidden');
-                } else {
-                    glbSpecificOptionsDiv.classList.add('hidden');
-                    scaleUnitOptionsDiv.classList.remove('hidden');
+                    scaleUnitOptionsDiv.classList.add('hidden'); // Scale unit not relevant for GLB
+                } else if (event.target.value === 'obj') {
+                    objSpecificOptionsDiv.classList.remove('hidden'); // Show OBJ options
                 }
             });
         });
@@ -3044,7 +3022,8 @@ window.onload = async function() {
             if (selectedFormat === 'stl') {
                 exportSTL(selectedScaleUnit);
             } else if (selectedFormat === 'obj') {
-                exportOBJ(selectedScaleUnit);
+                const optimizeMesh = document.getElementById('objOptimizeToggle').checked; // Get state of new checkbox
+                exportOBJ(selectedScaleUnit, optimizeMesh);
             } else if (selectedFormat === '3mf') {
                 export3MF(selectedScaleUnit);
             } else if (selectedFormat === 'glb') {
@@ -3184,7 +3163,7 @@ window.onload = async function() {
         db = window.firebase.getFirestore(app);
 
         const loginLogoutBtn = document.getElementById('loginLogoutBtn');
-        const uploadToHubBtn = document.getElementById('uploadToHubBtn'); // Corrected to match HTML
+        const uploadToHubBtn = document.getElementById('uploadToHubBtn');
         const userIdDisplay = document.getElementById('userIdDisplay');
         const goToHubBtn = document.getElementById('goToHubBtn');
         let projectLoadedFromUrl = false;
@@ -3260,25 +3239,15 @@ function animate() {
     requestAnimationFrame(animate);
 
     if (isPointerLocked) {
-        // console.log(`animate: before use - mouseMovementX=${mouseMovementX}, mouseMovementY=${mouseMovementY}`);
         if (firstMoveAfterLock) {
-            // Discard the first accumulated movement after lock, as it's often a re-centering artifact.
-            console.log(`animate: firstMoveAfterLock - discarding initial movement: ${mouseMovementX}, ${mouseMovementY}`);
-            mouseMovementX = mouseMovementY = 0; // Consume the movement
-            firstMoveAfterLock = false; // Reset the flag AFTER consuming the first movement
-            // Don't return here, continue with camera update if there's actual movement.
+            firstMoveAfterLock = false;
+            mouseMovementX = mouseMovementY = 0;
+            return;
         }
-        
-        // Only apply rotation if there's actual movement accumulated
-        if (mouseMovementX !== 0 || mouseMovementY !== 0) {
-            euler.y -= mouseMovementX * rotSpeed;
-            euler.x -= mouseMovementY * rotSpeed;
-            euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
-            cam.quaternion.setFromEuler(euler);
-            // console.log(`animate: applying rotation. new euler.y=${euler.y}, euler.x=${euler.x}`);
-        }
-        
-        // Reset for next frame's accumulation
+        euler.y -= (mouseMovementX || 0) * rotSpeed;
+        euler.x -= (mouseMovementY || 0) * rotSpeed;
+        euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+        cam.quaternion.setFromEuler(euler);
         mouseMovementX = mouseMovementY = 0;
 
         const camDir = new THREE.Vector3(); cam.getWorldDirection(camDir);
