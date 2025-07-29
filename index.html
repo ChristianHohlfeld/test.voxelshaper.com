@@ -35,8 +35,7 @@ body {
     user-select: none;
     display: flex; /* Use flexbox for overall layout */
     flex-direction: column; /* Stack vertically */
-    height: 100vh; /* Changed from min-h-screen to h-screen */
-    overflow: hidden; /* Added to prevent scrollbar on body */
+    min-height: 100vh; /* Full viewport height */
 }
 
 /* Canvas specific touch and selection disable */
@@ -142,6 +141,10 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     justify-content: center;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     transition: background-color 0.2s, transform 0.2s;
+    text-align: center; /* Ensure text is centered */
+    line-height: 1.2; /* Adjust line height for better text fit */
+    font-size: 0.8rem; /* Smaller font size for text */
+    padding: 0.2rem; /* Add padding for text */
 }
 
 .mobile-btn:hover {
@@ -155,28 +158,14 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 #mobile-controls {
     gap: 1rem;
 }
-
-/* Collapsed state for desktop menu */
-#controls.collapsed {
-    display: none !important; /* Use !important to override tailwind's flex */
-}
-/* User badge styling */
-.user-badge {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    object-fit: cover;
-    vertical-align: middle;
-    margin-right: 0.25rem;
-}
 </style>
 </head>
-<body class="bg-base-100 h-screen text-base-content flex flex-col overflow-hidden">
-<!-- Mobile menu toggle - remains fixed top-right, hidden on large screens -->
-<button id="menuToggle" aria-label="Menü umschalten" class="fixed top-4 right-4 z-[1500] w-10 h-10 text-xl leading-10 text-center bg-base-300 text-base-content border-none rounded-lg cursor:pointer shadow-md hover:bg-base-content/20 lg:hidden">☰</button>
+<body class="bg-base-100 min-h-screen text-base-content flex flex-col">
+<!-- Menu toggle for mobile - appears on top right -->
+<button id="menuToggle" aria-label="Menü umschalten" class="fixed top-4 right-4 z-[1500] w-10 h-10 text-xl leading-10 text-center bg-base-300 text-base-content border-none rounded-lg cursor: pointer shadow-md hover:bg-base-content/20 lg:hidden">☰</button>
 
-<!-- Main control panel - no longer hidden by default, will be managed by JS for collapsing -->
-<div id="controls" class="flex flex-wrap items-center justify-center gap-3 p-4 bg-base-200 border-b border-base-content/20">
+<!-- Main control panel - hidden on mobile by default, shown on desktop -->
+<div id="controls" class="flex flex-wrap items-center justify-center gap-3 p-4 bg-base-200 border-b border-base-content/20 hidden md:flex">
     <!-- Grid Size Control -->
     <label for="grid-size-slider" class="text-base-content">Gittergröße:</label>
     <input type="range" id="grid-size-slider" min="5" max="180" value="10" aria-label="Gittergröße anpassen" class="range range-xs w-36">
@@ -213,22 +202,14 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 
     <!-- User & Hub Controls -->
     <button id="loginLogoutBtn" aria-label="Anmelden oder Abmelden" class="btn btn-sm btn-info">Anmelden</button>
-    <!-- userIdDisplay now only shows the badge -->
     <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
     <button id="uploadToHubBtn" aria-label="Auf Hub hochladen" class="btn btn-sm btn-warning">Auf Hub hochladen</button>
     <button id="goToHubBtn" aria-label="Zum VoxelShaper Hub wechseln" class="btn btn-sm btn-secondary">Zum Hub</button>
-    
-    <!-- Removed Gemini API Feature: Generate Idea button -->
-
-    <!-- NEW desktop collapse button -->
-    <button id="desktopCollapseBtn" aria-label="Menü einklappen" class="btn btn-sm btn-neutral hidden md:block ml-auto">
-        <i class="fas fa-chevron-up" id="desktopCollapseIcon"></i>
-    </button>
 </div>
 
 <!-- Main 3D Canvas Container -->
 <div id="container" class="flex-1 relative border-2 border-transparent box-border overflow-hidden touch-none">
-    <canvas id="voxelCanvas" class="w-full h-full block box-border"></canvas>
+    <canvas id="voxelCanvas" class="w-full h-full block box-border" tabindex="0"></canvas>
     <input type="file" id="fileInput" accept=".json" class="hidden">
 </div>
 
@@ -362,6 +343,21 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
             </div>
         </div>
 
+        <!-- Export Up Axis Selection (for STL, OBJ, 3MF) -->
+        <div class="form-control mb-4" id="exportAxisOptions">
+            <label class="label"><span class="label-text">Up-Achse für Export:</span></label>
+            <div class="flex gap-3">
+                <label class="flex items-center">
+                    <input type="radio" name="exportUpAxis" value="Y" class="radio radio-primary" />
+                    <span class="ml-2">Y-Up (Standard)</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="exportUpAxis" value="Z" class="radio radio-primary" checked />
+                    <span class="ml-2">Z-Up (3D-Drucker)</span>
+                </label>
+            </div>
+        </div>
+
         <!-- GLB Specific Options -->
         <div id="glbSpecificOptions" class="hidden border-t border-base-content/20 pt-4 mt-4">
             <h4 class="font-semibold text-md mb-3">GLB Spezifische Optionen:</h4>
@@ -403,15 +399,15 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <button class="mobile-btn" id="mobile-camera" aria-label="Kamera zurücksetzen">📷</button>
 
     <button class="mobile-btn" id="mobile-mode-toggle" aria-label="Modus wechseln">
-        <span id="mobile-mode-icon" class="fas fa-plus"></span>
+        <span id="mobile-mode-text">Hinzufügen</span>
     </button>
 
     <button class="mobile-btn" id="mobile-color-picker-btn" aria-label="Farbe auswählen">🎨</button>
     <input type="color" id="mobile-color-input" value="#ffffff" class="hidden w-0 h-0 opacity-0 absolute">
 
-    <!-- Removed mobile-axis-toggle, mobile-level-up, mobile-level-down buttons -->
-
     <button class="mobile-btn" id="mobile-login-logout" aria-label="Anmelden oder Abmelden">🔑</button>
+    <button class="mobile-btn" id="mobile-upload-hub" aria-label="Auf Hub hochladen">⬆️</button>
+    <button class="mobile-btn" id="mobile-go-hub" aria-label="Zum VoxelShaper Hub wechseln">🌐</button>
 </div>
 
 <!-- Three.js and other libraries -->
@@ -497,7 +493,7 @@ function key(x, y, z) { return ((x << SHIFT_X) | (y << SHIFT_Y) | z) >>> 0; }
 // Utility to parse a unique key back into voxel coordinates
 function parseKey(k) { return [(k >>> SHIFT_X) & VOX_MASK, (k >>> VOX_BITS) & VOX_MASK, k & VOX_MASK]; }
 // Get chunk coordinates from global voxel coordinates
-function getChunkCoords(x, y, z) { return { cx: Math.floor(x / CHUNK_SIZE), cy: Math.floor(y / CHUNK_SIZE), cz: Math.floor(z / CHUNK_SIZE) }; }
+function getChunkCoords(x, y, z) { return { cx: Math.floor(x / CHUNK_SIZE), cy: Math.floor(y / CHUNK_SIZE), cz: Math.floor(z / CHUNK_SIZE) }; } // Updated to use x,y,z
 // Get string key for a chunk
 function getChunkKey(cx, cy, cz) { return `${cx},${cy},${cz}`; }
 
@@ -513,7 +509,7 @@ const PAN_SPEED_TOUCH_MOBILE = 0.2;
 const PINCH_ZOOM_MULT_MOBILE = 80;
 
 const ROTATE_SPEED_TOUCH_DESKTOP = 0.004;
-const PAN_SPEED_TOUCH_DESKTOP = 0.1;
+const PAN_SPEED_TOUCH_DESKTOP = 0.1; 
 const PINCH_ZOOM_MULT_DESKTOP = 40;
 
 
@@ -652,23 +648,23 @@ class VoxelChunk {
             new THREE.Vector3(this.offsetX + chunkSize * VS, this.offsetY + chunkSize * VS, this.offsetZ + chunkSize * VS)
         );
     }
-    getLocalKey(x, y, z) { return key(x % this.chunkSize, y % this.chunkSize, z % this.chunkSize); }
-    addVoxel(x, y, z, colorHex) {
-        const lKey = this.getLocalKey(x, y, z); const gKey = key(x, y, z);
+    getLocalKey(gx, gy, gz) { return key(gx % this.chunkSize, gy % this.chunkSize, gz % this.chunkSize); }
+    addVoxel(gx, gy, gz, colorHex) {
+        const lKey = this.getLocalKey(gx, gy, gz); const gKey = key(gx, gy, gz);
         if (this.voxels.has(lKey)) {
             const instanceId = this.voxels.get(lKey).instanceId;
             this.voxels.set(lKey, { color: colorHex, instanceId }); this.updateInstanceColor(instanceId, colorHex);
         } else {
             const instanceId = this.instancedMesh.count++;
             this.voxels.set(lKey, { color: colorHex, instanceId }); this.globalToLocalInstanceIdMap.set(gKey, instanceId);
-            dummy.position.set((x % this.chunkSize) * VS + HALF, (y % this.chunkSize) * VS + HALF, (z % this.chunkSize) * VS + HALF);
+            dummy.position.set((gx % this.chunkSize) * VS + HALF, (gy % this.chunkSize) * VS + HALF, (gz % this.chunkSize) * VS + HALF);
             dummy.updateMatrix(); this.instancedMesh.setMatrixAt(instanceId, dummy.matrix);
             this.updateInstanceColor(instanceId, colorHex);
             this.instancedMesh.instanceMatrix.needsUpdate = true; this.instancedMesh.instanceColor.needsUpdate = true;
         }
     }
-    removeVoxel(x, y, z) {
-        const lKey = this.getLocalKey(x, y, z); const gKey = key(x, y, z);
+    removeVoxel(gx, gy, gz) {
+        const lKey = this.getLocalKey(gx, gy, gz); const gKey = key(gx, gy, gz);
         if (!this.voxels.has(lKey)) return;
         const { instanceId: removedId } = this.voxels.get(lKey);
         this.voxels.delete(lKey); this.globalToLocalInstanceIdMap.delete(gKey);
@@ -688,11 +684,11 @@ class VoxelChunk {
         this.instancedMesh.count--;
         this.instancedMesh.instanceMatrix.needsUpdate = true; this.instancedMesh.instanceColor.needsUpdate = true;
     }
-    recolorVoxel(x, y, z, newColorHex) {
-        const lKey = this.getLocalKey(x, y, z);
+    recolorVoxel(gx, gy, gz, newColorHex) {
+        const lKey = this.getLocalKey(gx, gy, gz);
         if (!this.voxels.has(lKey)) return;
         const { instanceId } = this.voxels.get(lKey);
-        this.voxels.set(lKey, { color: newColorHex });
+        this.voxels.set(lKey, { color: newColorHex }); // Only update color, instanceId remains the same
         this.updateInstanceColor(instanceId, newColorHex);
     }
     updateInstanceColor(instanceId, hex) {
@@ -738,7 +734,7 @@ function handleGesture() {
         if (gestureState.type === 'none') {
             const dMid = Math.hypot(midX - gestureState.startMid.x, midY - gestureState.startMid.y);
             const PINCH_REL_TH = 0.05;
-            const relDelta = Math.abs(dist / gestureState.startDist - 1);
+            const relDelta = Math.abs(dist - gestureState.startDist) / gestureState.startDist;
             if (relDelta > PINCH_REL_TH) {
                 gestureState.type = 'pinch';
             } else if (dMid > MOVE_PX) {
@@ -783,10 +779,10 @@ function rebuildHelpers() {
 
     const size = GRID * VS;
 
-    // On mobile, always fix grid to Y-axis at level 0
     if (isMobile) {
+        // On mobile, grid helper is always fixed to y-axis for simplicity as per user request
         gridHelper = new THREE.GridHelper(size, GRID, 0x444444, 0x444444 );
-        gridHelper.position.set(size / 2, 0, size / 2); // Fixed at Y=0
+        gridHelper.position.set(size / 2, activeDrawingLevel.y * VS, size / 2);
     } else {
         if (currentDrawingAxis === 'y') {
             gridHelper = new THREE.GridHelper(size, GRID, 0x444444, 0x444444 );
@@ -807,19 +803,9 @@ function rebuildHelpers() {
     boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffff }));
     boxHelper.position.set(size / 2, size / 2, size / 2);
     scene.add(boxHelper);
-
-    const mobileAxisIcon = document.getElementById('mobile-axis-icon');
-    if (mobileAxisIcon) {
-        mobileAxisIcon.className = AxisIcons[currentDrawingAxis];
-    }
 }
 
 function updateGridHelperPosition() {
-    // On mobile, force activeDrawingLevel.y to 0 and currentDrawingAxis to 'y'
-    if (isMobile) {
-        activeDrawingLevel.y = 0;
-        currentDrawingAxis = 'y';
-    }
     rebuildHelpers();
     localStorage.setItem('voxelEditorActiveDrawingLevelX', activeDrawingLevel.x);
     localStorage.setItem('voxelEditorActiveDrawingLevelY', activeDrawingLevel.y);
@@ -839,9 +825,9 @@ function cycleMode() {
         case Modes.DRAW: currentMode = Modes.ADD; break;
     }
     document.getElementById('current-mode').textContent = `Modus: ${currentMode}`;
-    const mobileModeIcon = document.getElementById('mobile-mode-icon');
-    if (mobileModeIcon) {
-        mobileModeIcon.className = ModeIcons[currentMode];
+    const mobileModeText = document.getElementById('mobile-mode-text');
+    if (mobileModeText) {
+        mobileModeText.textContent = currentMode;
     }
     lastActionVoxelCoords = null;
     updatePreviewVoxel(0, 0, 0, false);
@@ -886,7 +872,7 @@ function applyVoxelState(state) {
     for (const chunk of chunks.values()) chunk.dispose();
     chunks.clear();
     voxels.clear();
-    state.forEach(v => _addSingleVoxel(v.x, v.y, v.z, v.color));
+    state.forEach(v => _addSingleVoxel(v.x, v.y, v.z, v.color)); // Changed v.gx,v.gy,v.gz to v.x,v.y,v.z
 }
 
 function addCommand(type, oldState = null, newState = null, commandData = null) {
@@ -926,28 +912,28 @@ function executeCommand(command, reverse = false) {
 function undo() { if (historyPointer >= 0) { executeCommand(history[historyPointer], true); historyPointer--; } }
 function redo() { if (historyPointer < history.length - 1) { historyPointer++; executeCommand(history[historyPointer], false); } }
 
-function _addSingleVoxel(x, y, z, colorHex) {
+function _addSingleVoxel(x, y, z, colorHex) { // Changed gx,gy,gz to x,y,z
     const gKey = key(x, y, z);
     voxels.set(gKey, { color: colorHex });
-    const { cx, cy, cz } = getChunkCoords(x, y, z);
+    const { cx, cy, cz } = getChunkCoords(x, y, z); // Changed gx,gy,gz to x,y,z
     const cKey = getChunkKey(cx, cy, cz);
     let chunk = chunks.get(cKey);
     if (!chunk) {
         chunk = new VoxelChunk(cx, cy, cz, CHUNK_SIZE, scene);
         chunks.set(cKey, chunk);
     }
-    chunk.addVoxel(x, y, z, colorHex);
+    chunk.addVoxel(x, y, z, colorHex); // Changed gx,gy,gz to x,y,z
 }
 
-function _removeSingleVoxel(x, y, z) {
+function _removeSingleVoxel(x, y, z) { // Changed gx,gy,gz to x,y,z
     const gKey = key(x, y, z);
     if (!voxels.has(gKey)) return;
     voxels.delete(gKey);
-    const { cx, cy, cz } = getChunkCoords(x, y, z);
+    const { cx, cy, cz } = getChunkCoords(x, y, z); // Changed gx,gy,gz to x,y,z
     const cKey = getChunkKey(cx, cy, cz);
     if (chunks.has(cKey)) {
         const chunk = chunks.get(cKey);
-        chunk.removeVoxel(x, y, z);
+        chunk.removeVoxel(x, y, z); // Changed gx,gy,gz to x,y,z
         if (chunk.instancedMesh.count === 0) {
             chunk.dispose();
             chunks.delete(cKey);
@@ -955,22 +941,22 @@ function _removeSingleVoxel(x, y, z) {
     }
 }
 
-function _recolorSingleVoxel(x, y, z, newColorHex) {
+function _recolorSingleVoxel(x, y, z, newColorHex) { // Changed gx,gy,gz to x,y,z
     const gKey = key(x, y, z);
     if (!voxels.has(gKey)) return;
     voxels.set(gKey, { color: newColorHex });
-    const { cx, cy, cz } = getChunkCoords(x, y, z);
+    const { cx, cy, cz } = getChunkCoords(x, y, z); // Changed gx,gy,gz to x,y,z
     const cKey = getChunkKey(cx, cy, cz);
-    if (chunks.has(cKey)) chunks.get(cKey).recolorVoxel(x, y, z, newColorHex);
+    if (chunks.has(cKey)) chunks.get(cKey).recolorVoxel(x, y, z, newColorHex); // Changed gx,gy,gz to x,y,z
 }
 
-function performVoxelModification(x, y, z, mode, newColor) {
-    const gKey = key(x, y, z);
+function performVoxelModification(x, y, z, mode, newColor) { // Changed gx,gy,gz to x,y,z
+    const gKey = key(x, y, z); // Changed gx,gy,gz to x,y,z
     const hasVoxel = voxels.has(gKey);
 
-    x = Math.max(0, Math.min(GRID - 1, x));
-    y = Math.max(0, Math.min(GRID - 1, y));
-    z = Math.max(0, Math.min(GRID - 1, z));
+    x = Math.max(0, Math.min(GRID - 1, x)); // Changed gx to x
+    y = Math.max(0, Math.min(GRID - 1, y)); // Changed gy to y
+    z = Math.max(0, Math.min(GRID - 1, z)); // Changed gz to z
 
     switch (mode) {
         case Modes.ADD:
@@ -1036,7 +1022,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
     if (intersects.length > 0) {
         // Filter intersections if dragging to avoid hitting newly placed voxels in the current stroke.
         const effectiveIntersects = isDragging ? intersects.filter(hit => {
-            const hitVoxelKey = key(
+            const hitVoxelKey = key( // Changed gx,gy,gz to x,y,z
                 Math.floor(hit.point.x / VS),
                 Math.floor(hit.point.y / VS),
                 Math.floor(hit.point.z / VS)
@@ -1060,8 +1046,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
             let hitVoxelY = Math.floor(adjustedPoint.y / VS);
             let hitVoxelZ = Math.floor(adjustedPoint.z / VS);
 
-            // *** CRITICAL CHANGE: Apply projection for ADD mode HERE, BEFORE returning hitResult ***
-            // This ensures the returned coordinates represent the *intended placement* for ADD mode.
+            // Apply projection for ADD mode, otherwise use the hit voxel's coordinates directly
             if (currentMode === Modes.ADD) {
                  hitVoxelX += hitNormal.x;
                  hitVoxelY += hitNormal.y;
@@ -1073,63 +1058,65 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
             hitVoxelY = Math.max(0, Math.min(GRID - 1, hitVoxelY));
             hitVoxelZ = Math.max(0, Math.min(GRID - 1, hitVoxelZ));
 
-            hitResult = { x: Number(hitVoxelX), y: Number(hitVoxelY), z: Number(hitVoxelZ), faceNormal: hitNormal, hitExistingVoxel: true };
-            if (!Number.isFinite(hitResult.x) || !Number.isFinite(hitResult.y) || !Number.isFinite(hitResult.z)) {
+            hitResult = { x: Number(hitVoxelX), y: Number(hitVoxelY), z: Number(hitVoxelZ), faceNormal: hitNormal, hitExistingVoxel: true }; // Changed gx,gy,gz to x,y,z
+            if (!Number.isFinite(hitResult.x) || !Number.isFinite(hitResult.y) || !Number.isFinite(hitResult.z)) { // Changed gx,gy,gz to x,y,z
                 hitResult = null;
             }
         }
     }
 
-    // If no *valid* voxel was hit (or filtered out), intersect with a stable drawing plane.
-    // This allows "drawing in the air" on arbitrary layers, based on activeDrawingLevel for the chosen axis.
-    let planeNormal = new THREE.Vector3();
-    let planeConstant = 0; // Default to 0, will be adjusted by activeDrawingLevel
+    // If no *valid* voxel was hit, proceed based on mode
+    if (hitResult === null) {
+        if (currentMode === Modes.ADD) {
+            // For ADD mode, if no voxel is hit, intersect with a stable drawing plane.
+            let planeNormal = new THREE.Vector3();
+            let planeConstant = 0; // Default to 0, will be adjusted by activeDrawingLevel
 
-    if (currentDrawingAxis === 'y') {
-        planeNormal.set(0, 1, 0);
-        planeConstant = -(activeDrawingLevel.y * VS);
-    } else if (currentDrawingAxis === 'x') {
-        planeNormal.set(1, 0, 0);
-        planeConstant = -(activeDrawingLevel.x * VS);
-    } else if (currentDrawingAxis === 'z') {
-        planeNormal.set(0, 0, 1);
-        planeConstant = -(activeDrawingLevel.z * VS);
-    }
+            if (currentDrawingAxis === 'y') {
+                planeNormal.set(0, 1, 0);
+                planeConstant = -(activeDrawingLevel.y * VS);
+            } else if (currentDrawingAxis === 'x') {
+                planeNormal.set(1, 0, 0);
+                planeConstant = -(activeDrawingLevel.x * VS);
+            } else if (currentDrawingAxis === 'z') {
+                planeNormal.set(0, 0, 1);
+                planeConstant = -(activeDrawingLevel.z * VS);
+            }
 
-    const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
-    const intersectionPoint = new THREE.Vector3();
+            const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
+            const intersectionPoint = new THREE.Vector3();
 
-    if (raycaster.ray.intersectPlane(drawingPlane, intersectionPoint)) {
-        if (!Number.isFinite(intersectionPoint.x) || !Number.isFinite(intersectionPoint.y) || !Number.isFinite(intersectionPoint.z)) {
-            return null;
+            if (raycaster.ray.intersectPlane(drawingPlane, intersectionPoint)) {
+                if (!Number.isFinite(intersectionPoint.x) || !Number.isFinite(intersectionPoint.y) || !Number.isFinite(intersectionPoint.z)) {
+                    return null;
+                }
+
+                let x = Math.floor(intersectionPoint.x / VS); // Changed gx to x
+                let y = Math.floor(intersectionPoint.y / VS); // Changed gy to y
+                let z = Math.floor(intersectionPoint.z / VS); // Changed gz to z
+
+                // Crucially, snap to the activeDrawingLevel for the current axis.
+                if (currentDrawingAxis === 'y') y = activeDrawingLevel.y; // Changed gy to y
+                else if (currentDrawingAxis === 'x') x = activeDrawingLevel.x; // Changed gx to x
+                else if (currentDrawingAxis === 'z') z = activeDrawingLevel.z; // Changed gz to z
+
+                // Clamp these coordinates to ensure they are within grid bounds
+                x = Math.max(0, Math.min(GRID - 1, x)); // Changed gx to x
+                y = Math.max(0, Math.min(GRID - 1, y)); // Changed gy to y
+                z = Math.max(0, Math.min(GRID - 1, z)); // Changed gz to z
+                
+                hitResult = { x: x, y: y, z: z, faceNormal: null, hitExistingVoxel: false };
+            }
         }
-
-        let x = Math.floor(intersectionPoint.x / VS);
-        let y = Math.floor(intersectionPoint.y / VS);
-        let z = Math.floor(intersectionPoint.z / VS);
-
-        // Crucially, snap to the activeDrawingLevel for the current axis.
-        if (currentDrawingAxis === 'y') y = activeDrawingLevel.y;
-        else if (currentDrawingAxis === 'x') x = activeDrawingLevel.x;
-        else if (currentDrawingAxis === 'z') z = activeDrawingLevel.z;
-
-        // Clamp these coordinates to ensure they are within grid boundaries
-        x = Math.max(0, Math.min(GRID - 1, x));
-        y = Math.max(0, Math.min(GRID - 1, y));
-        z = Math.max(0, Math.min(GRID - 1, z));
-        
-        // If a hitResult from an existing voxel was found, prioritize it.
-        // Otherwise, use the drawing plane intersection.
-        if (hitResult === null) { // Only set if no voxel was hit
-            hitResult = { x: x, y: y, z: z, faceNormal: null, hitExistingVoxel: false };
-        }
+        // For DELETE or DRAW modes, if no existing voxel is hit, hitResult remains null.
+        // This prevents operations on empty space for these modes.
     }
     return hitResult; // Return the final hit result or null
 }
 
 function clearAllInternal(fromHistory = false) {
     if (!fromHistory) {
-        const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; });
+        const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }); // Changed gx,gy,gz to x,y,z
         addCommand('clearAll', oldState, []);
     }
     for (const chunk of chunks.values()) chunk.dispose();
@@ -1140,29 +1127,29 @@ function clearAllInternal(fromHistory = false) {
 function clearAll() { clearAllInternal(false); }
 
 function fillActiveLevel() {
-    const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; });
+    const oldState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }); // Changed gx,gy,gz to x,y,z
     const voxelsToRemove = [];
     for (let x = 0; x < GRID; x++) {
         for (let z = 0; z < GRID; z++) {
-            let cx, cy, cz;
+            let cx, cy, cz; // Renamed for clarity, not to conflict with x,y,z as voxel coords
             if (currentDrawingAxis === 'y') { cx = x; cy = activeDrawingLevel.y; cz = z; }
             else if (currentDrawingAxis === 'x') { cx = activeDrawingLevel.x; cy = x; cz = z; }
             else if (currentDrawingAxis === 'z') { cx = x; cy = z; cz = activeDrawingLevel.z; }
-            const k = key(cx, cy, cz);
+            const k = key(cx, cy, cz); // Changed gx,gy,gz to x,y,z
             if (voxels.has(k)) voxelsToRemove.push(k);
         }
     }
-    voxelsToRemove.forEach(k => { const p = parseKey(k); _removeSingleVoxel(p[0], p[1], p[2]); });
+    voxelsToRemove.forEach(k => { const p = parseKey(k); _removeSingleVoxel(p[0], p[1], p[2]); }); // Changed gx,gy,gz to x,y,z
 
     const newState = [];
     for (let x = 0; x < GRID; x++) {
         for (let z = 0; z < GRID; z++) {
-            let cx, cy, cz;
+            let cx, cy, cz; // Renamed for clarity
             if (currentDrawingAxis === 'y') { cx = x; cy = activeDrawingLevel.y; cz = z; }
             else if (currentDrawingAxis === 'x') { cx = activeDrawingLevel.x; cy = x; cz = z; }
             else if (currentDrawingAxis === 'z') { cx = x; cy = z; cz = activeDrawingLevel.z; }
-            _addSingleVoxel(cx, cy, cz, currentColor);
-            newState.push({ x: cx, y: cy, z: cz, color: currentColor, dimX: 1, dimY: 1, dimZ: 1 });
+            _addSingleVoxel(cx, cy, cz, currentColor); // Changed gx,gy,gz to x,y,z
+            newState.push({ x: cx, y: cy, z: cz, color: currentColor, dimX: 1, dimY: 1, dimZ: 1 }); // Changed gx,gy,gz to x,y,z
         }
     }
     addCommand('fillLevel', oldState, newState);
@@ -1261,7 +1248,7 @@ function resetToDefaultProject() {
 function loadProjectData(projectData) {
     try {
         const loadedVoxels = projectData.projectData ? projectData.projectData.voxels : projectData.voxels;
-        const loadedSettings = projectData.projectData ? projectData.projectData.settings : projectData.settings;
+        const loadedSettings = projectData.projectData ? projectData.projectData.settings : projectData.settings; // Corrected: Use projectData.projectData.settings
         clearAllInternal(true);
         removeImageTemplate(true);
 
@@ -1366,28 +1353,19 @@ async function loadProjectFromModelId(modelId) {
     showToast('Lade Projekt', `Lade Projekt mit ID: ${modelId}...`, 'info', 5000);
     try {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Attempt to get the document. Firestore rules will determine if this succeeds.
         const docRef = window.firebase.doc(db, "artifacts", appId, "public", "data", "models", modelId);
         const docSnap = await window.firebase.getDoc(docRef);
 
         if (docSnap.exists()) {
             const pData = docSnap.data();
-            const isPublic = pData.visibility === 'public';
-            const isOwner = auth.currentUser && auth.currentUser.uid === pData.uploaderUid;
-
-            // Load if public OR if the current user is the owner
-            if (isPublic || isOwner) {
-                if (pData && pData.projectData) {
-                    projectRemixOf = modelId;
-                    projectSourceJsonUrl = window.location.href;
-                    loadProjectData(pData);
-                    showToast('Projekt geladen', `Projekt "${docSnap.data().title}" erfolgreich geladen.`, 'success', 5000);
-                } else {
-                    showToast('Fehler', 'Projektdaten im Dokument nicht gefunden.', 'error', 5000);
-                    resetToDefaultProject();
-                }
+            if (pData && pData.projectData) {
+                projectRemixOf = modelId;
+                projectSourceJsonUrl = window.location.href;
+                loadProjectData(pData);
+                showToast('Projekt geladen', `Projekt "${docSnap.data().title}" erfolgreich geladen.`, 'success', 5000);
             } else {
-                // If not public and not owner, show permission denied
-                showToast('Zugriff verweigert', 'Sie haben keine Berechtigung, dieses private Projekt zu laden.', 'error', 5000);
+                showToast('Fehler', 'Projektdaten im Dokument nicht gefunden.', 'error', 5000);
                 resetToDefaultProject();
             }
         } else {
@@ -1395,7 +1373,7 @@ async function loadProjectFromModelId(modelId) {
             resetToDefaultProject();
         }
     } catch (error) {
-        // More specific error handling for Firestore permission issues
+        // Handle Firestore permission errors specifically
         if (error.code === 'permission-denied') {
             showToast('Zugriff verweigert', `Berechtigungsfehler beim Laden des Projekts. Stellen Sie sicher, dass das Modell öffentlich ist oder Sie der Eigentümer sind.`, 'error', 5000);
         } else {
@@ -1502,13 +1480,25 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
 }
 
-async function exportSTL(exportScaleUnit) {
+// Function to apply axis transformation
+function applyAxisTransform(geometry, upAxis) {
+    if (upAxis === 'Z') {
+        // Rotate from Y-up (Three.js default) to Z-up
+        geometry.rotateX(-Math.PI / 2);
+    }
+    // If upAxis is 'Y', no transformation needed as Three.js is Y-up by default
+}
+
+async function exportSTL(exportScaleUnit, exportUpAxis) {
     if (voxels.size === 0) { showToast('Export fehlgeschlagen', 'Keine Voxel zum Exportieren vorhanden!', 'warning', 5000); return; }
     showToast('Exportiere STL', 'Erzeuge STL-Modell...', 'info', 5000);
 
     const effectiveVoxelSize = exportScaleUnit === 'mm' ? VS : VS / 10;
-    // STL does not support vertex colors, so pass false for optimization to get a single mesh without color grouping.
     const { geometry: mergedGeometry } = buildMergedGeometry(false, effectiveVoxelSize); 
+    
+    // Apply axis transform before creating the mesh for export
+    applyAxisTransform(mergedGeometry, exportUpAxis);
+
     const tempMesh = new THREE.Mesh(mergedGeometry);
 
     if (typeof THREE.STLExporter === 'undefined') { showToast('Export fehlgeschlagen', 'STLExporter-Bibliothek nicht geladen.', 'error', 5000); return; }
@@ -1524,7 +1514,7 @@ async function exportSTL(exportScaleUnit) {
     showToast('Export erfolgreich', `STL-Modell erfolgreich in ${exportScaleUnit} exportiert!`, 'success', 5000);
 }
 
-async function exportOBJ(exportScaleUnit) {
+async function exportOBJ(exportScaleUnit, exportUpAxis) {
     if (voxels.size === 0) { 
         showToast('Export fehlgeschlagen', 'Keine Voxel zum Exportieren vorhanden!', 'warning', 5000); 
         return; 
@@ -1532,19 +1522,16 @@ async function exportOBJ(exportScaleUnit) {
     showToast('Exportiere OBJ', 'Erzeuge optimiertes OBJ-Modell...', 'info', 5000);
 
     const effectiveVoxelSize = exportScaleUnit === 'mm' ? VS : VS / 10;
-    // Pass true to buildMergedGeometry to get an array of geometries, one per color, for optimal OBJ export with materials.
     const mergedColorGeometries = buildMergedGeometry(true, effectiveVoxelSize);
     
     let objContent = `# VoxelShaper OBJ Export\n`;
     let mtlContent = `# VoxelShaper MTL Export\n`;
     let vertexOffset = 0;
-    const materialNames = new Map(); // Maps hex color to material name in MTL
+    const materialNames = new Map();
 
     if (mergedColorGeometries.length > 0) {
         objContent += `mtllib voxel_model.mtl\n`;
 
-        // Define common vertex normals for all faces (cube normals)
-        // OBJ normal indices are 1-based
         objContent += `# Vertex Normals\n`;
         objContent += `vn 0.0000 0.0000 1.0000 # 1: +Z\n`;
         objContent += `vn 0.0000 0.0000 -1.0000 # 2: -Z\n`;
@@ -1560,22 +1547,23 @@ async function exportOBJ(exportScaleUnit) {
                 if (geometry) geometry.dispose();
                 return;
             }
+
+            // Apply axis transform to each geometry before processing
+            applyAxisTransform(geometry, exportUpAxis);
             
             const matName = `material_${colorHex.replace('#', '')}`;
             materialNames.set(colorHex, matName);
 
-            // Add material definition to MTL
             const c = new THREE.Color(colorHex);
             mtlContent += `newmtl ${matName}\n`;
-            mtlContent += `Kd ${c.r.toFixed(4)} ${c.g.toFixed(4)} ${c.b.toFixed(4)}\n`; // Diffuse color
-            mtlContent += `Ka ${c.r.toFixed(4)} ${c.g.toFixed(4)} ${c.b.toFixed(4)}\n`; // Ambient color
-            mtlContent += `Ks 0.0 0.0 0.0\n`; // Specular color (set to black for flat look)
-            mtlContent += `Ns 0.0\n`; // Specular exponent
-            mtlContent += `d 1.0\n`; // Dissolve (opacity)
-            mtlContent += `illum 1\n\n`; // Illumination model (color on and ambient off)
+            mtlContent += `Kd ${c.r.toFixed(4)} ${c.g.toFixed(4)} ${c.b.toFixed(4)}\n`;
+            mtlContent += `Ka ${c.r.toFixed(4)} ${c.g.toFixed(4)} ${c.b.toFixed(4)}\n`;
+            mtlContent += `Ks 0.0 0.0 0.0\n`;
+            mtlContent += `Ns 0.0\n`;
+            mtlContent += `d 1.0\n`;
+            mtlContent += `illum 1\n\n`;
 
-            // Add object definition and material usage to OBJ
-            objContent += `g object_${index}\n`; // Group name for this color's mesh
+            objContent += `g object_${index}\n`;
             objContent += `usemtl ${matName}\n`;
 
             const positions = geometry.attributes.position.array;
@@ -1586,13 +1574,11 @@ async function exportOBJ(exportScaleUnit) {
             const indices = geometry.index ? geometry.index.array : Array.from({ length: positions.length / 3 }, (_, i) => i);
             const positionAttribute = geometry.attributes.position;
 
-            // Iterate through faces and assign appropriate normals
             for (let i = 0; i < indices.length; i += 3) {
-                const v1_idx = indices[i] + 1 + vertexOffset; // OBJ is 1-indexed
+                const v1_idx = indices[i] + 1 + vertexOffset;
                 const v2_idx = indices[i+1] + 1 + vertexOffset;
                 const v3_idx = indices[i+2] + 1 + vertexOffset;
 
-                // Calculate face normal to determine which of the 6 predefined normals to use
                 const p1 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i]);
                 const p2 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i+1]);
                 const p3 = new THREE.Vector3().fromBufferAttribute(positionAttribute, indices[i+2]);
@@ -1601,24 +1587,25 @@ async function exportOBJ(exportScaleUnit) {
                 const ab = new THREE.Vector3().subVectors(p1, p2);
                 const faceNormal = cb.cross(ab).normalize();
 
-                let normalIndex = 1; // Default to +Z
+                let normalIndex = 1;
                 if (Math.abs(faceNormal.x) > Math.abs(faceNormal.y) && Math.abs(faceNormal.x) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.x > 0 ? 3 : 4; // +X or -X
+                    normalIndex = faceNormal.x > 0 ? 3 : 4;
                 } else if (Math.abs(faceNormal.y) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.y > 0 ? 5 : 6; // +Y or -Y
+                    normalIndex = faceNormal.y > 0 ? 5 : 6;
                 } else {
-                    normalIndex = faceNormal.z > 0 ? 1 : 2; // +Z or -Z
+                    normalIndex = faceNormal.z > 0 ? 1 : 2;
                 }
+                
                 objContent += `f ${v1_idx}//${normalIndex} ${v2_idx}//${normalIndex} ${v3_idx}//${normalIndex}\n`;
             }
-            vertexOffset += positions.length / 3; // Update offset for next object's vertices
-            geometry.dispose(); // Dispose used geometry
+            vertexOffset += positions.length / 3;
+            geometry.dispose();
         });
     } else {
-        // This fallback path should ideally not be hit if buildMergedGeometry(true) is used correctly
-        // and there are voxels. However, keeping it for robustness.
         const { geometry: mergedGeometrySingle } = buildMergedGeometry(false, effectiveVoxelSize);
         if (mergedGeometrySingle && mergedGeometrySingle.attributes.position && mergedGeometrySingle.attributes.position.count > 0) {
+            applyAxisTransform(mergedGeometrySingle, exportUpAxis); // Apply transform here too
+
             objContent += `mtllib voxel_model.mtl\n`;
             objContent += `# Vertex Normals\n`;
             objContent += `vn 0.0000 0.0000 1.0000 # 1: +Z\n`;
@@ -1634,7 +1621,7 @@ async function exportOBJ(exportScaleUnit) {
 
             const tempMaterialName = `material_default`;
             mtlContent += `newmtl ${tempMaterialName}\n`;
-            mtlContent += `Kd 1.0 1.0 1.0\nKa 1.0 1.0 1.0\nKs 0.0 0.0 0.0\nNs 0.0\nd 1.0\nillum 1\n\n`; // Default white material
+            mtlContent += `Kd 1.0 1.0 1.0\nKa 1.0 1.0 1.0\nKs 0.0 0.0 0.0\nNs 0.0\nd 1.0\nillum 1\n\n`;
             objContent += `usemtl ${tempMaterialName}\n`;
 
             for (let i = 0; i < positions.length; i += 3) {
@@ -1655,13 +1642,13 @@ async function exportOBJ(exportScaleUnit) {
                 const ab = new THREE.Vector3().subVectors(p1, p2);
                 const faceNormal = cb.cross(ab).normalize();
 
-                let normalIndex = 1; // Default to +Z
+                let normalIndex = 1;
                 if (Math.abs(faceNormal.x) > Math.abs(faceNormal.y) && Math.abs(faceNormal.x) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.x > 0 ? 3 : 4; // +X or -X
+                    normalIndex = faceNormal.x > 0 ? 3 : 4;
                 } else if (Math.abs(faceNormal.y) > Math.abs(faceNormal.z)) {
-                    normalIndex = faceNormal.y > 0 ? 5 : 6; // +Y or -Y
+                    normalIndex = faceNormal.y > 0 ? 5 : 6;
                 } else {
-                    normalIndex = faceNormal.z > 0 ? 1 : 2; // +Z or -Z
+                    normalIndex = faceNormal.z > 0 ? 1 : 2;
                 }
                 objContent += `f ${v1_idx}//${normalIndex} ${v2_idx}//${normalIndex} ${v3_idx}//${normalIndex}\n`;
             }
@@ -1683,7 +1670,7 @@ async function exportOBJ(exportScaleUnit) {
     showToast('Export erfolgreich', `OBJ-Modell erfolgreich in ${exportScaleUnit} exportiert und als ZIP verpackt!`, 'success', 5000);
 }
 
-async function export3MF(exportScaleUnit) {
+async function export3MF(exportScaleUnit, exportUpAxis) {
     if (voxels.size === 0) {
         showToast('Export fehlgeschlagen', 'Keine Voxel zum Exportieren vorhanden!', 'warning', 5000);
         return;
@@ -1716,7 +1703,6 @@ async function export3MF(exportScaleUnit) {
 
         const effectiveVoxelSize = exportScaleUnit === 'mm' ? VS : VS / 10;
 
-        // For 3MF, we typically group by color and use a color palette with pindex/pid
         const mergedColorGeometries = buildMergedGeometry(true, effectiveVoxelSize);
 
         let modelXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -1725,6 +1711,7 @@ async function export3MF(exportScaleUnit) {
         
         let colorPaletteId = 0;
         let colorIndexMap = new Map();
+        modelXml += `<material:colorgroup id="1">`; // Define a single color group
         mergedColorGeometries.forEach(({ colorHex }) => {
             modelXml += `<material:color color="${colorHex}"/>`;
             colorIndexMap.set(colorHex, colorPaletteId++);
@@ -1732,7 +1719,6 @@ async function export3MF(exportScaleUnit) {
         modelXml += `</material:colorgroup>`;
 
         let objectIdCounter = 1;
-        // Temporary geometry used for cloning, disposed at the end
         const tempBoxGeometry = new THREE.BoxGeometry(effectiveVoxelSize, effectiveVoxelSize, effectiveVoxelSize);
 
 
@@ -1743,10 +1729,12 @@ async function export3MF(exportScaleUnit) {
                 return;
             }
 
+            // Apply axis transform to each geometry before processing
+            applyAxisTransform(mergedGeometryForColor, exportUpAxis);
+
             const positions = mergedGeometryForColor.attributes.position.array;
             const indices = mergedGeometryForColor.index ? mergedGeometryForColor.index.array : Array.from({ length: positions.length / 3 }, (_, i) => i);
 
-            // Add each color-grouped mesh as a separate object in 3MF
             modelXml += `<object id="${objectIdCounter + 1}" type="model">
                 <mesh>
                     <vertices>`;
@@ -1758,26 +1746,23 @@ async function export3MF(exportScaleUnit) {
             }
             modelXml += `</vertices>
                     <triangles>`;
-            // Assign color per face using pid and pindex (from the colorgroup)
             for (let i = 0; i < indices.length; i += 3) {
                 const v1 = indices[i];
                 const v2 = indices[i + 1];
                 const v3 = indices[i + 2];
-                // For a single-color object, all faces use the same color from the palette
                 modelXml += `<triangle v1="${v1}" v2="${v2}" v3="${v3}" pid="1" p1="${colorIndexMap.get(colorHex)}" p2="${colorIndexMap.get(colorHex)}" p3="${colorIndexMap.get(colorHex)}"/>`;
             }
             modelXml += `</triangles>
                 </mesh>
             </object>`;
             
-            mergedGeometryForColor.dispose(); // Dispose the merged geometry for this color
+            mergedGeometryForColor.dispose();
             objectIdCounter++;
         });
-        tempBoxGeometry.dispose(); // Dispose the temporary base box geometry
+        tempBoxGeometry.dispose();
 
         modelXml += `</resources>
     <build>`;
-        // Reference all created objects in the build section
         for(let i = 1; i < objectIdCounter; i++) {
             modelXml += `<item objectid="${i+1}"/>`;
         }
@@ -1806,7 +1791,7 @@ async function exportGLBWithOptions(options) {
 
     try {
         if (typeof THREE.GLTFExporter === 'undefined') {
-            throw new Error('GLTFExporter-bibliothek nicht geladen.');
+            throw new Error('GLTFExporter-Bibliothek nicht geladen.');
         }
 
         const exporter = new THREE.GLTFExporter();
@@ -1815,27 +1800,24 @@ async function exportGLBWithOptions(options) {
         const materialCache = new Map();
 
         const effectiveVoxelSize = VS;
-        // buildMergedGeometry returns an array of {geometry, colorHex} if optimizeMesh (splitByColorAndMerge) is true
-        // or a single {geometry, colorHex: null} if false.
         const geometriesOrSingleGeometry = buildMergedGeometry(options.splitByColorAndMerge, effectiveVoxelSize);
 
         let geometriesToProcess = [];
         if (Array.isArray(geometriesOrSingleGeometry)) {
             geometriesToProcess = geometriesOrSingleGeometry;
         } else {
-            geometriesToProcess = [geometriesOrSingleGeometry]; // Wrap single geometry in an array for consistent processing
+            geometriesToProcess = [geometriesOrSingleGeometry];
         }
 
         for (const { geometry: currentGeometry, colorHex } of geometriesToProcess) {
             if (!currentGeometry || currentGeometry.attributes.position.count === 0) {
                 console.warn(`Skipping empty geometry for color ${colorHex || 'default'}`);
-                if (currentGeometry) currentGeometry.dispose(); // Dispose if exists but empty
+                if (currentGeometry) currentGeometry.dispose();
                 continue;
             }
 
-            // Apply transformations (pivot, scale) per geometry if needed
-            const geometryClone = currentGeometry.clone(); // Clone to apply transforms without affecting original data
-                                                            // if original is reused elsewhere, or just to dispose cleanly
+            const geometryClone = currentGeometry.clone();
+                                                            
             if (options.floorPivot || options.gameReady) {
                 geometryClone.computeBoundingBox();
                 const boundingBox = geometryClone.boundingBox;
@@ -1851,16 +1833,15 @@ async function exportGLBWithOptions(options) {
             const scaleFactor = options.voxelSizeMM / 1000;
             geometryClone.scale(scaleFactor, scaleFactor, scaleFactor);
 
-            // Determine material
             let material;
-            if (colorHex && options.splitByColorAndMerge) { // If split by color, use a material per color
+            if (colorHex && options.splitByColorAndMerge) {
                 material = materialCache.get(colorHex);
                 if (!material) {
                     material = new THREE.MeshStandardMaterial({ color: new THREE.Color(colorHex), name: `mat_${colorHex.replace('#', '')}` });
                     materialCache.set(colorHex, material);
                 }
-            } else { // Single color or no color optimization, use default material
-                material = materialCache.get('#FFFFFF'); // Use a consistent key for default
+            } else {
+                material = materialCache.get('#FFFFFF');
                 if (!material) {
                     material = new THREE.MeshStandardMaterial({ color: new THREE.Color(0xffffff), name: 'mat_default' });
                     materialCache.set('#FFFFFF', material);
@@ -1868,8 +1849,6 @@ async function exportGLBWithOptions(options) {
             }
             
             tempGroup.add(new THREE.Mesh(geometryClone, material));
-            // Note: geometryClone will be disposed later with tempGroup children or explicitly if needed.
-            // Original `currentGeometry` from `mergedColorGeometries` or `mergedGeometry` is disposed at finally block.
         }
         
         exporter.parse(
@@ -1887,9 +1866,8 @@ async function exportGLBWithOptions(options) {
     } catch (error) {
         showToast('Export fehlgeschlagen', `Fehler beim Exportieren des GLB-Modells: ${error.message}`, 'error', 5000);
     } finally {
-        // Dispose geometries that were used for processing, but only the original ones.
         if (Array.isArray(geometriesOrSingleGeometry)) {
-            geometriesToProcess.forEach(({ geometry }) => { // Loop over geometriesToProcess, not original `geometriesOrSingleGeometry`
+            geometriesToProcess.forEach(({ geometry }) => {
                 if (geometry) geometry.dispose();
             });
         } else if (geometriesOrSingleGeometry && geometriesOrSingleGeometry.geometry) {
@@ -1898,7 +1876,6 @@ async function exportGLBWithOptions(options) {
 
         materialCache.forEach(mat => mat.dispose());
         materialCache.clear();
-        // Dispose meshes and their geometries/materials that were added to tempGroup
         while(tempGroup.children.length > 0){
             const object = tempGroup.children[0];
             tempGroup.remove(object);
@@ -2018,7 +1995,6 @@ async function loginLogout() {
     if (auth.currentUser) {
         try {
             await window.firebase.signOut(auth);
-            // UI updates will be handled by onAuthStateChanged listener
             showToast('Abgemeldet', 'Sie wurden erfolgreich abgemeldet.', 'info', 5000);
         } catch (e) {
             showToast('Fehler beim Abmelden', `Fehler: ${e.message}`, 'error', 5000);
@@ -2035,7 +2011,7 @@ function openUploadModal() {
         return;
     }
     if (voxels.size === 0) {
-        showToast('Upload fehlgeschlagen', 'Die Szene ist leer. Bitte erstellen Sie zuerst ein Modell.', 'warning', 5000);
+        showToast('Upload fehlgeschritten', 'Die Szene ist leer. Bitte erstellen Sie zuerst ein Modell.', 'warning', 5000);
         return;
     }
     document.getElementById('uploadTitle').value = projectTitle;
@@ -2174,21 +2150,23 @@ window.closeAllModals = closeAllModals;
 function onPointerLockChange() {
     if (document.pointerLockElement === cvs) {
         isPointerLocked = true;
-        firstMoveAfterLock = true;
-        mouseMovementX = mouseMovementY = 0;
+        firstMoveAfterLock = true; // Set to true here
+        mouseMovementX = mouseMovementY = 0; // Reset accumulated movement
         updatePreviewVoxel(0,0,0,false);
         euler.setFromQuaternion(cam.quaternion, 'YXZ');
+        cvs.focus(); // Explicitly set focus to canvas for keyboard input
+        console.log("Pointer lock ACQUIRED. firstMoveAfterLock set to true. Canvas focused.");
     } else {
         isPointerLocked = false;
+        console.log("Pointer lock RELEASED.");
     }
 }
 
 function onMouseWheel(e) {
     e.preventDefault();
 
-    // On desktop, Alt key + wheel controls layers for ADD/DRAW mode
-    if (!isMobile && (currentMode === Modes.ADD || currentMode === Modes.DRAW)) {
-        if (e.altKey) {
+    if (e.altKey) {
+        if (!isMobile && (currentMode === Modes.ADD || currentMode === Modes.DRAW)) {
             if (e.shiftKey) {
                 activeDrawingLevel.z = Math.max(0, Math.min(GRID - 1, activeDrawingLevel.z - Math.sign(e.deltaY)));
                 currentDrawingAxis = 'z';
@@ -2202,19 +2180,20 @@ function onMouseWheel(e) {
                 currentDrawingAxis = 'y';
             }
             updateGridHelperPosition();
-        } else { // If Alt is not pressed, scroll affects camera speed on desktop
-            moveSpeed = Math.max(0.01, Math.min(1.0, moveSpeed - Math.sign(e.deltaY) * 0.01));
-            document.getElementById('fly-speed-slider').value = moveSpeed;
-            document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2);
-            localStorage.setItem('voxelEditorFlySpeed', moveSpeed);
+        } else {
+            cam.position.addScaledVector(cam.getWorldDirection(new THREE.Vector3()), e.deltaY * 0.005 * moveSpeed * 5);
         }
-    } else { // On mobile OR if not ADD/DRAW mode on desktop, wheel always affects camera speed
-        cam.position.addScaledVector(cam.getWorldDirection(new THREE.Vector3()), e.deltaY * 0.005 * moveSpeed * 5);
+    } else {
+        moveSpeed = Math.max(0.01, Math.min(1.0, moveSpeed - Math.sign(e.deltaY) * 0.01));
+        document.getElementById('fly-speed-slider').value = moveSpeed;
+        document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2);
+        localStorage.setItem('voxelEditorFlySpeed', moveSpeed);
     }
 }
 
 const keyboard = {};
 function onKeyDown(e) {
+    console.log(`Key Down: ${e.key.toLowerCase()}, isPointerLocked: ${isPointerLocked}`);
     const activeModals = ['authModal', 'uploadProjectModal', 'clearConfirmationModal', 'exportOptionsModal'].some(id => document.getElementById(id).open);
     if (activeModals) { if (e.key === 'Escape') { closeAllModals(); e.preventDefault(); } return; }
 
@@ -2233,6 +2212,7 @@ function onKeyDown(e) {
 }
 
 function onKeyUp(e) {
+    console.log(`Key Up: ${e.key.toLowerCase()}, isPointerLocked: ${isPointerLocked}`);
     keyboard[e.key.toLowerCase()] = false;
     if (e.key === 'Shift') isShiftDragging = false;
     if (e.key === 'Control' || e.metaKey) isControlDragging = false;
@@ -2243,14 +2223,16 @@ let currentStrokeVoxelKeys = new Set();
 
 
 function onPointerLeave(e) {
+    console.log("onPointerLeave fired.");
     if (pointerIsDown && isDragging && currentStrokeVoxels.size > 0) {
         const oldState = [];
         const newState = [];
         for (const [gKey, change] of currentStrokeVoxels.entries()) {
-            const p = parseKey(gKey);
+            const p = parseKey(gKey); // p is [x,y,z]
             oldState.push({ x: p[0], y: p[1], z: p[2], color: change.originalColor });
             newState.push({ x: p[0], y: p[1], z: p[2], color: change.finalColor });
         }
+        console.log(`onPointerLeave - Adding batch command. Old State Size: ${oldState.length}, New State Size: ${newState.length}`);
         if (oldState.length > 0) {
             addCommand('batch', oldState, newState);
         }
@@ -2270,7 +2252,8 @@ function onPointerLeave(e) {
     previewLineVoxels = [];
     dragAxisLock = null;
     initialDragVoxelCoords = null;
-    dragFixedLayerCoord = null;
+    dragFixedLayerCoord = null; // Reset the fixed layer coordinate on pointer up
+    console.log("onPointerLeave - All drag states reset.");
     
     // For touch, release the pointer from activePointers map
     if (e.pointerType === 'touch') {
@@ -2278,15 +2261,16 @@ function onPointerLeave(e) {
     }
 }
 
-let pointerIsDown = false;
+let pointerIsDown = false; // Indicates if a voxel-modifying pointer is down
 let rightMouseButtonDown = false;
 let lastX, lastY;
-let suppressNextTap = false;
+let suppressNextTap = false; // Not strictly needed with the new logic, but kept for safety
 
 function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
+    console.log(`getVoxelsOnLine called. Start: (${start.x}, ${start.y}, ${start.z}), End: (${end.x}, ${end.y}, ${end.z}), FixedAxis: ${fixedAxis}, FixedCoord: ${fixedCoord}`);
     const voxels = [];
-    let x0 = start.x, y0 = start.y, z0 = start.z;
-    let x1 = end.x, y1 = end.y, z1 = end.z;
+    let x0 = start.x, y0 = start.y, z0 = start.z; // Use x,y,z
+    let x1 = end.x, y1 = end.y, z1 = end.z; // Use x,y,z
 
     const dx = x1 - x0;
     const dy = y1 - y0;
@@ -2303,7 +2287,8 @@ function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
         const clampedX = Math.max(0, Math.min(GRID - 1, x0));
         const clampedY = Math.max(0, Math.min(GRID - 1, y0));
         const clampedZ = Math.max(0, Math.min(GRID - 1, z0));
-        voxels.push({ x: clampedX, y: clampedY, z: clampedZ });
+        voxels.push({ x: clampedX, y: clampedY, z: clampedZ }); // Use x,y,z
+        console.log(`getVoxelsOnLine - single point. Result: (${clampedX}, ${clampedY}, ${clampedZ})`);
         return voxels;
     }
 
@@ -2332,9 +2317,9 @@ function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
 
         // Clamp to grid boundaries and add to list
         voxels.push({
-            x: Math.max(0, Math.min(GRID - 1, finalX)),
-            y: Math.max(0, Math.min(GRID - 1, finalY)),
-            z: Math.max(0, Math.min(GRID - 1, finalZ))
+            x: Math.max(0, Math.min(GRID - 1, finalX)), // Use x,y,z
+            y: Math.max(0, Math.min(GRID - 1, finalY)), // Use x,y,z
+            z: Math.max(0, Math.min(GRID - 1, finalZ))  // Use x,y,z
         });
     }
 
@@ -2342,46 +2327,46 @@ function getVoxelsOnLine(start, end, fixedAxis = null, fixedCoord = null) {
     const uniqueVoxels = [];
     const seenKeys = new Set();
     for (const v of voxels) {
-        const k = key(v.x, v.y, v.z);
+        const k = key(v.x, v.y, v.z); // Use v.x,v.y,v.z
         if (!seenKeys.has(k)) {
             seenKeys.add(k);
             uniqueVoxels.push(v);
         }
     }
+    console.log(`getVoxelsOnLine - unique voxels generated (count: ${uniqueVoxels.length}):`, uniqueVoxels);
     return uniqueVoxels;
 }
 
 function onPointerUp(e) {
-    if (e.button === 2) {
+    console.log("onPointerUp fired.");
+    e.preventDefault(); // Prevent default browser actions
+    e.stopPropagation(); // Stop event bubbling
+
+    if (e.button === 2) { // Right mouse button
         rightMouseButtonDown = false;
         document.exitPointerLock();
         return;
     }
     
-    // Only process voxel modification if it was a drag, or if it was a double-tap (handled in onPointerDown)
-    const totalMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
-    const wasDrag = (totalMovedDist > MOVE_PX) || isDragging;
-
-    if (wasDrag) {
-        if (currentStrokeVoxels.size > 0) {
-            const oldState = [];
-            const newState = [];
-            for (const [gKey, change] of currentStrokeVoxels.entries()) {
-                const p = parseKey(gKey);
-                oldState.push({ x: p[0], y: p[1], z: p[2], color: change.originalColor });
-                newState.push({ x: p[0], y: p[1], z: p[2], color: change.finalColor });
-            }
-            if (oldState.length > 0) {
-                addCommand('batch', oldState, newState);
-            }
+    // If it was a double-tap initiated drag on mobile, or any drag on desktop, commit the stroke
+    if (pointerIsDown && isDragging && currentStrokeVoxels.size > 0) {
+        const oldState = [];
+        const newState = [];
+        for (const [gKey, change] of currentStrokeVoxels.entries()) {
+            const p = parseKey(gKey);
+            oldState.push({ x: p[0], y: p[1], z: p[2], color: change.originalColor });
+            newState.push({ x: p[0], y: p[1], z: p[2], color: change.finalColor });
         }
-    } else {
+        console.log(`onPointerUp - Adding batch command. Old State Size: ${oldState.length}, New State Size: ${newState.length}`);
+        if (oldState.length > 0) {
+            addCommand('batch', oldState, newState);
+        }
     }
 
     // Reset all flags and states after pointer up
-    pointerIsDown = false;
+    pointerIsDown = false; // Reset voxel-modifying flag
     isDragging = false;
-    doubleTapDragActive = false;
+    doubleTapDragActive = false; // Always reset double tap flag on pointer up
     lastActionVoxelCoords = null;
     initialClickPos = null;
     initialTargetVoxelCoords = null;
@@ -2395,6 +2380,7 @@ function onPointerUp(e) {
     dragAxisLock = null;
     initialDragVoxelCoords = null;
     dragFixedLayerCoord = null;
+    console.log("onPointerUp - All drag states reset.");
     
     // For touch, release the pointer from activePointers map
     if (e.pointerType === 'touch') {
@@ -2403,33 +2389,33 @@ function onPointerUp(e) {
 }
 
 async function onPointerDown(e) {
-    // Focus the canvas immediately on any pointer down event
-    cvs.focus();
+    console.log("onPointerDown fired.");
+    console.log(`Event: clientX=${e.clientX}, clientY=${e.clientY}, button=${e.button}, pointerType=${e.pointerType}`);
 
-    // Prevent double-tap zoom on mobile buttons
-    if (isMobile && e.target.closest('.mobile-btn')) {
-        e.preventDefault();
-        return;
-    }
+    e.preventDefault();
+    e.stopPropagation();
 
-    // Request pointer lock ONLY for the right mouse button (RMB)
-    if (e.button === 2) { // e.pointerType is 'mouse' implicitly
-        e.preventDefault(); // Prevent context menu
+    if (e.pointerType === 'mouse' && e.button === 2) {
         try {
             await cvs.requestPointerLock();
         } catch (error) {
+            console.error("Failed to request pointer lock:", error);
             showToast('Fehler', 'Zeigerfixierung fehlgeschlagen.', 'error', 3000);
         }
         rightMouseButtonDown = true;
         return;
     }
     
+    cvs.focus();
+    console.log("onPointerDown - Canvas focused for interaction.");
+
     if (isPointerLocked) {
+        console.log("onPointerDown - Pointer is locked, ignoring input for voxel interaction.");
         return;
     }
 
-    // Alt + left click for color picking (desktop only, or mobile with two fingers + alt key if that were possible)
-    if (e.button === 0 && e.altKey) { // e.pointerType is 'mouse' implicitly
+    if (e.button === 0 && e.altKey) {
+        console.log("onPointerDown - Alt + Left click for color pick detected.");
         const hitResult = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
         if (hitResult && hitResult.hitExistingVoxel) {
             const gKey = key(hitResult.x, hitResult.y, hitResult.z);
@@ -2440,29 +2426,86 @@ async function onPointerDown(e) {
                 const mobileColorInput = document.getElementById('mobile-color-input');
                 if (mobileColorInput) mobileColorInput.value = pickedColor;
                 localStorage.setItem('voxelEditorColor', pickedColor);
-                // Deselect any active color preset
                 presetBoxes.forEach(box => box.classList.remove('active', 'border-primary', 'shadow-lg', 'shadow-primary/50')); activePresetIndex = -1;
                 showToast('Farbe aufgenommen', `Farbe: ${pickedColor}`, 'info', 2000);
+                console.log(`onPointerDown - Color picked: ${pickedColor}`);
             }
+        } else {
+            console.log("onPointerDown - Alt + Left click: No existing voxel hit for color pick.");
         }
         return;
     }
 
-    // Handle multi-touch for camera control
     if (e.pointerType === 'touch') {
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
         
-        if (activePointers.size > 1) { // Multi-touch detected: camera control, no voxel placement
-            initialTargetVoxelCoords = null; // Invalidate target for voxel ops
-            currentStrokeVoxels.clear();
-            currentStrokeVoxelKeys.clear();
+        if (activePointers.size === 1) { // Single touch
+            const currentTime = performance.now();
+            const dist = Math.hypot(e.clientX - lastTapCoords.x, e.clientY - lastTapCoords.y);
+
+            if (currentTime - lastTapTime < DOUBLE_TAP_TIME_THRESHOLD && dist < DOUBLE_TAP_DIST_THRESHOLD) {
+                // Double tap detected: Activate voxel modification
+                console.log("Double tap detected! Activating voxel modification.");
+                doubleTapDragActive = true;
+                pointerIsDown = true; // Set pointerIsDown for voxel operations
+                
+                voxelsAtDragStart = new Map(voxels);
+                currentStrokeVoxels.clear();
+                currentStrokeVoxelKeys.clear();
+                dragAxisLock = null;
+                isDragging = false;
+                initialDragVoxelCoords = null;
+                initialClickPos = { x: e.clientX, y: e.clientY };
+
+                let rawInitialRayTarget = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
+                if (rawInitialRayTarget && Number.isFinite(rawInitialRayTarget.x) && Number.isFinite(rawInitialRayTarget.y) && Number.isFinite(rawInitialRayTarget.z)) {
+                    initialTargetVoxelCoords = {
+                        x: Math.max(0, Math.min(GRID - 1, rawInitialRayTarget.x)),
+                        y: Math.max(0, Math.min(GRID - 1, rawInitialRayTarget.y)),
+                        z: Math.max(0, Math.min(GRID - 1, rawInitialRayTarget.z)),
+                        faceNormal: rawInitialRayTarget.faceNormal,
+                        hitExistingVoxel: rawInitialRayTarget.hitExistingVoxel
+                    };
+                    if (currentMode === Modes.ADD) {
+                        dragFixedLayerCoord = Number(initialTargetVoxelCoords[currentDrawingAxis]);
+                        if (!Number.isFinite(dragFixedLayerCoord)) dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]);
+                    } else { dragFixedLayerCoord = null; }
+                    if (dragFixedLayerCoord !== null) initialTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
+
+                    lastActionVoxelCoords = { ...initialTargetVoxelCoords };
+                    const gKey = key(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z);
+                    const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
+                    performVoxelModification(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z, currentMode, currentColor);
+                    const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
+                    currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
+                    currentStrokeVoxelKeys.add(gKey);
+                    updatePreviewVoxel(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z, true);
+                } else {
+                    updatePreviewVoxel(0,0,0,false);
+                }
+                lastTapTime = 0; lastTapCoords = { x: 0, y: 0 };
+            } else {
+                // Single tap for camera movement: Initialize gesture state
+                console.log("Single tap detected. Initializing camera gesture (mobile).");
+                doubleTapDragActive = false;
+                pointerIsDown = false; // Not a voxel operation
+                lastTapTime = currentTime;
+                lastTapCoords = { x: e.clientX, y: e.clientY };
+                gestureState.type = 'none'; gestureState.startMid = gestureState.lastMid = { x: e.clientX, y: e.clientY };
+                gestureState.startDist = gestureState.lastDist = 0;
+                gestureState.initialPointerCount = 1;
+                updatePreviewVoxel(0,0,0,false);
+                previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
+            }
+        } else if (activePointers.size >= 2) { // Multi-touch: Camera control
+            console.log("Multi-touch detected, switching to camera gesture.");
+            doubleTapDragActive = false; // Disable voxel ops
+            pointerIsDown = false; // Not a voxel operation
+            initialTargetVoxelCoords = null;
+            currentStrokeVoxels.clear(); currentStrokeVoxelKeys.clear();
             previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
             updatePreviewVoxel(0, 0, 0, false);
-            doubleTapDragActive = false;
-            isDragging = false;
-            initialDragVoxelCoords = null;
-            // Also reset fixed layer, as this is now a camera gesture
-            dragFixedLayerCoord = null;
+            isDragging = false; initialDragVoxelCoords = null; dragFixedLayerCoord = null;
             
             const pointersArr = [...activePointers.values()];
             const [p0, p1] = pointersArr;
@@ -2470,138 +2513,80 @@ async function onPointerDown(e) {
             gestureState.type = 'none'; gestureState.startMid = gestureState.lastMid = { x: midX, y: midY };
             gestureState.startDist = gestureState.lastDist = dist;
             gestureState.initialPointerCount = activePointers.size;
-            return;
         }
+        return; // Exit for all touch events, as they are handled above
     }
 
-    // Voxel interaction logic for single pointer (mouse left click or single touch)
+    // Desktop mouse left click: Always a voxel interaction
+    pointerIsDown = true;
     voxelsAtDragStart = new Map(voxels);
     currentStrokeVoxels.clear();
     currentStrokeVoxelKeys.clear();
     dragAxisLock = null;
     isDragging = false;
     initialDragVoxelCoords = null;
-
     initialClickPos = { x: e.clientX, y: e.clientY };
-    pointerIsDown = true;
 
     let rawInitialRayTarget = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
     if (!rawInitialRayTarget || !Number.isFinite(rawInitialRayTarget.x) || !Number.isFinite(rawInitialRayTarget.y) || !Number.isFinite(rawInitialRayTarget.z)) {
-        pointerIsDown = false; initialClickPos = null; initialTargetVoxelCoords = null; dragFixedLayerCoord = null;
+        initialTargetVoxelCoords = null;
+        dragFixedLayerCoord = null;
+        updatePreviewVoxel(0,0,0,false);
+        pointerIsDown = false; // No valid target, so no voxel operation
         return;
-    }
-
-    initialTargetVoxelCoords = {
-        x: Number(rawInitialRayTarget.x),
-        y: Number(rawInitialRayTarget.y),
-        z: Number(rawInitialRayTarget.z),
-        faceNormal: rawInitialRayTarget.faceNormal,
-        hitExistingVoxel: rawInitialRayTarget.hitExistingVoxel
-    };
-
-    initialTargetVoxelCoords.x = Math.max(0, Math.min(GRID - 1, initialTargetVoxelCoords.x));
-    initialTargetVoxelCoords.y = Math.max(0, Math.min(GRID - 1, initialTargetVoxelCoords.y));
-    initialTargetVoxelCoords.z = Math.max(0, Math.min(GRID - 1, initialTargetVoxelCoords.z));
-
-    // Layer lock only for ADD mode
-    if (currentMode === Modes.ADD) {
-        dragFixedLayerCoord = Number(initialTargetVoxelCoords[currentDrawingAxis]);
-        if (!Number.isFinite(dragFixedLayerCoord)) {
-            dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]);
-        }
     } else {
-        dragFixedLayerCoord = null; // No layer lock for DELETE/DRAW
-    }
-
-    if (dragFixedLayerCoord !== null) {
-        initialTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
-    }
-
-    // --- Voxel modification for single click/tap (or start of drag) ---
-    let performSingleVoxelOp = false;
-    if (isMobile && e.pointerType === 'touch') {
-        const currentTime = performance.now();
-        const dist = Math.hypot(e.clientX - lastTapCoords.x, e.clientY - lastTapCoords.y);
-        if (currentTime - lastTapTime < DOUBLE_TAP_TIME_THRESHOLD && dist < DOUBLE_TAP_DIST_THRESHOLD) {
-            performSingleVoxelOp = true; // Double tap on mobile
-            lastTapTime = 0; lastTapCoords = { x: 0, y: 0 }; suppressNextTap = true;
-        } else {
-            lastTapTime = currentTime; lastTapCoords = { x: e.clientX, y: e.clientY }; suppressNextTap = false;
-        }
-    } else { // Desktop mouse click
-        performSingleVoxelOp = true;
-    }
-
-    if (performSingleVoxelOp) {
-        // For DELETE/DRAW modes, only perform operation if an existing voxel was hit
-        if ((currentMode === Modes.DELETE || currentMode === Modes.DRAW) && !initialTargetVoxelCoords.hitExistingVoxel) {
-            // Do nothing, no existing voxel to delete/draw on
-        } else {
-            lastActionVoxelCoords = { ...initialTargetVoxelCoords };
-            const gKey = key(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z);
-            const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
-            performVoxelModification(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z, currentMode, currentColor);
-            const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
-            currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
-            currentStrokeVoxelKeys.add(gKey);
-            // If it was a single tap/click and not a drag, add it as a single batch command immediately
-            if (!isDragging) { // isDragging is false at the start of a click/tap
-                addCommand('batch', [{ x: initialTargetVoxelCoords.x, y: initialTargetVoxelCoords.y, z: initialTargetVoxelCoords.z, color: initialColor }], [{ x: initialTargetVoxelCoords.x, y: initialTargetVoxelCoords.y, z: initialTargetVoxelCoords.z, color: finalColor }]);
-                currentStrokeVoxels.clear(); // Clear stroke for next action
-                currentStrokeVoxelKeys.clear();
-            }
-        }
-    }
-    // --- End of voxel modification for single click/tap ---
-
-    // Update preview voxel visibility
-    if (initialTargetVoxelCoords) {
-        let showPreview = false;
-        const gKeyAtPreview = key(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z);
-        const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
-
+        initialTargetVoxelCoords = {
+            x: Math.max(0, Math.min(GRID - 1, rawInitialRayTarget.x)),
+            y: Math.max(0, Math.min(GRID - 1, rawInitialRayTarget.y)),
+            z: Math.max(0, Math.min(GRID - 1, rawInitialRayTarget.z)),
+            faceNormal: rawInitialRayTarget.faceNormal,
+            hitExistingVoxel: rawInitialRayTarget.hitExistingVoxel
+        };
         if (currentMode === Modes.ADD) {
-            if (!hasVoxelAtPreview) { showPreview = true; }
-        } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-            if (hasVoxelAtPreview) { showPreview = true; }
-        }
-        updatePreviewVoxel(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z, showPreview);
-    } else {
-        updatePreviewVoxel(0, 0, 0, false);
+            dragFixedLayerCoord = Number(initialTargetVoxelCoords[currentDrawingAxis]);
+            if (!Number.isFinite(dragFixedLayerCoord)) dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]);
+        } else { dragFixedLayerCoord = null; }
+        if (dragFixedLayerCoord !== null) initialTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
     }
-    previewLineInstancedMesh.count = 0;
-    previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
-    previewLineVoxels = [];
+
+    // Perform the first voxel modification immediately for desktop mouse clicks
+    lastActionVoxelCoords = { ...initialTargetVoxelCoords };
+    const gKey = key(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z);
+    const initialColor = voxelsAtDragStart.has(gKey) ? voxelsAtDragStart.get(gKey).color : null;
+    performVoxelModification(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z, currentMode, currentColor);
+    const finalColor = voxels.has(gKey) ? voxels.get(gKey).color : null;
+    currentStrokeVoxels.set(gKey, { originalColor: initialColor, finalColor: finalColor });
+    currentStrokeVoxelKeys.add(gKey);
+    updatePreviewVoxel(initialTargetVoxelCoords.x, initialTargetVoxelCoords.y, initialTargetVoxelCoords.z, true);
+    console.log(`onPointerDown - First voxel modified (desktop): (${initialTargetVoxelCoords.x}, ${initialTargetVoxelCoords.y}, ${initialTargetVoxelCoords.z}). Key: ${gKey}`);
 }
 
 function onPointerMove(e) {
     e.preventDefault();
+    e.stopPropagation();
+
     if (isPointerLocked) {
         mouseMovementX += e.movementX;
         mouseMovementY += e.movementY;
         return;
     }
 
-    // Update active pointer position for multi-touch gestures
     if (e.pointerType === 'touch') {
-        if (activePointers.has(e.pointerId)) {
-            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
-            if (activePointers.size >= 1) {
-                handleGesture();
-                if (activePointers.size > 1 || (pointerIsDown && !isDragging && Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) > MOVE_PX)) {
-                    updatePreviewVoxel(0, 0, 0, false);
-                    previewLineInstancedMesh.count = 0;
-                    previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
-                    previewLineVoxels = [];
-                    if (activePointers.size > 1) {
-                        isDragging = false;
-                        pointerIsDown = false;
-                    }
-                }
-            }
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
+        
+        if (activePointers.size === 1 && !doubleTapDragActive) { // Single finger camera rotation
+            handleGesture();
+            updatePreviewVoxel(0, 0, 0, false); // No voxel preview during camera drag
+            previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
+            return;
+        } else if (activePointers.size >= 2) { // Multi-finger camera pan/zoom
+            handleGesture();
+            updatePreviewVoxel(0, 0, 0, false); // No voxel preview during camera drag
+            previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
+            return;
         }
+        // If we reach here for touch, it must be a doubleTapDragActive (voxel operation)
     }
-
 
     lastX = e.clientX;
     lastY = e.clientY;
@@ -2610,79 +2595,76 @@ function onPointerMove(e) {
     let currentTargetVoxelCoords = null;
 
     if (currentRayHit) {
-        // If in DELETE or DRAW mode, and the ray hit something but it's not an existing voxel, treat as no hit for modification.
-        if ((currentMode === Modes.DELETE || currentMode === Modes.DRAW) && !currentRayHit.hitExistingVoxel) {
-            currentTargetVoxelCoords = null; // No valid target for delete/draw if no existing voxel
-        } else {
-            currentTargetVoxelCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
-            currentTargetVoxelCoords.x = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.x));
-            currentTargetVoxelCoords.y = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.y));
-            currentTargetVoxelCoords.z = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.z));
-        }
+        currentTargetVoxelCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
+        currentTargetVoxelCoords.x = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.x));
+        currentTargetVoxelCoords.y = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.y));
+        currentTargetVoxelCoords.z = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.z));
     } else {
-        if (pointerIsDown && lastActionVoxelCoords) {
-             currentTargetVoxelCoords = { ...lastActionVoxelCoords };
-        } else {
-            currentTargetVoxelCoords = null;
-        }
+        currentTargetVoxelCoords = null;
     }
 
-    // Logic for dragging (drawing a line of voxels)
-    if (pointerIsDown && initialTargetVoxelCoords && currentTargetVoxelCoords) {
-        // Apply layer lock only if dragFixedLayerCoord is set (i.e., in ADD mode)
-        if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
-            currentTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
-        }
-
+    // Logic for dragging (drawing a line of voxels) or hover preview
+    if (pointerIsDown) { // A voxel-modifying pointer is down (desktop left click or mobile double tap drag)
         const currentMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
         const shouldStartDrag = currentMovedDist > MOVE_PX;
 
         if (!isDragging && shouldStartDrag) {
             isDragging = true;
+            console.log("onPointerMove - Drag initiated! isDragging set to true.");
         }
 
-        if (isDragging) {
-            const startPointForLine = { ...lastActionVoxelCoords };
-            const endPointForLine = { ...currentTargetVoxelCoords };
-
-            let pathVoxels;
-            // Pass fixedAxis and fixedCoord only if dragFixedLayerCoord is active
-            if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
-                pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine, currentDrawingAxis, dragFixedLayerCoord);
-            } else {
-                pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine);
-            }
-
-            if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-                pathVoxels = pathVoxels.filter(voxel => voxelsAtDragStart.has(key(voxel.x, voxel.y, voxel.z)));
-            }
-            
-            for (const voxel of pathVoxels) {
-                const gKey = key(voxel.x, voxel.y, voxel.z);
-                const hasVoxelBeforeModification = voxels.has(gKey);
-                const originalColor = hasVoxelBeforeModification ? voxels.get(gKey).color : null;
-                
-                performVoxelModification(voxel.x, voxel.y, voxel.z, currentMode, currentColor);
-                
-                const hasVoxelAfterModification = voxels.has(gKey);
-                const finalColor = hasVoxelAfterModification ? voxels.get(gKey).color : null;
-
-                if (!currentStrokeVoxels.has(gKey)) {
-                    if (originalColor !== finalColor || (originalColor === null && finalColor !== null)) {
-                        currentStrokeVoxels.set(gKey, { originalColor: originalColor, finalColor: finalColor });
-                    }
-                } else {
-                    currentStrokeVoxels.get(gKey).finalColor = finalColor;
+        if (isDragging) { // Voxel drag operation is active
+            if (currentTargetVoxelCoords) {
+                if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
+                    currentTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
                 }
-                currentStrokeVoxelKeys.add(gKey);
+
+                const startPointForLine = { ...lastActionVoxelCoords };
+                const endPointForLine = { ...currentTargetVoxelCoords };
+
+                let pathVoxels;
+                if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
+                    pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine, currentDrawingAxis, dragFixedLayerCoord);
+                } else {
+                    pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine);
+                }
+
+                if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
+                    pathVoxels = pathVoxels.filter(voxel => voxelsAtDragStart.has(key(voxel.x, voxel.y, voxel.z)));
+                }
+                
+                for (const voxel of pathVoxels) {
+                    const gKey = key(voxel.x, voxel.y, voxel.z);
+                    const hasVoxelBeforeModification = voxels.has(gKey);
+                    const originalColor = hasVoxelBeforeModification ? voxels.get(gKey).color : null;
+                    
+                    performVoxelModification(voxel.x, voxel.y, voxel.z, currentMode, currentColor);
+                    
+                    const hasVoxelAfterModification = voxels.has(gKey);
+                    const finalColor = hasVoxelAfterModification ? voxels.get(gKey).color : null;
+
+                    if (!currentStrokeVoxels.has(gKey)) {
+                        if (originalColor !== finalColor || (originalColor === null && finalColor !== null)) {
+                            currentStrokeVoxels.set(gKey, { originalColor: originalColor, finalColor: finalColor });
+                        }
+                    } else {
+                        currentStrokeVoxels.get(gKey).finalColor = finalColor;
+                    }
+                    currentStrokeVoxelKeys.add(gKey);
+                }
+                if (pathVoxels.length > 0) {
+                    lastActionVoxelCoords = { x: pathVoxels[pathVoxels.length - 1].x, y: pathVoxels[pathVoxels.length - 1].y, z: pathVoxels[pathVoxels.length - 1].z };
+                } else {
+                    lastActionVoxelCoords = { ...endPointForLine };
+                }
+                updatePreviewVoxel(currentTargetVoxelCoords.x, currentTargetVoxelCoords.y, currentTargetVoxelCoords.z, true);
+                previewLineInstancedMesh.count = 0;
+            } else { // No currentTargetVoxelCoords, so no voxel preview
+                updatePreviewVoxel(0,0,0,false);
+                previewLineInstancedMesh.count = 0;
+                previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
+                previewLineVoxels = [];
             }
-            if (pathVoxels.length > 0) {
-                lastActionVoxelCoords = { x: pathVoxels[pathVoxels.length - 1].x, y: pathVoxels[pathVoxels.length - 1].y, z: pathVoxels[pathVoxels.length - 1].z };
-            } else {
-                lastActionVoxelCoords = { ...endPointForLine };
-            }
-            updatePreviewVoxel(currentTargetVoxelCoords.x, currentTargetVoxelCoords.y, currentTargetVoxelCoords.z, true);
-            previewLineInstancedMesh.count = 0;
         } else { // Pointer is down, but not yet dragging (or was a tap and finished)
             if (currentTargetVoxelCoords) {
                 let showPreview = false;
@@ -2696,7 +2678,7 @@ function onPointerMove(e) {
                 }
                 updatePreviewVoxel(currentTargetVoxelCoords.x, currentTargetVoxelCoords.y, currentTargetVoxelCoords.z, showPreview);
             } else {
-                updatePreviewVoxel(0, 0, 0, false);
+                updatePreviewVoxel(0,0,0,false);
             }
             previewLineInstancedMesh.count = 0;
             previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
@@ -2708,35 +2690,54 @@ function onPointerMove(e) {
         previewLineVoxels = [];
 
         if (currentRayHit) {
-            // Only show preview for DELETE/DRAW if it's an existing voxel
-            if ((currentMode === Modes.DELETE || currentMode === Modes.DRAW) && !currentRayHit.hitExistingVoxel) {
-                updatePreviewVoxel(0, 0, 0, false); // No preview if no voxel to delete/draw on
-            } else {
-                let hoverPreviewCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
-                
-                hoverPreviewCoords.x = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.x));
-                hoverPreviewCoords.y = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.y));
-                hoverPreviewCoords.z = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.z));
+            let hoverPreviewCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
+            
+            hoverPreviewCoords.x = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.x));
+            hoverPreviewCoords.y = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.y));
+            hoverPreviewCoords.z = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.z));
 
-                let showPreview = false;
-                const gKeyAtPreview = key(hoverPreviewCoords.x, hoverPreviewCoords.y, hoverPreviewCoords.z);
-                const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
+            let showPreview = false;
+            const gKeyAtPreview = key(hoverPreviewCoords.x, hoverPreviewCoords.y, hoverPreviewCoords.z);
+            const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
 
-                if (currentMode === Modes.ADD) {
-                    if (!hasVoxelAtPreview) { showPreview = true; }
-                    } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
-                    if (hasVoxelAtPreview) { showPreview = true; }
-                }
-                updatePreviewVoxel(hoverPreviewCoords.x, hoverPreviewCoords.y, hoverPreviewCoords.z, showPreview);
+            if (currentMode === Modes.ADD) {
+                if (!hasVoxelAtPreview) { showPreview = true; }
+                } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
+                if (hasVoxelAtPreview) { showPreview = true; }
             }
+            updatePreviewVoxel(hoverPreviewCoords.x, hoverPreviewCoords.y, hoverPreviewCoords.z, showPreview);
         } else {
             updatePreviewVoxel(0, 0, 0, false);
         }
     }
 }
 
-// Removed cycleDrawingAxis function
-// Removed moveDrawingLevel function
+function cycleDrawingAxis() {
+    const axes = ['x', 'y', 'z'];
+    const currentIndex = axes.indexOf(currentDrawingAxis);
+    currentDrawingAxis = axes[(currentIndex + 1) % axes.length];
+    updateGridHelperPosition();
+    showToast('Zeichenachse', `Achse: ${currentDrawingAxis.toUpperCase()}`, 'info', 1500);
+}
+
+function moveDrawingLevel(direction) {
+    if (currentMode !== Modes.ADD && currentMode !== Modes.DRAW) {
+        showToast('Hinweis', 'Ebenensteuerung nur im Hinzufügen- oder Zeichenmodus verfügbar.', 'warning', 2000);
+        return;
+    }
+    let level = activeDrawingLevel[currentDrawingAxis];
+
+    if (!Number.isFinite(level)) {
+        level = 0;
+        activeDrawingLevel[currentDrawingAxis] = level;
+    }
+
+    level += direction;
+    level = Math.max(0, Math.min(GRID - 1, level));
+    activeDrawingLevel[currentDrawingAxis] = level;
+    updateGridHelperPosition();
+    showToast('Zeichenebene', `Ebene ${currentDrawingAxis.toUpperCase()}: ${level}`, 'info', 1500);
+}
 
 
 window.onload = async function() {
@@ -2810,8 +2811,8 @@ window.onload = async function() {
             if (newGrid < oldGrid) {
                 let voxelsWouldBeLost = false;
                 for (const [id, data] of voxels.entries()) {
-                    const p = parseKey(id);
-                    if (p[0] >= newGrid || p[1] >= newGrid || p[2] >= newGrid) {
+                    const p = parseKey(id); // p is [x,y,z]
+                    if (p[0] >= newGrid || p[1] >= newGrid || p[2] >= newGrid) { // p[0], p[1], p[2] are x,y,z
                         voxelsWouldBeLost = true;
                         break;
                     }
@@ -2825,14 +2826,14 @@ window.onload = async function() {
                 }
             }
             
-            const oldVoxelState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; });
+            const oldVoxelState = [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }); // x,y,z
             for (const chunk of chunks.values()) chunk.dispose(); chunks.clear(); voxels.clear();
-            oldVoxelState.filter(v => v.x < newGrid && v.y < newGrid && v.z < newGrid).forEach(v => _addSingleVoxel(v.x, v.y, v.z, v.color));
+            oldVoxelState.filter(v => v.x < newGrid && v.y < newGrid && v.z < newGrid).forEach(v => _addSingleVoxel(v.x, v.y, v.z, v.color)); // x,y,z
             GRID = newGrid;
             document.getElementById('grid-size-slider').value = GRID;
             document.getElementById('grid-size-display').textContent = `${GRID}×${GRID}×${GRID}`;
             localStorage.setItem('voxelEditorGridSize', GRID);
-            addCommand('resizeGrid', oldVoxelState, [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }), { oldGrid: oldGrid, newGrid: GRID });
+            addCommand('resizeGrid', oldVoxelState, [...voxels.entries()].map(([id, data]) => { const p = parseKey(id); return { x: p[0], y: p[1], z: p[2], color: data.color }; }), { oldGrid: oldGrid, newGrid: GRID }); // x,y,z
             rebuildHelpers();
             resetCameraPosition();
         });
@@ -2846,11 +2847,12 @@ window.onload = async function() {
             if (previewVoxelMesh.visible) {
                 previewVoxelMaterial.color.set(currentColor);
             }
+            showToast('Farbe ausgewählt', `Farbe: ${currentColor}`, 'info', 2000);
         });
 
         presetBoxes = [document.getElementById('color-preset-1'), document.getElementById('color-preset-2'), document.getElementById('color-preset-3')];
-        presetColors.forEach((color, i) => {
-            presetBoxes[i].value = color;
+        presetColors.forEach((color, i) => { // Corrected: use presetColors[i] for box.value
+            presetBoxes[i].value = color; // Assign value directly to the input element
             presetBoxes[i].addEventListener('click', (e) => setActivePreset(i));
             presetBoxes[i].addEventListener('input', (e) => savePresetColor(i, e.target.value));
         });
@@ -2873,39 +2875,47 @@ window.onload = async function() {
         
         document.getElementById('exportBtn').addEventListener('click', () => {
             const exportOptionsModal = document.getElementById('exportOptionsModal');
+            // Set default format to OBJ and default axis to Z-Up for 3D printers (like Bambu Lab)
             document.querySelector(`input[name="exportFormat"][value="obj"]`).checked = true;
             document.querySelector(`input[name="exportScaleUnit"][value="mm"]`).checked = true;
+            document.querySelector(`input[name="exportUpAxis"][value="Z"]`).checked = true; // Default for 3D printers
+            
             document.getElementById('glbSpecificOptions').classList.add('hidden');
             scaleUnitOptionsDiv.classList.remove('hidden');
+            exportAxisOptionsDiv.classList.remove('hidden'); // Ensure axis options are visible for non-GLB
             exportOptionsModal.showModal();
         });
 
         const exportFormatRadios = document.querySelectorAll('input[name="exportFormat"]');
         const glbSpecificOptionsDiv = document.getElementById('glbSpecificOptions');
         const scaleUnitOptionsDiv = document.getElementById('scaleUnitOptions');
+        const exportAxisOptionsDiv = document.getElementById('exportAxisOptions'); // New element
 
         exportFormatRadios.forEach(radio => {
             radio.addEventListener('change', (event) => {
                 if (event.target.value === 'glb') {
                     glbSpecificOptionsDiv.classList.remove('hidden');
                     scaleUnitOptionsDiv.classList.add('hidden');
+                    exportAxisOptionsDiv.classList.add('hidden'); // Hide axis options for GLB
                 } else {
                     glbSpecificOptionsDiv.classList.add('hidden');
                     scaleUnitOptionsDiv.classList.remove('hidden');
+                    exportAxisOptionsDiv.classList.remove('hidden'); // Show axis options for non-GLB
                 }
             });
         });
 
         document.getElementById('confirmExportBtn').addEventListener('click', () => {
-            const selectedFormat = document.querySelector(`input[name="exportFormat"]:checked`).value;
-            const selectedScaleUnit = document.querySelector(`input[name="exportScaleUnit"]:checked`).value;
+            const selectedFormat = document.querySelector('input[name="exportFormat"]:checked').value;
+            const selectedScaleUnit = document.querySelector('input[name="exportScaleUnit"]:checked').value;
+            const selectedUpAxis = document.querySelector('input[name="exportUpAxis"]:checked')?.value || 'Y'; // Default to Y if not found
 
             if (selectedFormat === 'stl') {
-                exportSTL(selectedScaleUnit);
+                exportSTL(selectedScaleUnit, selectedUpAxis);
             } else if (selectedFormat === 'obj') {
-                exportOBJ(selectedScaleUnit);
+                exportOBJ(selectedScaleUnit, selectedUpAxis);
             } else if (selectedFormat === '3mf') {
-                export3MF(selectedScaleUnit);
+                export3MF(selectedScaleUnit, selectedUpAxis);
             } else if (selectedFormat === 'glb') {
                 const gameReady = document.getElementById('glbGameReadyToggle').checked;
                 const voxelSizeMM = parseFloat(document.getElementById('glbVoxelSizeInput').value);
@@ -2947,89 +2957,43 @@ window.onload = async function() {
         document.getElementById('imageFileInput').addEventListener('change', handleImageFileSelect);
         document.getElementById('removeImageTemplateBtn').addEventListener('click', removeImageTemplate);
 
-        // Mobile menu toggle logic
         document.getElementById('menuToggle').addEventListener('click', (e) => {
-            e.preventDefault(); // Prevent default touch behavior
+            e.preventDefault();
             const controlsPanel = document.getElementById('controls');
-            const mobileControls = document.getElementById('mobile-controls');
-            // Toggle visibility of mobile controls only
-            mobileControls.classList.toggle('hidden');
-            mobileControls.classList.toggle('flex');
+            controlsPanel.classList.toggle('hidden');
+            if (!controlsPanel.classList.contains('hidden')) controlsPanel.classList.add('flex');
+            else controlsPanel.classList.remove('flex');
         });
-
-        // NEW: Desktop collapse button logic
-        const desktopCollapseBtn = document.getElementById('desktopCollapseBtn');
-        const desktopCollapseIcon = document.getElementById('desktopCollapseIcon');
-        if (desktopCollapseBtn) {
-            desktopCollapseBtn.addEventListener('click', () => {
-                const controlsPanel = document.getElementById('controls');
-                controlsPanel.classList.toggle('collapsed'); // Toggle the collapsed class
-                if (controlsPanel.classList.contains('collapsed')) {
-                    desktopCollapseIcon.classList.remove('fa-chevron-up');
-                    desktopCollapseIcon.classList.add('fa-chevron-down');
-                } else {
-                    desktopCollapseIcon.classList.remove('fa-chevron-down');
-                    desktopCollapseIcon.classList.add('fa-chevron-up');
-                }
-            });
-        }
-
 
         const mediaQuery = window.matchMedia('(max-width: 768px)');
         function handleMediaQueryChange(e) {
             isMobile = e.matches;
             const controlsPanel = document.getElementById('controls');
             const mobileControls = document.getElementById('mobile-controls');
-            // Removed mobileAxisToggle, mobileLevelUp, mobileLevelDown from here
-            const menuToggleMobile = document.getElementById('menuToggle'); // The original mobile-only button
-            const desktopCollapseBtn = document.getElementById('desktopCollapseBtn'); // The new desktop button
 
-            if (e.matches) { // Mobile view
-                controlsPanel.classList.add('collapsed'); // Hide desktop controls
-                controlsPanel.style.display = 'none'; // Ensure display none for layout
-                
+            if (e.matches) {
+                controlsPanel.classList.add('hidden');
                 mobileControls.classList.remove('hidden');
                 mobileControls.classList.add('flex');
                 toastContainer.classList.remove('toast-end');
                 toastContainer.classList.add('toast-top-center');
-                
-                // Ensure mobile layer controls are hidden
-                // document.getElementById('mobile-axis-toggle').classList.add('hidden'); // Removed
-                // document.getElementById('mobile-level-up').classList.add('hidden');   // Removed
-                // document.getElementById('mobile-level-down').classList.add('hidden'); // Removed
-
-                if (desktopCollapseBtn) desktopCollapseBtn.classList.add('hidden'); // Hide desktop button
-                if (menuToggleMobile) menuToggleMobile.classList.remove('hidden'); // Show mobile toggle
-
-                // Force activeDrawingLevel.y to 0 and currentDrawingAxis to 'y' for mobile
-                activeDrawingLevel.y = 0;
-                currentDrawingAxis = 'y';
-
-            } else { // Desktop view
-                controlsPanel.classList.remove('collapsed'); // Show desktop controls (open by default)
-                controlsPanel.style.display = 'flex'; // Ensure it's rendered as flex
-                
+            }
+            else {
+                controlsPanel.classList.remove('hidden');
+                controlsPanel.classList.add('flex');
                 mobileControls.classList.add('hidden');
-                mobileControls.classList.remove('flex'); // Ensure flex is removed
+                mobileControls.classList.remove('flex');
                 toastContainer.classList.remove('toast-top-center');
                 toastContainer.classList.add('toast-end');
-
-                // Ensure mobile layer controls are hidden
-                // document.getElementById('mobile-axis-toggle').classList.add('hidden'); // Removed
-                // document.getElementById('mobile-level-up').classList.add('hidden');   // Removed
-                // document.getElementById('mobile-level-down').classList.add('hidden'); // Removed
-
-                if (desktopCollapseBtn) desktopCollapseBtn.classList.remove('hidden'); // Show desktop button
-                if (menuToggleMobile) menuToggleMobile.classList.add('hidden'); // Hide mobile toggle
             }
             onResize();
             rebuildHelpers();
-            const mobileModeIcon = document.getElementById('mobile-mode-icon');
-            if (mobileModeIcon) {
-                mobileModeIcon.className = ModeIcons[currentMode];
+            const mobileModeText = document.getElementById('mobile-mode-text');
+            if (mobileModeText) {
+                mobileModeText.textContent = currentMode;
             }
         }
-        mediaQuery.addListener(handleMediaQueryChange); handleMediaQueryChange(mediaQuery); // Call once on load
+        mediaQuery.addListener(handleMediaQueryChange); handleMediaQueryChange(mediaQuery);
 
         document.getElementById('mobile-undo').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); undo(); });
         document.getElementById('mobile-redo').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); redo(); });
@@ -3041,7 +3005,7 @@ window.onload = async function() {
         const mobileColorInput = document.getElementById('mobile-color-input');
         
         mobileColorPickerBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); mobileColorInput.click(); });
-        mobileColorInput.addEventListener('input', (e) => {
+        mobileColorInput.addEventListener('input', (e) => { // Fires continuously as color changes
             currentColor = e.target.value;
             localStorage.setItem('voxelEditorColor', currentColor);
             document.getElementById('color-picker').value = currentColor;
@@ -3049,19 +3013,21 @@ window.onload = async function() {
             activePresetIndex = -1;
             if (previewVoxelMesh.visible) { previewVoxelMaterial.color.set(currentColor); }
         });
-        mobileColorInput.addEventListener('change', (e) => {
+        mobileColorInput.addEventListener('change', (e) => { // Fires when picker is closed (e.g., "Done" button)
             currentColor = e.target.value;
             localStorage.setItem('voxelEditorColor', currentColor);
             document.getElementById('color-picker').value = currentColor;
             presetBoxes.forEach(box => box.classList.remove('active', 'border-primary', 'shadow-lg', 'shadow-primary/50'));
             activePresetIndex = -1;
             if (previewVoxelMesh.visible) { previewVoxelMaterial.color.set(currentColor); }
+            showToast('Farbe ausgewählt', `Farbe: ${currentColor}`, 'info', 2000); // Show toast only when picker closes
         });
         mobileColorInput.value = currentColor;
 
-        // Removed event listeners for mobile-axis-toggle, mobile-level-up, mobile-level-down
-
         document.getElementById('mobile-login-logout').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); loginLogout(); });
+        document.getElementById('mobile-upload-hub').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); openUploadModal(); });
+        document.getElementById('mobile-go-hub').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); window.open('https://hub.voxelshaper.com', '_blank'); });
+
 
         document.getElementById('grid-size-slider').value = GRID;
         document.getElementById('grid-size-display').textContent = `${GRID}×${GRID}×${GRID}`;
@@ -3069,18 +3035,14 @@ window.onload = async function() {
         document.getElementById('fly-speed-slider').value = moveSpeed;
         document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2);
         
-        document.getElementById('mobile-mode-icon').className = ModeIcons[currentMode];
-        // Removed mobile-axis-icon update as axis control is removed on mobile
-
+        document.getElementById('mobile-mode-text').textContent = currentMode;
 
         const app = window.firebase.initializeApp(window.firebaseConfig);
         auth = window.firebase.getAuth(app);
         db = window.firebase.getFirestore(app);
 
         const loginLogoutBtn = document.getElementById('loginLogoutBtn');
-        const uploadToHubBtn = document.getElementById('uploadToHubBtn');
         const userIdDisplay = document.getElementById('userIdDisplay');
-        const goToHubBtn = document.getElementById('goToHubBtn');
         let projectLoadedFromUrl = false;
 
         predefinedCategories.forEach(cat => { const opt = document.createElement('option'); opt.value = cat; opt.textContent = cat; document.getElementById('uploadCategory').appendChild(opt); });
@@ -3091,38 +3053,21 @@ window.onload = async function() {
                     try { await window.firebase.signInWithCustomToken(auth, __initial_auth_token); }
                     catch (e) { showToast('Anmeldefehler', `Fehler beim Anmelden mit Token: ${e.message}. Bitte versuchen Sie es erneut.`, 'error', 5000); }
                 }
-                // Removed the anonymous sign-in block here
 
                 window.firebase.onAuthStateChanged(auth, async (user) => {
                     currentUserId = user ? user.uid : null;
                     currentUser = user;
-                    
-                    // If user is anonymous, sign them out immediately
-                    if (user && user.isAnonymous) {
-                        await window.firebase.signOut(auth);
-                        // After signOut, onAuthStateChanged will be called again with user = null,
-                        // which will then correctly update the UI to "Anmelden" and default avatar.
-                        showToast('Info', 'Anonyme Sitzung beendet. Bitte melden Sie sich an.', 'info', 5000);
-                        return; 
-                    }
-
                     loginLogoutBtn.textContent = user ? 'Abmelden' : 'Anmelden';
-                    
-                    // Display only the user's photo as a badge if logged in, otherwise default 'U'
-                    if (user && user.photoURL) {
-                        userIdDisplay.innerHTML = `<img src="${user.photoURL}" alt="User Avatar" class="user-badge">`;
-                        userIdDisplay.title = user.email || ''; // Show email on hover for info
+                    if (user) {
+                        userIdDisplay.innerHTML = `<img src="${user.photoURL || 'https://placehold.co/24x24/cccccc/000000?text=U'}" alt="User Avatar" class="w-6 h-6 rounded-full align-middle mr-1"> ${user.displayName || user.email || 'Angemeldet'}`;
+                        userIdDisplay.title = user.email || user.uid;
+                        userIdDisplay.classList.remove('hidden');
                     } else {
-                        // Default avatar if not logged in or no photoURL
-                        userIdDisplay.innerHTML = `<img src="https://placehold.co/24x24/cccccc/000000?text=U" alt="Default Avatar" class="user-badge">`;
-                        userIdDisplay.title = 'Nicht angemeldet';
+                        userIdDisplay.classList.add('hidden');
                     }
-                    
-                    // Update mobile login/logout button icon
                     document.getElementById('mobile-login-logout').textContent = user ? '🚪' : '🔑';
                     if (user) document.getElementById('authModal').close();
 
-                    // Only attempt to load project from URL if not already loaded and auth state is ready
                     if (!projectLoadedFromUrl) {
                         const urlParams = new URLSearchParams(window.location.search);
                         const modelId = urlParams.get('modelId');
@@ -3150,7 +3095,14 @@ window.onload = async function() {
             });
 
         document.getElementById('goToHubBtn').addEventListener('click', () => window.open('https://hub.voxelshaper.com', '_blank'));
-        document.getElementById('uploadToHubBtn').addEventListener('click', openUploadModal);
+        
+        document.getElementById('uploadToHubBtn').addEventListener('click', () => {
+            if (auth.currentUser) {
+                openUploadModal();
+            } else {
+                openAuthModal();
+            }
+        });
 
         loginLogoutBtn.addEventListener('click', loginLogout);
         document.getElementById('authModal').addEventListener('click', (e) => { if (e.target === document.getElementById('authModal')) closeAuthModal(); });
@@ -3165,7 +3117,6 @@ window.onload = async function() {
         document.getElementById('uploadConfirmBtn').addEventListener('click', uploadProjectToHub);
         document.getElementById('uploadCancelBtn').addEventListener('click', () => { document.getElementById('uploadProjectModal').close(); cvs.focus(); });
 
-        // Removed event listener for the generateIdeaBtn
     } catch (e) {
         showToast('Schwerer Fehler', `Ein unerwarteter Fehler ist aufgetreten: ${e.message}.`, 'error', 10000);
     }
@@ -3212,7 +3163,4 @@ function animate() {
 
     ren.render(scene, cam);
 }
-
-// Removed generateVoxelIdea function
-</script></body>
-</html>
+</script></body></html>
