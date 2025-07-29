@@ -3197,8 +3197,9 @@ window.onload = async function() {
                     try { await window.firebase.signInWithCustomToken(auth, __initial_auth_token); }
                     catch (e) { showToast('Anmeldefehler', `Fehler beim Anmelden mit Token: ${e.message}. Bitte versuchen Sie es erneut.`, 'error', 5000); }
                 } else {
-                    // If no custom token, sign in anonymously to get a userId for public data access
-                    await window.firebase.signInAnonymously(auth);
+                    // If no custom token, the user will remain unauthenticated.
+                    // Features requiring authentication will be disabled.
+                    console.log("No custom auth token provided. User will remain unauthenticated.");
                 }
 
                 window.firebase.onAuthStateChanged(auth, async (user) => {
@@ -3306,4 +3307,3 @@ function animate() {
 
     ren.render(scene, cam);
 }
-</script></body></html>
