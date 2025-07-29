@@ -1,4 +1,3 @@
-# .github/workflows/pages.yml
 name: Deploy static content to Pages
 
 on:
@@ -37,17 +36,19 @@ jobs:
       - name: Replace domain in all HTML files
         run: |
           echo "🔄 Replacing voxelshaper.com → test.voxelshaper.com..."
-          find out -name '*.html' -exec perl -i -pe 's~(?<!test\.)voxelshaper\.com~test.voxelshaper.com~g' {} \;
+          find out -name '*.html' \
+            -exec perl -i -pe 's~https://(?!test\.)([^/]*voxelshaper\.com)~https://test.$1~g' {} \;
 
       - name: 🔧 Inject TEST banner
         run: |
           echo "🔧 Injecting TEST banner..."
-          perl -i -pe 's~</head>~<style>html,body{box-shadow:0 0 0 6px red inset!important}html::before{content:"TEST – test.voxelshaper.com";position:fixed;top:0;left:0;right:0;background:red;color:#fff;text-align:center;font:700 12px/22px system-ui;z-index:99999;letter-spacing:.15em}</style></head>~' out/index.html
+          perl -i -pe 's~</head>~<style>html,body{box-shadow:0 0 0 6px red inset!important}html::before{content:"TEST – test.voxelshaper.com";position:fixed;top:0;left:0;right:0;background:red;color:#fff;text-align:center;font:700 12px/22px system-ui;z-index:99999;letter-spacing:.15em}</style></head>~' \
+            out/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'out'
+          path: out
 
       - name: Deploy to GitHub Pages
         id: deployment
