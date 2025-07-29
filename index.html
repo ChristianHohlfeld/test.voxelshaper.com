@@ -458,13 +458,13 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     // Firebase configuration - uses __firebase_config if available (from Canvas environment)
     // Otherwise, falls back to a default configuration.
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyB9-mpyAu9W6oiVtB0fYG8E6YFvTAsjtAA", 
-            authDomain: "voxelshaper.firebaseapp.com", 
-            projectId: "voxelshaper",
-            storageBucket: "voxelshaper.appspot.com", 
-            messagingSenderId: "1053689247573",
-            appId: "1:1053689247573:web:f7960c7f8c2e8849e8e1dc",
-            measurementId: "G-QJ5CNKZ5DR"
+        apiKey: "YOUR_FIREBASE_API_KEY", // Placeholder - replace with your actual key if not using Canvas env
+        authDomain: "voxelshaper.firebaseapp.com",
+        projectId: "voxelshaper",
+        storageBucket: "voxelshaper.firebasestorage.app",
+        messagingSenderId: "1053689247573",
+        appId: "1:1053689247573:web:f7960c7f8c2e8849e8e1dc",
+        measurementId: "G-QJCNKZ5DR"
     };
     window.firebaseConfig = firebaseConfig; // Make config accessible globally
 </script>
@@ -2539,18 +2539,25 @@ function onPointerDown(e) {
     // 3. Determine the FIXED LAYER COORDINATE for the entire drag stroke.
     // This will be a single number (x, y, or z value) for the active axis.
     // It's directly from the preview position's coordinate for the current drawing axis.
-    dragFixedLayerCoord = Number(initialTargetVoxelCoords[currentDrawingAxis]); // Explicitly cast to Number
-    if (!Number.isFinite(dragFixedLayerCoord)) {
-        // Fallback if this is still not finite (should ideally not happen with above steps)
-        dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]); // Use Number() for safety
-        console.error("onPointerDown - dragFixedLayerCoord was non-finite, falling back to activeDrawingLevel.");
+    if (currentMode === Modes.ADD) { // Only set fixed layer for ADD mode
+        dragFixedLayerCoord = Number(initialTargetVoxelCoords[currentDrawingAxis]); // Explicitly cast to Number
+        if (!Number.isFinite(dragFixedLayerCoord)) {
+            // Fallback if this is still not finite (should ideally not happen with above steps)
+            dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]); // Use Number() for safety
+            console.error("onPointerDown - dragFixedLayerCoord was non-finite for ADD mode, falling back to activeDrawingLevel.");
+        }
+    } else { // No fixed layer for DELETE or DRAW modes
+        dragFixedLayerCoord = null;
     }
+    
     console.log(`onPointerDown - Fixed layer coordinate (${currentDrawingAxis}): ${dragFixedLayerCoord}`);
     console.log(`onPointerDown - Type of dragFixedLayerCoord: ${typeof dragFixedLayerCoord}`);
     
     // Ensure the initialTargetVoxelCoords' relevant axis matches the determined dragFixedLayerCoord
     // This makes the first voxel placed perfectly align with the fixed layer.
-    initialTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
+    if (dragFixedLayerCoord !== null) { // Only enforce if fixed layer is active
+        initialTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
+    }
     console.log("onPointerDown - initialTargetVoxelCoords (fixed axis enforced):", initialTargetVoxelCoords);
 
 
@@ -2635,8 +2642,8 @@ function onPointerMove(e) {
     if (currentRayHit) {
         // Ensure currentTargetVoxelCoords uses x, y, z properties for consistency
         currentTargetVoxelCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
-        // currentRayHit already includes faceNormal projection for ADD mode,
-        // so no further adjustment needed here for `currentTargetVoxelCoords`.
+        // The `currentRayHit` from `calculateRayTargetVoxelCoords` is already correctly adjusted for ADD mode,
+        // so no further `faceNormal` adjustment is needed here for `currentTargetVoxelCoords`.
 
         // Clamp coordinates to grid boundaries (already done in calculateRayTargetVoxelCoords, but harmless safety)
         currentTargetVoxelCoords.x = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.x));
@@ -2660,9 +2667,11 @@ function onPointerMove(e) {
             currentTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
         } else {
              // Fallback: If dragFixedLayerCoord is somehow not set (shouldn't happen with new onPointerDown logic)
-             // or is invalid, use initialTargetVoxelCoords's initial layer.
-             currentTargetVoxelCoords[currentDrawingAxis] = initialTargetVoxelCoords[currentDrawingAxis];
-             console.warn("onPointerMove: dragFixedLayerCoord was invalid. Forcing currentTargetVoxelCoords to initialTargetVoxelCoords layer as fallback.");
+             // or is invalid, use currentTargetVoxelCoords's current coordinate for that axis.
+             // This applies for DELETE/DRAW modes where no fixed layer is intended.
+             // No need to snap to initialTargetVoxelCoords' layer for these modes.
+             // `currentTargetVoxelCoords` already reflects the raycast hit, so just let it be.
+             // console.warn("onPointerMove: dragFixedLayerCoord was invalid or null. Current mode:", currentMode, "No fixed layer enforced.");
         }
 
         const currentMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
@@ -2682,8 +2691,13 @@ function onPointerMove(e) {
             console.log(`onPointerMove (DRAGGING) - startPointForLine: (${startPointForLine.x}, ${startPointForLine.y}, ${startPointForLine.z}), endPointForLine: (${endPointForLine.x}, ${endPointForLine.y}, ${endPointForLine.z})`);
 
 
-            // Get all voxels along the line segment on the fixed plane
-            let pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine, currentDrawingAxis, dragFixedLayerCoord);
+            // Get all voxels along the line segment on the fixed plane (if dragFixedLayerCoord is active)
+            let pathVoxels;
+            if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
+                pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine, currentDrawingAxis, dragFixedLayerCoord);
+            } else {
+                pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine); // No fixed layer for DELETE/DRAW
+            }
             console.log(`onPointerMove (DRAGGING) - getVoxelsOnLine returned ${pathVoxels.length} voxels.`);
 
 
@@ -3121,7 +3135,7 @@ window.onload = async function() {
         db = window.firebase.getFirestore(app);
 
         const loginLogoutBtn = document.getElementById('loginLogoutBtn');
-        const uploadToHubBtn = document.getElementById('uploadToHub'); // Fixed ID for upload button
+        const uploadToHubBtn = document.getElementById('uploadToHubBtn'); // Corrected to match HTML
         const userIdDisplay = document.getElementById('userIdDisplay');
         const goToHubBtn = document.getElementById('goToHubBtn');
         let projectLoadedFromUrl = false;
