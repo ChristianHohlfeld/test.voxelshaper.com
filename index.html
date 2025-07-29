@@ -173,7 +173,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 </head>
 <body class="bg-base-100 h-screen text-base-content flex flex-col overflow-hidden">
 <!-- Mobile menu toggle - remains fixed top-right, hidden on large screens -->
-<button id="menuToggle" aria-label="Menü umschalten" class="fixed top-4 right-4 z-[1500] w-10 h-10 text-xl leading-10 text-center bg-base-300 text-base-content border-none rounded-lg cursor-pointer shadow-md hover:bg-base-content/20 lg:hidden">☰</button>
+<button id="menuToggle" aria-label="Menü umschalten" class="fixed top-4 right-4 z-[1500] w-10 h-10 text-xl leading-10 text-center bg-base-300 text-base-content border-none rounded-lg cursor:pointer shadow-md hover:bg-base-content/20 lg:hidden">☰</button>
 
 <!-- Main control panel - no longer hidden by default, will be managed by JS for collapsing -->
 <div id="controls" class="flex flex-wrap items-center justify-center gap-3 p-4 bg-base-200 border-b border-base-content/20">
@@ -217,6 +217,8 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
     <button id="uploadToHubBtn" aria-label="Auf Hub hochladen" class="btn btn-sm btn-warning">Auf Hub hochladen</button>
     <button id="goToHubBtn" aria-label="Zum VoxelShaper Hub wechseln" class="btn btn-sm btn-secondary">Zum Hub</button>
+    
+    <!-- Removed Gemini API Feature: Generate Idea button -->
 
     <!-- NEW desktop collapse button -->
     <button id="desktopCollapseBtn" aria-label="Menü einklappen" class="btn btn-sm btn-neutral hidden md:block ml-auto">
@@ -3163,6 +3165,7 @@ window.onload = async function() {
         document.getElementById('uploadConfirmBtn').addEventListener('click', uploadProjectToHub);
         document.getElementById('uploadCancelBtn').addEventListener('click', () => { document.getElementById('uploadProjectModal').close(); cvs.focus(); });
 
+        // Removed event listener for the generateIdeaBtn
     } catch (e) {
         showToast('Schwerer Fehler', `Ein unerwarteter Fehler ist aufgetreten: ${e.message}.`, 'error', 10000);
     }
@@ -3209,4 +3212,7 @@ function animate() {
 
     ren.render(scene, cam);
 }
-</script></body></html>
+
+// Removed generateVoxelIdea function
+</script></body>
+</html>
