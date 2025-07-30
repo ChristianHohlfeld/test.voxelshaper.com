@@ -147,10 +147,48 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 #mobile-controls {
     gap: 1rem;
 }
+
+/* New styles for mobile top menu buttons */
+.mobile-top-menu {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background-color: var(--fallback-b2, oklch(var(--b2)/1));
+    border-bottom: 1px solid var(--fallback-bc, oklch(var(--bc)/0.1));
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.mobile-top-menu .btn {
+    min-height: 2.5rem; /* Ensure consistent height */
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.mobile-top-menu .range {
+    flex-grow: 1; /* Allow slider to take available space */
+    max-width: 120px; /* Limit slider width */
+}
 </style>
 </head>
 <body class="bg-base-100 min-h-screen text-base-content flex flex-col">
 <button id="menuToggle" aria-label="Menü umschalten" class="fixed top-4 right-4 z-[1500] w-10 h-10 text-xl leading-10 text-center bg-base-300 text-base-content border-none rounded-lg cursor:pointer shadow-md hover:bg-base-content/20 lg:hidden">☰</button>
+
+<!-- New Mobile Top Menu -->
+<div id="mobile-top-menu" class="mobile-top-menu md:hidden">
+    <label for="mobile-rot-speed-slider" class="text-base-content text-sm">Rotationsgeschw.:</label>
+    <input type="range" id="mobile-rot-speed-slider" min="0.001" max="0.01" step="0.0005" value="0.003" aria-label="Rotationsgeschwindigkeit anpassen" class="range range-xs w-24">
+    <span id="mobile-rot-speed-display" class="font-bold text-primary text-sm">0.0030</span>
+
+    <button id="mobile-invert-look-x" class="btn btn-sm btn-neutral">↔️</button>
+    <button id="mobile-invert-look-y" class="btn btn-sm btn-neutral">↕️</button>
+    <button id="mobile-reverse-strafe-x" class="btn btn-sm btn-neutral">⬅️➡️</button>
+    <button id="mobile-reverse-strafe-y" class="btn btn-sm btn-neutral">⬆️⬇️</button>
+</div>
 
 <div id="controls" class="flex flex-wrap items-center justify-center gap-3 p-4 bg-base-200 border-b border-base-content/20 hidden md:flex">
     <label for="grid-size-slider" class="text-base-content">Gittergröße:</label>
@@ -177,6 +215,10 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <label for="fly-speed-slider" class="text-base-content">Fluggeschwindigkeit:</label>
     <input type="range" id="fly-speed-slider" min="0.01" max="1.0" step="0.01" value="0.1" aria-label="Fluggeschwindigkeit anpassen" class="range range-xs w-36">
     <span id="fly-speed-display" class="font-bold text-primary">0.10</span>
+
+    <label for="rot-speed-slider" class="text-base-content">Rotationsgeschwindigkeit:</label>
+    <input type="range" id="rot-speed-slider" min="0.001" max="0.01" step="0.0005" value="0.003" aria-label="Rotationsgeschwindigkeit anpassen" class="range range-xs w-36">
+    <span id="rot-speed-display" class="font-bold text-primary">0.0030</span>
 
     <button id="resetCameraBtn" aria-label="Kamera zurücksetzen" class="btn btn-sm btn-neutral">Zur Szene zurückkehen</button>
 
@@ -463,7 +505,8 @@ const MOVE_PX = 10;
 const DT_MS = 250;
 
 const ROTATE_SPEED_TOUCH_MOBILE = 0.008;
-const PAN_SPEED_TOUCH_MOBILE = 0.2;
+const PAN_SPEED_TOUCH_MOBILE = 0.15; // Slightly decreased from 0.2
+
 const PINCH_ZOOM_MULT_MOBILE = 80;
 
 const ROTATE_SPEED_TOUCH_DESKTOP = 0.004;
@@ -474,10 +517,10 @@ const PINCH_ZOOM_MULT_DESKTOP = 40;
 let activePointers = new Map();
 let gestureState = { type: 'none', startDist: 0, startMid: { x: 0, y: 0 }, lastMid: { x: 0, y: 0 }, lastDist: 0, startTime: 0, initialPointerCount: 0 };
 let tapCandidate = null;
-let doubleTapDragActive = false;
+let doubleTapDragActive = false; // Flag for double tap to enable drawing/editing
 
 let scene, cam, ren, gridHelper, boxHelper;
-let rotSpeed = 0.004;
+let rotSpeed = parseFloat(localStorage.getItem('voxelEditorRotSpeed') || '0.003'); // Initialized from localStorage, default 0.003
 let euler;
 const voxels = new Map();
 const chunks = new Map();
@@ -489,6 +532,13 @@ let currentDrawingAxis = 'y';
 let currentColor = localStorage.getItem('voxelEditorColor') || '#ffffff';
 let moveSpeed = parseFloat(localStorage.getItem('voxelEditorFlySpeed') || '0.1');
 let GRID = parseInt(localStorage.getItem('voxelEditorGridSize') || '10');
+
+// New settings for camera inversion and strafe reversal
+let invertLookX = localStorage.getItem('voxelEditorInvertLookX') === 'true';
+let invertLookY = localStorage.getItem('voxelEditorInvertLookY') === 'true';
+let reverseStrafeX = localStorage.getItem('voxelEditorReverseStrafeX') === 'true';
+let reverseStrafeY = localStorage.getItem('voxelEditorReverseStrafeY') === 'true';
+
 
 activeDrawingLevel.x = Number(localStorage.getItem('voxelEditorActiveDrawingLevelX') || '0');
 if (!Number.isFinite(activeDrawingLevel.x)) activeDrawingLevel.x = 0;
@@ -571,7 +621,7 @@ let isMobile = window.matchMedia('(max-width: 768px)').matches;
 let initialDragVoxelWorldPos = null;
 let dragAxisLock = null;
 let initialDragVoxelCoords = null;
-let dragFixedLayerCoord = null; // For layer lock during drawing
+let dragFixedLayerCoord = null; // For layer lock during adding
 
 let projectTitle = '';
 let projectDescription = '';
@@ -786,8 +836,14 @@ function handleGesture() {
         const p = pointers[0];
         const rotateSpeed = isMobile ? ROTATE_SPEED_TOUCH_MOBILE : ROTATE_SPEED_TOUCH_DESKTOP;
         
-        euler.y += (p.x - gestureState.lastMid.x) * rotateSpeed;
-        euler.x -= (p.y - gestureState.lastMid.y) * rotateSpeed;
+        let deltaX = (p.x - gestureState.lastMid.x) * rotateSpeed;
+        let deltaY = (p.y - gestureState.lastMid.y) * rotateSpeed;
+
+        if (invertLookX) deltaX *= -1;
+        if (invertLookY) deltaY *= -1;
+
+        euler.y += deltaX;
+        euler.x -= deltaY;
         
         euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
         cam.quaternion.setFromEuler(euler);
@@ -818,9 +874,12 @@ function handleGesture() {
             gestureState.lastDist = dist;
         } else if (gestureState.type === 'pan') {
             const panSpeed = isMobile ? PAN_SPEED_TOUCH_MOBILE : PAN_SPEED_TOUCH_DESKTOP;
-            const dx = (midX - gestureState.lastMid.x) * panSpeed;
-            const dy = (midY - gestureState.lastMid.y) * panSpeed;
+            let dx = (midX - gestureState.lastMid.x) * panSpeed;
+            let dy = (midY - gestureState.lastMid.y) * panSpeed;
             
+            if (reverseStrafeX) dx *= -1;
+            if (reverseStrafeY) dy *= -1;
+
             const right = new THREE.Vector3().crossVectors(cam.getWorldDirection(new THREE.Vector3()), cam.up).normalize();
             cam.position.addScaledVector(right, dx);
             cam.position.addScaledVector(new THREE.Vector3(0, 1, 0), dy);
@@ -872,8 +931,7 @@ function onPointerLeave(e) {
     currentStrokeVoxels.clear();
     currentStrokeVoxelKeys.clear();
     dragAxisLock = null;
-    initialDragVoxelCoords = null;
-    dragFixedLayerCoord = null;
+    dragFixedLayerCoord = null; // Ensure this is reset
 
     if (e.pointerType === 'touch') {
         releasePointer(e.pointerId, e);
@@ -1243,6 +1301,11 @@ function saveJSON() {
         presetColors: presetColors,
         activePresetIndex: activePresetIndex,
         moveSpeed: moveSpeed,
+        rotSpeed: rotSpeed, // Save rotation speed
+        invertLookX: invertLookX, // Save invert look X
+        invertLookY: invertLookY, // Save invert look Y
+        reverseStrafeX: reverseStrafeX, // Save reverse strafe X
+        reverseStrafeY: reverseStrafeY, // Save reverse strafe Y
         templateImageData: templateImageData
     };
 
@@ -1283,6 +1346,15 @@ function resetToDefaultProject() {
     localStorage.setItem('voxelEditorActiveDrawingLevelZ', activeDrawingLevel.z);
     localStorage.setItem('voxelEditorCurrentDrawingAxis', currentDrawingAxis);
     moveSpeed = 0.1; document.getElementById('fly-speed-slider').value = moveSpeed; document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2); localStorage.setItem('voxelEditorFlySpeed', moveSpeed);
+    rotSpeed = 0.003; document.getElementById('rot-speed-slider').value = rotSpeed; document.getElementById('rot-speed-display').textContent = rotSpeed.toFixed(4); localStorage.setItem('voxelEditorRotSpeed', rotSpeed); // Reset rotation speed
+    
+    // Reset new settings
+    invertLookX = false; localStorage.setItem('voxelEditorInvertLookX', 'false');
+    invertLookY = false; localStorage.setItem('voxelEditorInvertLookY', 'false');
+    reverseStrafeX = false; localStorage.setItem('voxelEditorReverseStrafeX', 'false');
+    reverseStrafeY = false; localStorage.setItem('voxelEditorReverseStrafeY', 'false');
+    updateMobileCameraControlButtons(); // Update button states
+
     presetColors[0] = '#E4002B'; presetColors[1] = '#00A040'; presetColors[2] = '#0057B8';
     localStorage.setItem('voxelPresetColor1', presetColors[0]); localStorage.setItem('voxelPresetColor2', presetColors[1]); localStorage.setItem('voxelPresetColor3', presetColors[2]);
     presetBoxes.forEach((box, i) => { box.value = presetColors[i]; box.classList.remove('active', 'border-primary', 'shadow-lg', 'shadow-primary/50'); });
@@ -1351,6 +1423,16 @@ function loadProjectData(projectData) {
             if (loadedSettings.moveSpeed !== undefined) {
                 moveSpeed = loadedSettings.moveSpeed; document.getElementById('fly-speed-slider').value = moveSpeed; document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2); localStorage.setItem('voxelEditorFlySpeed', moveSpeed);
             }
+            if (loadedSettings.rotSpeed !== undefined) { // Load rotation speed
+                rotSpeed = loadedSettings.rotSpeed; document.getElementById('rot-speed-slider').value = rotSpeed; document.getElementById('rot-speed-display').textContent = rotSpeed.toFixed(4); localStorage.setItem('voxelEditorRotSpeed', rotSpeed);
+            }
+            // Load new settings
+            invertLookX = loadedSettings.invertLookX === true; localStorage.setItem('voxelEditorInvertLookX', invertLookX);
+            invertLookY = loadedSettings.invertLookY === true; localStorage.setItem('voxelEditorInvertLookY', invertLookY);
+            reverseStrafeX = loadedSettings.reverseStrafeX === true; localStorage.setItem('voxelEditorReverseStrafeX', reverseStrafeX);
+            reverseStrafeY = loadedSettings.reverseStrafeY === true; localStorage.setItem('voxelEditorReverseStrafeY', reverseStrafeY);
+            updateMobileCameraControlButtons(); // Update button states
+
             if (loadedSettings.templateImageData) {
                 templateImageData = loadedSettings.templateImageData;
                 new THREE.TextureLoader().load(templateImageData.src, (texture) => {
@@ -2000,6 +2082,11 @@ async function uploadProjectToHub() {
             gridSize: GRID, cameraPosition: cam.position.toArray(), cameraQuaternion: cam.quaternion.toArray(),
             activeDrawingLevel: activeDrawingLevel, currentDrawingAxis: currentDrawingAxis, currentColor: currentColor,
             presetColors: presetColors, activePresetIndex: activePresetIndex, moveSpeed: moveSpeed,
+            rotSpeed: rotSpeed, // Save rotation speed
+            invertLookX: invertLookX, // Save invert look X
+            invertLookY: invertLookY, // Save invert look Y
+            reverseStrafeX: reverseStrafeX, // Save reverse strafe X
+            reverseStrafeY: reverseStrafeY, // Save reverse strafe Y
             templateImageData: null
         };
         const firestoreDocument = {
@@ -2013,7 +2100,10 @@ async function uploadProjectToHub() {
                 settings: firestoreSafeSettings, activeDrawingLevel: firestoreSafeSettings.activeDrawingLevel, activePresetIndex: firestoreSafeSettings.activePresetIndex,
                 cameraPosition: firestoreSafeSettings.cameraPosition, cameraQuaternion: firestoreSafeSettings.cameraQuaternion,
                 currentColor: firestoreSafeSettings.currentColor, currentDrawingAxis: firestoreSafeSettings.currentDrawingAxis,
-                gridSize: firestoreSafeSettings.gridSize, moveSpeed: firestoreSafeSettings.moveSpeed, presetColors: firestoreSafeSettings.presetColors, templateImageData: null, voxels: voxelMap
+                gridSize: firestoreSafeSettings.gridSize, moveSpeed: firestoreSafeSettings.moveSpeed, rotSpeed: firestoreSafeSettings.rotSpeed, presetColors: firestoreSafeSettings.presetColors,
+                invertLookX: firestoreSafeSettings.invertLookX, invertLookY: firestoreSafeSettings.invertLookY,
+                reverseStrafeX: firestoreSafeSettings.reverseStrafeX, reverseStrafeY: firestoreSafeSettings.reverseStrafeY,
+                templateImageData: null, voxels: voxelMap
             }
         };
         const docRef = await window.firebase.addDoc(window.firebase.collection(db, "models"), firestoreDocument);
@@ -2182,7 +2272,7 @@ function onPointerUp(e) {
 
     pointerIsDown = false;
     isDragging = false;
-    doubleTapDragActive = false;
+    doubleTapDragActive = false; // Reset double tap active state
     lastActionVoxelCoords = null;
     initialClickPos = null;
     initialTargetVoxelCoords = null;
@@ -2194,8 +2284,7 @@ function onPointerUp(e) {
     previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
     previewLineVoxels = [];
     dragAxisLock = null;
-    initialDragVoxelCoords = null;
-    dragFixedLayerCoord = null;
+    dragFixedLayerCoord = null; // Ensure this is reset
     
     if (e.pointerType === 'touch') {
         releasePointer(e.pointerId, e);
@@ -2249,8 +2338,9 @@ async function onPointerDown(e) {
             const dist = Math.hypot(e.clientX - (lastTapCoords.x || 0), e.clientY - (lastTapCoords.y || 0));
 
             if (currentTime - (lastTapTime || 0) < DOUBLE_TAP_TIME_THRESHOLD && dist < DOUBLE_TAP_DIST_THRESHOLD) { 
+                // Double tap detected: activate drawing/editing mode
                 doubleTapDragActive = true;
-                pointerIsDown = true;
+                pointerIsDown = true; // Indicate that a modification gesture is starting
                 
                 voxelsAtDragStart = new Map(voxels);
                 currentStrokeVoxels.clear();
@@ -2276,12 +2366,8 @@ async function onPointerDown(e) {
                         if (!Number.isFinite(dragFixedLayerCoord)) { 
                             dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]);
                         }
-                    } else { 
-                        if (rawInitialRayTarget.hitExistingVoxel) {
-                             dragFixedLayerCoord = Number(initialTargetVoxelCoords[currentDrawingAxis]);
-                        } else {
-                            dragFixedLayerCoord = null;
-                        }
+                    } else { // DELETE or DRAW mode: no layer lock
+                        dragFixedLayerCoord = null; 
                     }
 
                     if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
@@ -2304,10 +2390,11 @@ async function onPointerDown(e) {
                 } else {
                     updatePreviewVoxel(0,0,0,false);
                 }
-                lastTapTime = 0; lastTapCoords = { x: 0, y: 0 };
+                lastTapTime = 0; lastTapCoords = { x: 0, y: 0 }; // Reset for next double tap
             } else {
+                // Single tap, not double tap: prepare for camera movement
                 doubleTapDragActive = false;
-                pointerIsDown = false;
+                pointerIsDown = false; // Not a voxel modification gesture
                 lastTapTime = currentTime;
                 lastTapCoords = { x: e.clientX, y: e.clientY };
                 gestureState.type = 'none'; gestureState.startMid = gestureState.lastMid = { x: e.clientX, y: e.clientY };
@@ -2317,13 +2404,14 @@ async function onPointerDown(e) {
                 previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
             }
         } else if (activePointers.size >= 2) {
+            // Multi-finger: always for camera pan/zoom
             doubleTapDragActive = false;
             pointerIsDown = false;
             initialTargetVoxelCoords = null;
             currentStrokeVoxels.clear(); currentStrokeVoxelKeys.clear();
             previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
             updatePreviewVoxel(0, 0, 0, false);
-            isDragging = false; initialDragVoxelCoords = null; dragFixedLayerCoord = null;
+            isDragging = false; dragFixedLayerCoord = null;
             
             const pointersArr = [...activePointers.values()];
             const [p0, p1] = pointersArr;
@@ -2335,7 +2423,9 @@ async function onPointerDown(e) {
         return;
     }
 
+    // Mouse Left Click (always for voxel modification)
     pointerIsDown = true;
+    doubleTapDragActive = false; // Ensure double tap mode is off for mouse
     voxelsAtDragStart = new Map(voxels);
     currentStrokeVoxels.clear();
     currentStrokeVoxelKeys.clear();
@@ -2366,12 +2456,8 @@ async function onPointerDown(e) {
             if (!Number.isFinite(dragFixedLayerCoord)) {
                 dragFixedLayerCoord = Number(activeDrawingLevel[currentDrawingAxis]);
             }
-        } else {
-            if (rawInitialRayTarget.hitExistingVoxel) {
-                 dragFixedLayerCoord = Number(initialTargetVoxelCoords[currentDrawingAxis]);
-            } else {
-                dragFixedLayerCoord = null;
-            }
+        } else { // DELETE or DRAW mode: no layer lock
+            dragFixedLayerCoord = null;
         }
 
         if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
@@ -2407,19 +2493,115 @@ function onPointerMove(e) {
     if (e.pointerType === 'touch') {
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
         
-        if (activePointers.size === 1 && !doubleTapDragActive) {
-            handleGesture();
-            updatePreviewVoxel(0, 0, 0, false);
-            previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
-            return;
-        } else if (activePointers.size >= 2) {
-            handleGesture();
-            updatePreviewVoxel(0, 0, 0, false);
-            previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
-            return;
+        if (doubleTapDragActive) {
+            // In double tap mode, only handle voxel modification, no camera movement
+            let currentRayHit = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
+            let currentTargetVoxelCoords = null;
+
+            if (currentRayHit) {
+                currentTargetVoxelCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
+                if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
+                    currentTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
+                }
+                currentTargetVoxelCoords.x = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.x));
+                currentTargetVoxelCoords.y = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.y));
+                currentTargetVoxelCoords.z = Math.max(0, Math.min(GRID - 1, currentTargetVoxelCoords.z));
+            } else {
+                currentTargetVoxelCoords = null;
+            }
+
+            const currentMovedDist = initialClickPos ? Math.hypot(e.clientX - initialClickPos.x, e.clientY - initialClickPos.y) : 0;
+            const shouldStartDrag = currentMovedDist > MOVE_PX;
+
+            if (!isDragging && shouldStartDrag) {
+                isDragging = true;
+            }
+
+            if (isDragging) {
+                if (currentTargetVoxelCoords) {
+                    const startPointForLine = { ...lastActionVoxelCoords };
+                    const endPointForLine = { ...currentTargetVoxelCoords };
+
+                    let pathVoxels;
+                    if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
+                        pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine, currentDrawingAxis, dragFixedLayerCoord);
+                    } else {
+                        pathVoxels = getVoxelsOnLine(startPointForLine, endPointForLine);
+                    }
+
+                    if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
+                        pathVoxels = pathVoxels.filter(voxel => voxelsAtDragStart.has(key(voxel.x, voxel.y, voxel.z)));
+                    }
+                    
+                    for (const voxel of pathVoxels) {
+                        const gKey = key(voxel.x, voxel.y, voxel.z);
+                        const hasVoxelBeforeModification = voxels.has(gKey);
+                        const originalColor = hasVoxelBeforeModification ? voxels.get(gKey).color : null;
+                        
+                        performVoxelModification(voxel.x, voxel.y, voxel.z, currentMode, currentColor);
+                        
+                        const hasVoxelAfterModification = voxels.has(gKey);
+                        const finalColor = hasVoxelAfterModification ? voxels.get(gKey).color : null;
+
+                        if (!currentStrokeVoxels.has(gKey)) {
+                            if (originalColor !== finalColor || (originalColor === null && finalColor !== null)) {
+                                currentStrokeVoxels.set(gKey, { originalColor: originalColor, finalColor: finalColor });
+                            }
+                        } else {
+                            currentStrokeVoxels.get(gKey).finalColor = finalColor;
+                        }
+                        currentStrokeVoxelKeys.add(gKey);
+                    }
+                    if (pathVoxels.length > 0) {
+                        lastActionVoxelCoords = { x: pathVoxels[pathVoxels.length - 1].x, y: pathVoxels[pathVoxels.length - 1].y, z: pathVoxels[pathVoxels.length - 1].z };
+                    } else {
+                        lastActionVoxelCoords = { ...endPointForLine };
+                    }
+                    updatePreviewVoxel(currentTargetVoxelCoords.x, currentTargetVoxelCoords.y, currentTargetVoxelCoords.z, true);
+                    previewLineInstancedMesh.count = 0;
+                } else {
+                    updatePreviewVoxel(0,0,0,false);
+                    previewLineInstancedMesh.count = 0;
+                    previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
+                    previewLineVoxels = [];
+                }
+            } else {
+                if (currentTargetVoxelCoords) {
+                    let showPreview = false;
+                    const gKeyAtPreview = key(currentTargetVoxelCoords.x, currentTargetVoxelCoords.y, currentTargetVoxelCoords.z);
+                    const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
+
+                    if (currentMode === Modes.ADD) {
+                        if (!hasVoxelAtPreview) { showPreview = true; }
+                    } else if (currentMode === Modes.DELETE || currentMode === Modes.DRAW) {
+                        if (hasVoxelAtPreview) { showPreview = true; }
+                    }
+                    updatePreviewVoxel(currentTargetVoxelCoords.x, currentTargetVoxelCoords.y, currentTargetVoxelCoords.z, showPreview);
+                } else {
+                    updatePreviewVoxel(0,0,0,false);
+                }
+                previewLineInstancedMesh.count = 0;
+                previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
+                previewLineVoxels = [];
+            }
+            return; // Exit touch logic if doubleTapDragActive
+        } else {
+            // Normal touch gestures (camera movement)
+            if (activePointers.size === 1) {
+                handleGesture(); // Only camera rotation
+                updatePreviewVoxel(0, 0, 0, false); // No voxel preview during camera movement
+                previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
+                return;
+            } else if (activePointers.size >= 2) {
+                handleGesture(); // Camera pan/zoom
+                updatePreviewVoxel(0, 0, 0, false); // No voxel preview during camera movement
+                previewLineInstancedMesh.count = 0; previewLineInstancedMesh.instanceMatrix.needsUpdate = true; previewLineVoxels = [];
+                return;
+            }
         }
     }
 
+    // Mouse Logic (always for voxel modification if pointerIsDown, otherwise preview)
     lastX = e.clientX;
     lastY = e.clientY;
 
@@ -2428,7 +2610,6 @@ function onPointerMove(e) {
 
     if (currentRayHit) {
         currentTargetVoxelCoords = { x: currentRayHit.x, y: currentRayHit.y, z: currentRayHit.z };
-        // Apply fixed layer constraint first, then clamp
         if (dragFixedLayerCoord !== null && Number.isFinite(dragFixedLayerCoord)) {
             currentTargetVoxelCoords[currentDrawingAxis] = dragFixedLayerCoord;
         }
@@ -2544,10 +2725,6 @@ function onPointerMove(e) {
             updatePreviewVoxel(0, 0, 0, false);
         }
     }
-    
-    if (e.pointerType === 'touch' && activePointers.size === 1 && !isDragging) {
-        handleGesture();
-    }
 }
 
 
@@ -2576,6 +2753,19 @@ function moveDrawingLevel(direction) {
     activeDrawingLevel[currentDrawingAxis] = level;
     updateGridHelperPosition();
     showToast('Zeichenebene', `Ebene ${currentDrawingAxis.toUpperCase()}: ${level}`, 'info', 1500);
+}
+
+// Function to update the visual state of the new mobile camera control buttons
+function updateMobileCameraControlButtons() {
+    const invertLookXBtn = document.getElementById('mobile-invert-look-x');
+    const invertLookYBtn = document.getElementById('mobile-invert-look-y');
+    const reverseStrafeXBtn = document.getElementById('mobile-reverse-strafe-x');
+    const reverseStrafeYBtn = document.getElementById('mobile-reverse-strafe-y');
+
+    if (invertLookXBtn) invertLookXBtn.classList.toggle('btn-primary', invertLookX);
+    if (invertLookYBtn) invertLookYBtn.classList.toggle('btn-primary', invertLookY); // Fixed typo here
+    if (reverseStrafeXBtn) reverseStrafeXBtn.classList.toggle('btn-primary', reverseStrafeX);
+    if (reverseStrafeYBtn) reverseStrafeYBtn.classList.toggle('btn-primary', reverseStrafeY);
 }
 
 
@@ -2782,6 +2972,13 @@ window.onload = async function() {
             moveSpeed = parseFloat(e.target.value); document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2); localStorage.setItem('voxelEditorFlySpeed', moveSpeed);
         });
 
+        // Rotation speed slider event listener (Desktop)
+        document.getElementById('rot-speed-slider').addEventListener('input', (e) => {
+            rotSpeed = parseFloat(e.target.value);
+            document.getElementById('rot-speed-display').textContent = rotSpeed.toFixed(4);
+            localStorage.setItem('voxelEditorRotSpeed', rotSpeed);
+        });
+
         document.getElementById('resetCameraBtn').addEventListener('click', resetCameraPosition);
         // Removed generateVoxelIdeaBtn event listener
         document.getElementById('loadImageTemplateBtn').addEventListener('click', loadImageTemplate);
@@ -2800,6 +2997,7 @@ window.onload = async function() {
             isMobile = e.matches;
             const controlsPanel = document.getElementById('controls');
             const mobileControls = document.getElementById('mobile-controls');
+            const mobileTopMenu = document.getElementById('mobile-top-menu'); // Get new top menu
             const mobileAxisToggle = document.getElementById('mobile-axis-toggle');
             const mobileLevelUp = document.getElementById('mobile-level-up');
             const mobileLevelDown = document.getElementById('mobile-level-down');
@@ -2809,6 +3007,7 @@ window.onload = async function() {
                 controlsPanel.classList.add('hidden');
                 mobileControls.classList.remove('hidden');
                 mobileControls.classList.add('flex');
+                mobileTopMenu.classList.remove('hidden'); // Show mobile top menu
                 toastContainer.classList.remove('toast-end');
                 toastContainer.classList.add('toast-top-center');
                 
@@ -2824,6 +3023,7 @@ window.onload = async function() {
                 controlsPanel.classList.add('flex');
                 mobileControls.classList.add('hidden');
                 mobileControls.classList.remove('flex');
+                mobileTopMenu.classList.add('hidden'); // Hide mobile top menu
                 toastContainer.classList.remove('toast-top-center');
                 toastContainer.classList.add('toast-end');
 
@@ -2833,7 +3033,7 @@ window.onload = async function() {
             }
             onResize();
             rebuildHelpers();
-            // Removed mobileModeText update as it's now an icon
+            updateMobileCameraControlButtons(); // Update button states on media query change
         }
         mediaQuery.addListener(handleMediaQueryChange); handleMediaQueryChange(mediaQuery);
 
@@ -2869,12 +3069,52 @@ window.onload = async function() {
         document.getElementById('mobile-level-up').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(1); });
         document.getElementById('mobile-level-down').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(-1); });
 
+        // New mobile top menu button event listeners
+        document.getElementById('mobile-rot-speed-slider').addEventListener('input', (e) => {
+            rotSpeed = parseFloat(e.target.value);
+            document.getElementById('mobile-rot-speed-display').textContent = rotSpeed.toFixed(4);
+            localStorage.setItem('voxelEditorRotSpeed', rotSpeed);
+        });
+        document.getElementById('mobile-rot-speed-slider').value = rotSpeed; // Set initial value
+        document.getElementById('mobile-rot-speed-display').textContent = rotSpeed.toFixed(4); // Set initial display
+
+        document.getElementById('mobile-invert-look-x').addEventListener('click', (e) => {
+            e.stopPropagation();
+            invertLookX = !invertLookX;
+            localStorage.setItem('voxelEditorInvertLookX', invertLookX);
+            updateMobileCameraControlButtons();
+            showToast('Blick umkehren', `Horizontal: ${invertLookX ? 'Invertiert' : 'Normal'}`, 'info', 1500);
+        });
+        document.getElementById('mobile-invert-look-y').addEventListener('click', (e) => {
+            e.stopPropagation();
+            invertLookY = !invertLookY;
+            localStorage.setItem('voxelEditorInvertLookY', invertLookY);
+            updateMobileCameraControlButtons();
+            showToast('Blick umkehren', `Vertikal: ${invertLookY ? 'Invertiert' : 'Normal'}`, 'info', 1500);
+        });
+        document.getElementById('mobile-reverse-strafe-x').addEventListener('click', (e) => {
+            e.stopPropagation();
+            reverseStrafeX = !reverseStrafeX;
+            localStorage.setItem('voxelEditorReverseStrafeX', reverseStrafeX);
+            updateMobileCameraControlButtons();
+            showToast('Strafe umkehren', `Horizontal: ${reverseStrafeX ? 'Umgekehrt' : 'Normal'}`, 'info', 1500);
+        });
+        document.getElementById('mobile-reverse-strafe-y').addEventListener('click', (e) => {
+            e.stopPropagation();
+            reverseStrafeY = !reverseStrafeY;
+            localStorage.setItem('voxelEditorReverseStrafeY', reverseStrafeY);
+            updateMobileCameraControlButtons();
+            showToast('Strafe umkehren', `Vertikal: ${reverseStrafeY ? 'Umgekehrt' : 'Normal'}`, 'info', 1500);
+        });
+        updateMobileCameraControlButtons(); // Initial update for button states
+
         // Removed mobile-generate-idea event listener
         document.getElementById('mobile-login-logout').addEventListener('click', (e) => { e.stopPropagation(); loginLogout(); });
 
         document.getElementById('grid-size-slider').value = GRID; document.getElementById('grid-size-display').textContent = `${GRID}×${GRID}×${GRID}`;
         // Initial color setting for the desktop swatch is now handled in the event listener setup
         document.getElementById('fly-speed-slider').value = moveSpeed; document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2);
+        document.getElementById('rot-speed-slider').value = rotSpeed; document.getElementById('rot-speed-display').textContent = rotSpeed.toFixed(4); // Set initial display for rotation speed
         
         // Removed mobile-mode-text update
         document.getElementById('mobile-mode-icon').className = ModeIcons[Object.keys(Modes).find(key => Modes[key] === currentMode)]; // Set initial icon
