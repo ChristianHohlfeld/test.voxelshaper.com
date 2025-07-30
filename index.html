@@ -152,32 +152,6 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     gap: 0.75rem; /* Slightly reduced gap */
 }
 
-/* New styles for mobile top menu buttons */
-.mobile-top-menu {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    background-color: var(--fallback-b2, oklch(var(--b2)/1));
-    border-bottom: 1px solid var(--fallback-bc, oklch(var(--bc)/0.1));
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.mobile-top-menu .btn {
-    min-height: 2.5rem; /* Ensure consistent height */
-    height: 2.5rem;
-    padding: 0 0.75rem;
-    font-size: 0.875rem;
-    flex-shrink: 0; /* Prevent shrinking */
-}
-
-.mobile-top-menu .range {
-    flex-grow: 1; /* Allow slider to take available space */
-    max-width: 120px; /* Limit slider width */
-}
-
 /* Mobile specific styles for the desktop controls panel when it's shown as an overlay */
 @media (max-width: 768px) {
     #controls {
@@ -191,6 +165,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
         flex-direction: column; /* Stack items vertically */
         align-items: flex-start; /* Align items to the start */
         padding: 1rem;
+        padding-top: 4rem; /* Add padding to account for the hamburger menu button */
         overflow-y: auto; /* Enable scrolling for controls */
         box-sizing: border-box;
         gap: 0.75rem; /* Adjust gap for mobile */
@@ -240,18 +215,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 <body class="bg-base-100 min-h-screen text-base-content flex flex-col">
 <button id="menuToggle" aria-label="Menü umschalten" class="fixed top-4 right-4 z-[1500] w-10 h-10 text-xl leading-10 text-center bg-base-300 text-base-content border-none rounded-lg cursor:pointer shadow-md hover:bg-base-content/20 lg:hidden">☰</button>
 
-<!-- New Mobile Top Menu -->
-<div id="mobile-top-menu" class="mobile-top-menu md:hidden">
-    <label for="mobile-rot-speed-slider" class="text-base-content text-sm mr-2">Rotationsgeschw.:</label>
-    <input type="range" id="mobile-rot-speed-slider" min="0.001" max="0.01" step="0.0005" value="0.003" aria-label="Rotationsgeschwindigkeit anpassen" class="range range-xs w-24">
-    <span id="mobile-rot-speed-display" class="font-bold text-primary text-sm">0.0030</span>
-
-    <button id="mobile-invert-look-x" class="btn btn-sm btn-neutral text-btn">↔️ Blick</button>
-    <button id="mobile-invert-look-y" class="btn btn-sm btn-neutral text-btn">↕️ Blick</button>
-    <button id="mobile-reverse-strafe-x" class="btn btn-sm btn-neutral text-btn">↔️ Strafe</button>
-    <button id="mobile-reverse-strafe-y" class="btn btn-sm btn-neutral text-btn">↕️ Strafe</button>
-</div>
-
+<!-- Main Controls (Desktop and Mobile Overlay) -->
 <div id="controls" class="flex flex-wrap items-center justify-center gap-3 p-4 bg-base-200 border-b border-base-content/20 hidden md:flex">
     <label for="grid-size-slider" class="text-base-content">Gittergröße:</label>
     <input type="range" id="grid-size-slider" min="5" max="180" value="10" aria-label="Gittergröße anpassen" class="range range-xs w-36">
@@ -283,6 +247,12 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <label for="rot-speed-slider" class="text-base-content">Rotationsgeschwindigkeit:</label>
     <input type="range" id="rot-speed-slider" min="0.001" max="0.01" step="0.0005" value="0.003" aria-label="Rotationsgeschwindigkeit anpassen" class="range range-xs w-36">
     <span id="rot-speed-display" class="font-bold text-primary">0.0030</span>
+
+    <!-- NEW: Camera/Strafe Controls moved here -->
+    <button id="invert-look-x" class="btn btn-sm btn-neutral text-btn">↔️ Blick</button>
+    <button id="invert-look-y" class="btn btn-sm btn-neutral text-btn">↕️ Blick</button>
+    <button id="reverse-strafe-x" class="btn btn-sm btn-neutral text-btn">↔️ Strafe</button>
+    <button id="reverse-strafe-y" class="btn btn-sm btn-neutral text-btn">↕️ Strafe</button>
 
     <button id="resetCameraBtn" aria-label="Kamera zurücksetzen" class="btn btn-sm btn-neutral">Zur Szene zurückkehen</button>
 
@@ -480,8 +450,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <button class="mobile-btn" id="mobile-axis-toggle" aria-label="Zeichenachse wechseln">
         <span id="mobile-axis-icon" class="fas fa-arrows-alt-v"></span>
     </button>
-    <button class="mobile-btn" id="mobile-level-up" aria-label="Ebene erhöhen">⬆️</button>
-    <button class="mobile-btn" id="mobile-level-down" aria-label="Ebene verringern">⬇️</button>
+    <!-- Removed mobile-level-up and mobile-level-down buttons -->
 
     <button class="mobile-btn" id="mobile-login-logout" aria-label="Anmelden oder Abmelden">🔑</button>
 </div>
@@ -1537,7 +1506,7 @@ async function loadProjectFromModelId(modelId) {
         } else { showToast('Projekt nicht gefunden', `Kein Projekt mit ID "${modelId}" gefunden.`, 'warning', 5000); resetToDefaultProject(); }
     } catch (error) {
         if (error.code === 'permission-denied') showToast('Zugriff verweigert', `Berechtigungsfehler beim Laden des Projekts. Stellen Sie sicher, dass das Modell öffentlich ist oder Sie der Eigentümer sind.`, 'error', 5000);
-        else showToast('Fehler', `Fehler beim Laden des Projekts: ${error.message}`, 'error', 5000);
+        else showToast('Fehler', `Fehler beim Laden des Projekts: ${e.message}`, 'error', 5000);
         resetToDefaultProject();
     }
 }
@@ -2548,10 +2517,10 @@ function onPointerMove(e) {
     e.preventDefault();
     e.stopPropagation();
 
+    // If pointer is locked, movement is handled by the dedicated 'mousemove' listener.
+    // This function should not process movement events when pointer is locked.
     if (isPointerLocked) {
-        mouseMovementX += e.movementX;
-        mouseMovementY += e.movementY;
-        return;
+        return; 
     }
 
     if (e.pointerType === 'touch') {
@@ -2821,10 +2790,11 @@ function moveDrawingLevel(direction) {
 
 // Function to update the visual state of the new mobile camera control buttons
 function updateMobileCameraControlButtons() {
-    const invertLookXBtn = document.getElementById('mobile-invert-look-x');
-    const invertLookYBtn = document.getElementById('mobile-invert-look-y');
-    const reverseStrafeXBtn = document.getElementById('mobile-reverse-strafe-x');
-    const reverseStrafeYBtn = document.getElementById('mobile-reverse-strafe-y');
+    // These buttons are now in the main #controls div
+    const invertLookXBtn = document.getElementById('invert-look-x');
+    const invertLookYBtn = document.getElementById('invert-look-y');
+    const reverseStrafeXBtn = document.getElementById('reverse-strafe-x');
+    const reverseStrafeYBtn = document.getElementById('reverse-strafe-y');
 
     if (invertLookXBtn) invertLookXBtn.classList.toggle('btn-primary', invertLookX);
     if (invertLookYBtn) invertLookYBtn.classList.toggle('btn-primary', invertLookY);
@@ -2878,6 +2848,7 @@ window.onload = async function() {
         document.addEventListener('keydown', onKeyDown); document.addEventListener('keyup', onKeyUp);
         document.addEventListener('pointerlockchange', onPointerLockChange, false);
         containerDiv.addEventListener('mousemove', (e) => {
+            // This specific mousemove listener handles movement ONLY when pointer lock is active
             if (isPointerLocked) {
                 mouseMovementX += e.movementX;
                 mouseMovementY += e.movementY;
@@ -3043,6 +3014,37 @@ window.onload = async function() {
             localStorage.setItem('voxelEditorRotSpeed', rotSpeed);
         });
 
+        // NEW: Event listeners for invert/reverse buttons (now universal)
+        document.getElementById('invert-look-x').addEventListener('click', (e) => {
+            e.stopPropagation();
+            invertLookX = !invertLookX;
+            localStorage.setItem('voxelEditorInvertLookX', invertLookX);
+            updateMobileCameraControlButtons(); // This function now updates the universal buttons
+            showToast('Blick umkehren', `Horizontal: ${invertLookX ? 'Invertiert' : 'Normal'}`, 'info', 1500);
+        });
+        document.getElementById('invert-look-y').addEventListener('click', (e) => {
+            e.stopPropagation();
+            invertLookY = !invertLookY;
+            localStorage.setItem('voxelEditorInvertLookY', invertLookY);
+            updateMobileCameraControlButtons();
+            showToast('Blick umkehren', `Vertikal: ${invertLookY ? 'Invertiert' : 'Normal'}`, 'info', 1500);
+        });
+        document.getElementById('reverse-strafe-x').addEventListener('click', (e) => {
+            e.stopPropagation();
+            reverseStrafeX = !reverseStrafeX;
+            localStorage.setItem('voxelEditorReverseStrafeX', reverseStrafeX);
+            updateMobileCameraControlButtons();
+            showToast('Strafe umkehren', `Horizontal: ${reverseStrafeX ? 'Umgekehrt' : 'Normal'}`, 'info', 1500);
+        });
+        document.getElementById('reverse-strafe-y').addEventListener('click', (e) => {
+            e.stopPropagation();
+            reverseStrafeY = !reverseStrafeY;
+            localStorage.setItem('voxelEditorReverseStrafeY', reverseStrafeY);
+            updateMobileCameraControlButtons();
+            showToast('Strafe umkehren', `Vertikal: ${reverseStrafeY ? 'Umgekehrt' : 'Normal'}`, 'info', 1500);
+        });
+
+
         document.getElementById('resetCameraBtn').addEventListener('click', resetCameraPosition);
         // Removed generateVoxelIdeaBtn event listener
         document.getElementById('loadImageTemplateBtn').addEventListener('click', loadImageTemplate);
@@ -3074,23 +3076,21 @@ window.onload = async function() {
             isMobile = e.matches;
             const controlsPanel = document.getElementById('controls');
             const mobileControls = document.getElementById('mobile-controls');
-            const mobileTopMenu = document.getElementById('mobile-top-menu'); // Get new top menu
+            // Removed mobileTopMenu as it's deleted
             const mobileAxisToggle = document.getElementById('mobile-axis-toggle');
-            const mobileLevelUp = document.getElementById('mobile-level-up');
-            const mobileLevelDown = document.getElementById('mobile-level-down');
+            // Removed mobileLevelUp and mobileLevelDown as they are deleted
             const mobileModeIcon = document.getElementById('mobile-mode-icon'); // Get the icon element
 
             if (e.matches) {
                 controlsPanel.classList.add('hidden'); // Ensure desktop controls are hidden by default on mobile
                 mobileControls.classList.remove('hidden');
                 mobileControls.classList.add('flex');
-                mobileTopMenu.classList.remove('hidden'); // Show mobile top menu
+                // Removed mobileTopMenu related code
                 toastContainer.classList.remove('toast-end');
                 toastContainer.classList.add('toast-top-center');
                 
                 mobileAxisToggle.classList.remove('hidden');
-                mobileLevelUp.classList.remove('hidden');
-                mobileLevelDown.classList.remove('hidden');
+                // Removed mobileLevelUp and mobileLevelDown related code
                 if (mobileModeIcon) { // Set initial icon for mobile
                     mobileModeIcon.className = ModeIcons[Object.keys(Modes).find(key => Modes[key] === currentMode)];
                 }
@@ -3100,13 +3100,12 @@ window.onload = async function() {
                 controlsPanel.classList.add('flex');
                 mobileControls.classList.add('hidden');
                 mobileControls.classList.remove('flex');
-                mobileTopMenu.classList.add('hidden'); // Hide mobile top menu
+                // Removed mobileTopMenu related code
                 toastContainer.classList.remove('toast-top-center');
                 toastContainer.classList.add('toast-end');
 
                 mobileAxisToggle.classList.add('hidden');
-                mobileLevelUp.classList.add('hidden');
-                mobileLevelDown.classList.add('hidden');
+                // Removed mobileLevelUp and mobileLevelDown related code
             }
             onResize();
             rebuildHelpers();
@@ -3143,47 +3142,20 @@ window.onload = async function() {
         mobileColorInputHidden.value = currentColor; // Set initial value for hidden input
 
         document.getElementById('mobile-axis-toggle').addEventListener('click', (e) => { e.stopPropagation(); cycleDrawingAxis(); });
-        document.getElementById('mobile-level-up').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(1); });
-        document.getElementById('mobile-level-down').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(-1); });
+        // Removed mobile-level-up and mobile-level-down event listeners
+        // document.getElementById('mobile-level-up').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(1); });
+        // document.getElementById('mobile-level-down').addEventListener('click', (e) => { e.stopPropagation(); moveDrawingLevel(-1); });
 
-        // New mobile top menu button event listeners
-        document.getElementById('mobile-rot-speed-slider').addEventListener('input', (e) => {
-            rotSpeed = parseFloat(e.target.value);
-            document.getElementById('mobile-rot-speed-display').textContent = rotSpeed.toFixed(4);
-            localStorage.setItem('voxelEditorRotSpeed', rotSpeed);
-        });
-        document.getElementById('mobile-rot-speed-slider').value = rotSpeed; // Set initial value
-        document.getElementById('mobile-rot-speed-display').textContent = rotSpeed.toFixed(4); // Set initial display
+        // Removed mobile top menu button event listeners as the div is removed
+        // document.getElementById('mobile-rot-speed-slider').addEventListener('input', (e) => {
+        //     rotSpeed = parseFloat(e.target.value);
+        //     document.getElementById('mobile-rot-speed-display').textContent = rotSpeed.toFixed(4);
+        //     localStorage.setItem('voxelEditorRotSpeed', rotSpeed);
+        // });
+        // document.getElementById('mobile-rot-speed-slider').value = rotSpeed; // Set initial value
+        // document.getElementById('mobile-rot-speed-display').textContent = rotSpeed.toFixed(4); // Set initial display
 
-        document.getElementById('mobile-invert-look-x').addEventListener('click', (e) => {
-            e.stopPropagation();
-            invertLookX = !invertLookX;
-            localStorage.setItem('voxelEditorInvertLookX', invertLookX);
-            updateMobileCameraControlButtons();
-            showToast('Blick umkehren', `Horizontal: ${invertLookX ? 'Invertiert' : 'Normal'}`, 'info', 1500);
-        });
-        document.getElementById('mobile-invert-look-y').addEventListener('click', (e) => {
-            e.stopPropagation();
-            invertLookY = !invertLookY;
-            localStorage.setItem('voxelEditorInvertLookY', invertLookY);
-            updateMobileCameraControlButtons();
-            showToast('Blick umkehren', `Vertikal: ${invertLookY ? 'Invertiert' : 'Normal'}`, 'info', 1500);
-        });
-        document.getElementById('mobile-reverse-strafe-x').addEventListener('click', (e) => {
-            e.stopPropagation();
-            reverseStrafeX = !reverseStrafeX;
-            localStorage.setItem('voxelEditorReverseStrafeX', reverseStrafeX);
-            updateMobileCameraControlButtons();
-            showToast('Strafe umkehren', `Horizontal: ${reverseStrafeX ? 'Umgekehrt' : 'Normal'}`, 'info', 1500);
-        });
-        document.getElementById('mobile-reverse-strafe-y').addEventListener('click', (e) => {
-            e.stopPropagation();
-            reverseStrafeY = !reverseStrafeY;
-            localStorage.setItem('voxelEditorReverseStrafeY', reverseStrafeY);
-            updateMobileCameraControlButtons();
-            showToast('Strafe umkehren', `Vertikal: ${reverseStrafeY ? 'Umgekehrt' : 'Normal'}`, 'info', 1500);
-        });
-        updateMobileCameraControlButtons(); // Initial update for button states
+        // Removed mobile-invert-look-x/y and mobile-reverse-strafe-x/y event listeners as they are now universal and handled above.
 
         // Removed mobile-generate-idea event listener
         document.getElementById('mobile-login-logout').addEventListener('click', (e) => { e.stopPropagation(); loginLogout(); });
