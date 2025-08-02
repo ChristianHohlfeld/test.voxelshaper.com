@@ -233,7 +233,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 
         <div class="upload-modal-buttons flex justify-around gap-4 mt-6">
             <button id="uploadConfirmBtn" class="upload-confirm btn btn-success flex-1">Hochladen</button>
-            <button id="uploadCancelBtn" class="btn btn-ghost flex-1">Abbrechen</button>
+            <button id="uploadCancelBtn" class="upload-cancel btn btn-ghost flex-1">Abbrechen</button>
         </div>
     </div>
 </dialog>
@@ -493,6 +493,10 @@ const MAX_HISTORY_SIZE = 100;
 let currentStrokeVoxels = new Map();
 let voxelsAtDragStart = null;
 
+let previewLineInstancedMesh;
+const maxPreviewInstances = 180 * 3;
+let previewLineVoxels = [];
+
 let templateImageMesh = null;
 let templateImageData = null;
 
@@ -520,8 +524,6 @@ function createBrickGeometry(width, height, depth) {
     const studRadius = width * 0.15;
     const studHeight = height * 0.2;
     const studGeometry = new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 16);
-    
-    const geometries = [mainBox];
     
     // Position studs on the top face
     const studPositions = [
@@ -860,12 +862,6 @@ function performVoxelModification(gx, gy, gz, mode, newColor) {
 function updatePreviewVoxel(x, y, z, visible) {
     if (previewVoxelMesh) {
         if (visible) {
-            if (previewVoxelMesh.geometry.parameters.width !== VS ||
-                previewVoxelMesh.geometry.parameters.height !== VS ||
-                previewVoxelMesh.geometry.parameters.depth !== VS) {
-                previewVoxelMesh.geometry.dispose();
-                previewVoxelMesh.geometry = new THREE.BoxGeometry(VS, VS, VS);
-            }
             previewVoxelMesh.position.set(x * VS + HALF, y * VS + HALF, z * VS + HALF);
             previewVoxelMesh.visible = true;
             previewVoxelMaterial.color.set(currentColor);
@@ -955,7 +951,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
                 return null;
             }
 
-            const result = { gx, gy, gz, faceNormal: null, hitExistingVoxel: false };
+            const result = { gx: gx, gy: gy, gz: gz, faceNormal: null, hitExistingVoxel: false };
             return result;
         }
     }
@@ -1060,7 +1056,7 @@ function resetToDefaultProject() {
     localStorage.setItem('voxelPresetColor1', presetColors[0]); localStorage.setItem('voxelPresetColor2', presetColors[1]); localStorage.setItem('voxelPresetColor3', presetColors[2]);
     presetBoxes.forEach((box, i) => { box.value = presetColors[i]; box.classList.remove('active', 'border-primary', 'shadow-lg', 'shadow-primary/50'); });
     activePresetIndex = -1; removeImageTemplate(true); history.length = 0; historyPointer = -1;
-    rebuildHelpers(); resetCameraPosition(); showToast('Projekt zurückgesetzt', 'Das Projekt wurde auf den Standardzustand zurückgesetzt.', 'info', 5000);
+    resetCameraPosition(); showToast('Projekt zurückgesetzt', 'Das Projekt wurde auf den Standardzustand zurückgesetzt.', 'info', 5000);
 }
 
 function loadProjectData(projectData) {
@@ -1379,7 +1375,7 @@ window.signInEmailPassword = async function() { const email = document.getElemen
 window.signUpEmailPassword = async function() { const email = document.getElementById('emailInput').value; const password = document.getElementById('passwordInput').value; try { await window.firebase.createUserWithEmailAndPassword(auth, email, password); showToast('Registrierung erfolgreich', 'Konto erstellt und angemeldet.', 'success', 5000); closeAuthModal(); } catch (e) { showToast('Registrierungsfehler', `E-Mail: ${e.message}`, 'error', 5000); } }
 
 function closeAllModals() {
-    const modals = ['clearConfirmationModal', 'uploadProjectModal', 'authModal', 'ideaGeneratorModal', 'exportStlModal'];
+    const modals = ['clearConfirmationModal', 'uploadProjectModal', 'authModal', 'exportStlModal'];
     modals.forEach(id => { const modal = document.getElementById(id); if (modal && modal.open) modal.close(); });
 }
 window.closeAllModals = closeAllModals;
@@ -1408,7 +1404,7 @@ function onMouseWheel(e) {
 
 const keyboard = {};
 function onKeyDown(e) {
-    const activeModals = ['authModal', 'uploadProjectModal', 'clearConfirmationModal', 'ideaGeneratorModal', 'exportStlModal'].some(id => document.getElementById(id)?.open);
+    const activeModals = ['authModal', 'uploadProjectModal', 'clearConfirmationModal', 'exportStlModal'].some(id => document.getElementById(id).open);
     if (activeModals) { if (e.key === 'Escape') { closeAllModals(); e.preventDefault(); } return; }
     keyboard[e.key.toLowerCase()] = true;
     if (e.key === 'Shift') isShiftDragging = true;
@@ -1427,16 +1423,18 @@ function onKeyUp(e) {
 }
 
 function onPointerLeave(e) {
-    if (pointerIsDown && isDragging && currentStrokeVoxels.size > 0) {
-        const oldState = [];
-        const newState = [];
-        for (const [gKey, change] of currentStrokeVoxels.entries()) {
-            const [gx, gy, gz] = parseKey(gKey);
-            oldState.push({ gx, gy, gz, color: change.originalColor });
-            newState.push({ gx, gy, gz, color: change.finalColor });
-        }
-        if (oldState.length > 0) {
-            addCommand('batch', oldState, newState);
+    if (pointerIsDown && isDragging) {
+        if (currentStrokeVoxels.size > 0) {
+            const oldState = [];
+            const newState = [];
+            for (const [gKey, change] of currentStrokeVoxels.entries()) {
+                const [gx, gy, gz] = parseKey(gKey);
+                oldState.push({ gx, gy, gz, color: change.originalColor });
+                newState.push({ gx, gy, gz, color: change.finalColor });
+            }
+            if (oldState.length > 0) {
+                addCommand('batch', oldState, newState);
+            }
         }
     }
     pointerIsDown = false;
@@ -1450,9 +1448,10 @@ function onPointerLeave(e) {
     updatePreviewVoxel(0, 0, 0, false);
     dragAxisLock = null;
     initialDragVoxelCoords = null;
-    if (previewLineInstancedMesh) {
-      previewLineInstancedMesh.count = 0;
-      previewLineInstancedMesh.instanceMatrix.needsUpdate = true;
+    initialDragYLevel = null;
+    
+    if (e.pointerType === 'touch') {
+        releasePointer(e.pointerId, e);
     }
 }
 
@@ -1506,8 +1505,8 @@ function onPointerUp(e) {
             const newState = [];
             for (const [gKey, change] of currentStrokeVoxels.entries()) {
                 const [gx, gy, gz] = parseKey(gKey);
-                oldState.push({ gx: gx, gy: gy, gz: gz, color: change.originalColor });
-                newState.push({ gx: gx, gy: gy, gz: gz, color: change.finalColor });
+                oldState.push({ gx, gy, gz, color: change.originalColor });
+                newState.push({ gx, gy, gz, color: change.finalColor });
             }
             if (oldState.length > 0) {
                 addCommand('batch', oldState, newState);
@@ -1519,9 +1518,9 @@ function onPointerUp(e) {
 
             const rawTargetAtDown = calculateRayTargetVoxelCoords(initialClickPos.x, initialClickPos.y);
             if (currentMode === Modes.ADD && rawTargetAtDown && rawTargetAtDown.faceNormal) {
-                finalVoxelCoords.gx = rawTargetAtDown.gx + rawTargetAtDown.faceNormal.x;
-                finalVoxelCoords.gy = rawTargetAtDown.gy + rawTargetAtDown.faceNormal.y;
-                finalVoxelCoords.gz = rawTargetAtDown.gz + rawTargetAtDown.faceNormal.z;
+                finalVoxelCoords.gx = rawTargetAtDown.gx + Math.round(rawTargetAtDown.faceNormal.x);
+                finalVoxelCoords.gy = rawTargetAtDown.gy + Math.round(rawTargetAtDown.faceNormal.y);
+                finalVoxelCoords.gz = rawTargetAtDown.gz + Math.round(rawTargetAtDown.faceNormal.z);
                 
                 finalVoxelCoords.gx = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gx));
                 finalVoxelCoords.gy = Math.max(0, Math.min(GRID - 1, finalVoxelCoords.gy));
@@ -1591,6 +1590,7 @@ function onPointerDown(e) {
     dragAxisLock = null;
     isDragging = false;
     initialDragVoxelCoords = null;
+    initialDragYLevel = null;
 
     initialClickPos = { x: e.clientX, y: e.clientY };
     pointerIsDown = true;
@@ -1601,8 +1601,12 @@ function onPointerDown(e) {
         return;
     }
     
-    if (initialTargetVoxelCoords) {
-        initialDragYLevel = initialTargetVoxelCoords.gy;
+    if (initialTargetVoxelCoords && currentMode === Modes.ADD) {
+        if (initialTargetVoxelCoords.hitExistingVoxel) {
+            initialDragYLevel = initialTargetVoxelCoords.gy + Math.round(initialTargetVoxelCoords.faceNormal.y);
+        } else {
+            initialDragYLevel = initialTargetVoxelCoords.gy;
+        }
     }
 
 
@@ -1682,13 +1686,24 @@ function onPointerMove(e) {
         let gx = currentRayHit.gx;
         let gy = currentRayHit.gy;
         let gz = currentRayHit.gz;
-        
-        if (currentMode === Modes.ADD && currentRayHit.faceNormal) {
-            gx += currentRayHit.faceNormal.x;
-            gy += currentRayHit.faceNormal.y;
-            gz += currentRayHit.faceNormal.z;
-        }
 
+        // Corrected logic for add mode preview and placement
+        if (currentMode === Modes.ADD) {
+            if (currentRayHit.hitExistingVoxel) {
+                gx = currentRayHit.gx + Math.round(currentRayHit.faceNormal.x);
+                gy = currentRayHit.gy + Math.round(currentRayHit.faceNormal.y);
+                gz = currentRayHit.gz + Math.round(currentRayHit.faceNormal.z);
+            } else {
+                 if (currentDrawingAxis === 'y') {
+                    gy = activeDrawingLevel.y;
+                } else if (currentDrawingAxis === 'x') {
+                    gx = activeDrawingLevel.x;
+                } else if (currentDrawingAxis === 'z') {
+                    gz = activeDrawingLevel.z;
+                }
+            }
+        }
+        
         gx = Math.floor(gx);
         gy = Math.floor(gy);
         gz = Math.floor(gz);
@@ -1703,7 +1718,7 @@ function onPointerMove(e) {
             currentTargetVoxelCoords = null;
         }
     }
-
+    
     if (pointerIsDown && currentTargetVoxelCoords) {
         if (!isDragging && shouldStartDrag) {
             isDragging = true;
@@ -1750,6 +1765,7 @@ function onPointerMove(e) {
             }
             lastActionVoxelCoords = { ...endPointForLine };
             updatePreviewVoxel(currentTargetVoxelCoords.gx, currentTargetVoxelCoords.gy, currentTargetVoxelCoords.gz, true);
+
         } else {
             if (currentTargetVoxelCoords) {
                 let showPreview = false;
@@ -1769,19 +1785,30 @@ function onPointerMove(e) {
     } else {
         if (currentRayHit) {
             let hoverPreviewCoords = { gx: currentRayHit.gx, gy: currentRayHit.gy, gz: currentRayHit.gz };
-            if (currentMode === Modes.ADD && currentRayHit.faceNormal) {
-                hoverPreviewCoords.gx += currentRayHit.faceNormal.x;
-                hoverPreviewCoords.gy += currentRayHit.faceNormal.y;
-                hoverPreviewCoords.gz += currentRayHit.faceNormal.z;
+            if (currentMode === Modes.ADD) {
+                if (currentRayHit.hitExistingVoxel) {
+                    hoverPreviewCoords.gx += Math.round(currentRayHit.faceNormal.x);
+                    hoverPreviewCoords.gy += Math.round(currentRayHit.faceNormal.y);
+                    hoverPreviewCoords.gz += Math.round(currentRayHit.faceNormal.z);
+                } else {
+                    if (currentDrawingAxis === 'y') {
+                        hoverPreviewCoords.gy = activeDrawingLevel.y;
+                    } else if (currentDrawingAxis === 'x') {
+                        hoverPreviewCoords.gx = activeDrawingLevel.x;
+                    } else if (currentDrawingAxis === 'z') {
+                        hoverPreviewCoords.gz = activeDrawingLevel.z;
+                    }
+                }
             }
+            
             hoverPreviewCoords.gx = Math.floor(hoverPreviewCoords.gx);
             hoverPreviewCoords.gy = Math.floor(hoverPreviewCoords.gy);
             hoverPreviewCoords.gz = Math.floor(hoverPreviewCoords.gz);
-            
+
             hoverPreviewCoords.gx = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.gx));
             hoverPreviewCoords.gy = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.gy));
             hoverPreviewCoords.gz = Math.max(0, Math.min(GRID - 1, hoverPreviewCoords.gz));
-
+            
             let showPreview = false;
             const gKeyAtPreview = key(hoverPreviewCoords.gx, hoverPreviewCoords.gy, hoverPreviewCoords.gz);
             const hasVoxelAtPreview = voxels.has(gKeyAtPreview);
@@ -1827,7 +1854,7 @@ function moveDrawingLevel(direction) {
     level = Math.max(0, Math.min(GRID - 1, level));
     activeDrawingLevel[currentDrawingAxis] = level;
     updateGridHelperPosition();
-    showToast('Zeichenebene', `Ebene ${currentDrawingAxis.toUpperCase()}: ${level}`, 'info', 1500);
+    showToast('Zeichenebene', `Achse: ${currentDrawingAxis.toUpperCase()}, Ebene: ${level}`, 'info', 1500);
 }
 
 
