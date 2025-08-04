@@ -180,6 +180,8 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <button id="removeImageTemplateBtn" class="btn btn-sm btn-neutral hidden" aria-label="Bildvorlage entfernen">Bildvorlage entfernen</button>
     <input type="file" id="imageFileInput" accept="image/*" class="hidden">
 
+    <button id="toggleMeshViewBtn" aria-label="Mesh-Ansicht umschalten" class="btn btn-sm btn-neutral">Mesh-Ansicht umschalten</button>
+
     <button id="loginLogoutBtn" aria-label="Anmelden oder Abmelden" class="btn btn-sm btn-info">Anmelden</button>
     <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
     <button id="uploadToHubBtn" aria-label="Auf Hub hochladen" class="btn btn-sm btn-warning hidden">Auf Hub hochladen</button>
@@ -319,6 +321,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -517,38 +520,140 @@ let projectVisibility = 'public';
 
 const predefinedCategories = ["Spielzeug", "Dekoration", "Funktional", "Kunst", "Allgemein", "Charaktere", "Fahrzeuge", "Natur", "Architektur", "Abstrakt"];
 
-// Create a custom geometry for the brick with studs.
-function createBrickGeometry(width, height, depth) {
-    // The base of the brick is a box
-    const mainBox = new THREE.BoxGeometry(width, height, depth);
-    const studRadius = width * 0.15;
-    const studHeight = height * 0.2;
-    const studGeometry = new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 16);
-    
-    // Position studs on the top face
-    const studPositions = [
-        [-width / 4, height / 2, -depth / 4],
-        [ width / 4, height / 2, -depth / 4],
-        [-width / 4, height / 2,  depth / 4],
-        [ width / 4, height / 2,  depth / 4],
-    ];
-    
-    const studGeometries = studPositions.map(pos => {
-        const stud = studGeometry.clone();
-        stud.translate(pos[0], pos[1] + studHeight/2, pos[2]);
-        return stud;
-    });
+/**
+ * Erstellt eine Geometrie für einen LEGO-ähnlichen Baustein mit einem Kreuz-Noppen oben
+ * und einer passenden Kreuz-Aussparung unten.
+ * Die Geometrie wird so erstellt, dass ihr unterster Punkt bei Y=0 liegt.
+ *
+ * @param {number} side - Die Basisbreite und -tiefe des Bausteins (z.B. VS).
+ * @returns {THREE.BufferGeometry} Eine zusammengeführte BufferGeometry, die den Baustein darstellt.
+ */
+function createBrickGeometry(side) {
+    const geometries = [];
+    const printTolerance = 0.05; // Kleine Toleranz für den 3D-Druck (z.B. 0.05mm)
 
-    return THREE.BufferGeometryUtils.mergeBufferGeometries([mainBox, ...studGeometries]);
+    // LEGO 1x1 Baustein Nominalmaße (in mm, dann skaliert mit VS)
+    // Angenommen, VS repräsentiert die 8mm Seitenlänge eines 1x1 LEGO-Steins.
+    const nominalBrickSide = 8.0;
+    const scaleFactor = side / nominalBrickSide;
+
+    // Core dimensions based on real LEGO bricks
+    const brickBodyBaseHeight = 8.0 * scaleFactor; // Height of the main rectangular body
+    const topPlateThickness = 1.6 * scaleFactor; // Thickness of the plate on top of the main body
+    const crossStudHeight = 1.8 * scaleFactor; // Height of the cross stud itself
+    const outerWallThickness = 1.6 * scaleFactor; // Thickness of the outer walls
+
+    // Calculated overall height for stacking (excluding studs)
+    const brickOverallHeightForStacking = brickBodyBaseHeight + topPlateThickness;
+
+    // Noppen- und Anti-Noppen-Maße (Kreuzform)
+    const crossStudSide = 4.8 * scaleFactor; // Seitenlänge des Kreuz-Noppen (Breite der Arme)
+    const crossThickness = 1.6 * scaleFactor; // Dicke der Kreuzarme (für Stud und Anti-Stud)
+
+    const halfSide = side / 2;
+    const halfOuterWallThickness = outerWallThickness / 2;
+    const innerSpan = side - 2 * outerWallThickness;
+
+    // 1. Outer Walls of the main brick body (from Y=0 up to brickOverallHeightForStacking)
+    const outerLongWallGeo = new THREE.BoxGeometry(innerSpan, brickOverallHeightForStacking, outerWallThickness);
+    const outerFrontWall = outerLongWallGeo.clone();
+    outerFrontWall.translate(0, brickOverallHeightForStacking / 2, halfSide - halfOuterWallThickness);
+    geometries.push(outerFrontWall);
+
+    const outerBackWall = outerLongWallGeo.clone();
+    outerBackWall.translate(0, brickOverallHeightForStacking / 2, -halfSide + halfOuterWallThickness);
+    geometries.push(outerBackWall);
+
+    const outerShortWallGeo = new THREE.BoxGeometry(outerWallThickness, brickOverallHeightForStacking, side);
+    const outerLeftWall = outerShortWallGeo.clone();
+    outerLeftWall.translate(-halfSide + halfOuterWallThickness, brickOverallHeightForStacking / 2, 0);
+    geometries.push(outerLeftWall);
+
+    const outerRightWall = outerShortWallGeo.clone();
+    outerRightWall.translate(halfSide - halfOuterWallThickness, brickOverallHeightForStacking / 2, 0);
+    geometries.push(outerRightWall);
+
+    // 2. Solid Top Cap (the plate directly under the studs, covering the entire top surface of the main body)
+    const solidTopCapGeo = new THREE.BoxGeometry(side, topPlateThickness, side);
+    // Position its bottom at brickBodyBaseHeight
+    solidTopCapGeo.translate(0, brickBodyBaseHeight + topPlateThickness / 2, 0);
+    geometries.push(solidTopCapGeo);
+
+    // 3. Cross Studs (Top)
+    // These sit on top of the solidTopCapGeo
+    const studYPos = brickOverallHeightForStacking + crossStudHeight / 2;
+
+    const studH = new THREE.BoxGeometry(crossStudSide, crossStudHeight, crossThickness);
+    studH.translate(0, studYPos, 0);
+    geometries.push(studH);
+
+    const studV = new THREE.BoxGeometry(crossThickness, crossStudHeight, crossStudSide);
+    studV.translate(0, studYPos, 0);
+    geometries.push(studV);
+
+    // 4. Inner Anti-Stud Structure (Bottom Cavity - L-shaped pieces)
+    // These parts form the cruciform cavity and extend from Y=0 up to the bottom of the top plate.
+    const antiStudL_Height = brickBodyBaseHeight; // These walls go up to the base of the top plate
+
+    const antiStudL_OuterEdge = halfSide - halfOuterWallThickness;
+    const antiStudL_InnerEdge = (crossStudSide / 2) + (printTolerance / 2);
+
+    const rect1_width = antiStudL_OuterEdge - antiStudL_InnerEdge;
+    const rect1_depth = antiStudL_InnerEdge;
+    const rect2_width = antiStudL_InnerEdge;
+    const rect2_depth = antiStudL_OuterEdge - antiStudL_InnerEdge;
+
+    const offset1_x = antiStudL_InnerEdge + rect1_width / 2;
+    const offset1_z = antiStudL_InnerEdge / 2;
+
+    const offset2_x = antiStudL_InnerEdge / 2;
+    const offset2_z = antiStudL_InnerEdge + rect2_depth / 2;
+
+    // Create the 4 L-shaped segments
+    const l1_geo1 = new THREE.BoxGeometry(rect1_width, antiStudL_Height, rect1_depth);
+    l1_geo1.translate(offset1_x, antiStudL_Height / 2, offset1_z);
+    geometries.push(l1_geo1);
+
+    const l1_geo2 = new THREE.BoxGeometry(rect2_width, antiStudL_Height, rect2_depth);
+    l1_geo2.translate(offset2_x, antiStudL_Height / 2, offset2_z);
+    geometries.push(l1_geo2);
+
+    const l2_geo1 = l1_geo1.clone(); l2_geo1.translate(-2 * offset1_x, 0, 0); geometries.push(l2_geo1);
+    const l2_geo2 = l1_geo2.clone(); l2_geo2.translate(-2 * offset2_x, 0, 0); geometries.push(l2_geo2);
+
+    const l3_geo1 = l1_geo1.clone(); l3_geo1.translate(0, 0, -2 * offset1_z); geometries.push(l3_geo1);
+    const l3_geo2 = l1_geo2.clone(); l3_geo2.translate(0, 0, -2 * offset2_z); geometries.push(l3_geo2);
+
+    const l4_geo1 = l1_geo1.clone(); l4_geo1.translate(-2 * offset1_x, 0, -2 * offset1_z); geometries.push(l4_geo1);
+    const l4_geo2 = l1_geo2.clone(); l4_geo2.translate(-2 * offset2_x, 0, -2 * offset2_z); geometries.push(l4_geo2);
+
+    // Merge all geometries into a single BufferGeometry
+    const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
+    mergedGeometry.computeVertexNormals();
+
+    // Ensure the bottom of the brick is at Y=0
+    mergedGeometry.computeBoundingBox();
+    const minY = mergedGeometry.boundingBox.min.y;
+    mergedGeometry.translate(0, -minY, 0);
+
+    return mergedGeometry;
 }
 
+
 // Create a single, shared material for all voxels
-const voxelMaterial = new THREE.MeshStandardMaterial({
+const standardVoxelMaterial = new THREE.MeshStandardMaterial({
     roughness: 0.7,
     metalness: 0.1
 });
 
-const defaultVoxelGeometry = createBrickGeometry(VS, VS, VS);
+const wireframeVoxelMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff, // White color for wireframe
+    wireframe: true
+});
+
+let defaultVoxelGeometry; 
+let ACTUAL_BRICK_HEIGHT; // Neue globale Variable für die tatsächliche Höhe des Bausteins
+let isMeshViewMode = false; // New state variable for mesh view toggle
 
 function getChunkCoords(gx, gy, gz) { return { cx: Math.floor(gx / CHUNK_SIZE), cy: Math.floor(gy / CHUNK_SIZE), cz: Math.floor(gz / CHUNK_SIZE) }; }
 function getChunkKey(cx, cy, cz) { return `${cx},${cy},${cz}`; }
@@ -559,7 +664,8 @@ class VoxelChunk {
         this.offsetX = chunkX * chunkSize * VS; this.offsetY = chunkY * chunkSize * VS; this.offsetZ = chunkZ * chunkSize * VS;
         this.voxels = new Map(); this.globalToLocalInstanceIdMap = new Map();
         const maxInstancesInChunk = chunkSize * chunkSize * chunkSize;
-        this.instancedMesh = new THREE.InstancedMesh(defaultVoxelGeometry, voxelMaterial, maxInstancesInChunk);
+        // Use the appropriate material based on the current mode
+        this.instancedMesh = new THREE.InstancedMesh(defaultVoxelGeometry, isMeshViewMode ? wireframeVoxelMaterial : standardVoxelMaterial, maxInstancesInChunk);
         this.instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(maxInstancesInChunk * 3), 3);
         this.instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         this.instancedMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
@@ -580,7 +686,10 @@ class VoxelChunk {
         } else {
             const instanceId = this.instancedMesh.count++;
             this.voxels.set(lKey, { color: colorHex, instanceId }); this.globalToLocalInstanceIdMap.set(gKey, instanceId);
-            dummy.position.set((gx % this.chunkSize) * VS + HALF, (gy % this.chunkSize) * VS + HALF, (gz % this.chunkSize) * VS + HALF);
+            // Positionierung: (gx, gy, gz) ist die untere linke Ecke des Voxel-Gitters.
+            // Der Baustein hat seinen unteren Punkt bei Y=0 in seinem lokalen Koordinatensystem.
+            // Daher muss der Mittelpunkt des Bausteins in Y auf (gy * VS + ACTUAL_BRICK_HEIGHT / 2) gesetzt werden.
+            dummy.position.set((gx % this.chunkSize) * VS + HALF, (gy % this.chunkSize) * VS + (ACTUAL_BRICK_HEIGHT / 2), (gz % this.chunkSize) * VS + HALF);
             dummy.updateMatrix(); this.instancedMesh.setMatrixAt(instanceId, dummy.matrix);
             this.updateInstanceColor(instanceId, colorHex);
             this.instancedMesh.instanceMatrix.needsUpdate = true; this.instancedMesh.instanceColor.needsUpdate = true;
@@ -862,10 +971,13 @@ function performVoxelModification(gx, gy, gz, mode, newColor) {
 function updatePreviewVoxel(x, y, z, visible) {
     if (previewVoxelMesh) {
         if (visible) {
+            // Preview-Voxel ist eine Standard-BoxGeometry (VS, VS, VS), die um ihren Mittelpunkt zentriert ist.
+            // Um ihre Basis auf y * VS zu legen, muss ihre Y-Position y * VS + HALF sein.
             previewVoxelMesh.position.set(x * VS + HALF, y * VS + HALF, z * VS + HALF);
             previewVoxelMesh.visible = true;
             previewVoxelMaterial.color.set(currentColor);
             previewVoxelMaterial.opacity = (currentMode === Modes.DELETE) ? 0.2 : 0.5;
+            previewVoxelMaterial.wireframe = isMeshViewMode; // Apply wireframe to preview too
         } else {
             previewVoxelMesh.visible = false;
         }
@@ -1190,11 +1302,17 @@ async function exportSTL(unit) {
     }
     
     const geometriesToMerge = [];
-    const tempBoxGeometry = createBrickGeometry(VS * scaleFactor, VS * scaleFactor, VS * scaleFactor);
+    // Erstelle eine temporäre Geometrie mit der korrekten Skalierung für den Export
+    const tempBoxGeometry = createBrickGeometry(VS * scaleFactor);
 
     voxels.forEach((data, k) => {
         const [x, y, z] = parseKey(k);
-        dummy.position.set((x * VS + HALF) * scaleFactor, (y * VS + HALF) * scaleFactor, (z * VS + HALF) * scaleFactor);
+        // Positioniere die Instanz korrekt im Verhältnis zur Voxel-Grid-Einheit
+        // Der Baustein hat seinen unteren Punkt bei Y=0, daher muss der Mittelpunkt
+        // in Y auf (y * VS + (tatsächliche Höhe / 2)) gesetzt werden.
+        tempBoxGeometry.computeBoundingBox(); // Sicherstellen, dass die Bounding Box aktuell ist
+        const tempBrickHeight = tempBoxGeometry.boundingBox.max.y;
+        dummy.position.set((x * VS + HALF) * scaleFactor, (y * VS + (tempBrickHeight / 2)) * scaleFactor, (z * VS + HALF) * scaleFactor);
         dummy.updateMatrix();
         const instanceGeometry = tempBoxGeometry.clone();
         instanceGeometry.applyMatrix4(dummy.matrix);
@@ -1202,6 +1320,13 @@ async function exportSTL(unit) {
     });
 
     const mergedGeometry = geometriesToMerge.length > 0 ? THREE.BufferGeometryUtils.mergeBufferGeometries(geometriesToMerge, true) : new THREE.BufferGeometry();
+    
+    // Apply 90-degree rotation around X-axis for Bambu Labs
+    const rotationMatrix = new THREE.Matrix4();
+    rotationMatrix.makeRotationX(Math.PI / 2); // 90 degrees in radians
+
+    mergedGeometry.applyMatrix4(rotationMatrix);
+
     const tempMesh = new THREE.Mesh(mergedGeometry);
     if (typeof THREE.STLExporter === 'undefined') { showToast('Export fehlgeschlagen', 'STLExporter-Bibliothek nicht geladen.', 'error', 5000); return; }
     const exporter = new THREE.STLExporter();
@@ -1317,7 +1442,7 @@ function openUploadModal() {
     if (voxels.size === 0) { showToast('Upload fehlgeschuldert', 'Die Szene ist leer. Bitte erstellen Sie zuerst ein Modell.', 'warning', 5000); return; }
     document.getElementById('uploadTitle').value = projectTitle; document.getElementById('uploadDescription').value = projectDescription;
     document.getElementById('uploadCategory').value = projectCategory; document.getElementById('uploadTags').value = projectTags.join(', ');
-    document.querySelector(`input[name="uploadVisibility"][value="${projectVisibility}"]`).checked = true;
+    document.querySelector(`input[name="uploadVisibility"]:checked`).value = projectVisibility;
     const uploadCategorySelect = document.getElementById('uploadCategory');
     uploadCategorySelect.innerHTML = '<option value="" disabled selected>Kategorie auswählen</option>';
     predefinedCategories.forEach(cat => { const opt = document.createElement('option'); opt.value = cat; opt.textContent = cat; uploadCategorySelect.appendChild(opt); });
@@ -1377,11 +1502,15 @@ window.signUpEmailPassword = async function() { const email = document.getElemen
 function closeAllModals() {
     const modals = ['clearConfirmationModal', 'uploadProjectModal', 'authModal', 'exportStlModal'];
     modals.forEach(id => { const modal = document.getElementById(id); if (modal && modal.open) modal.close(); });
+    // Ensure cvs is defined before calling focus
+    if (cvs) {
+        cvs.focus(); // Ensure canvas regains focus after closing any modal
+    }
 }
 window.closeAllModals = closeAllModals;
 
 function onPointerLockChange() {
-    if (document.pointerLockElement === cvs) { isPointerLocked = true; firstMoveAfterLock = true; mouseMovementX = mouseMovementY = 0; updatePreviewVoxel(0,0,0,false); euler.setFromQuaternion(cam.quaternion, 'YXZ'); }
+    if (document.pointerLockElement === cvs) { isPointerLocked = true; firstMoveAfterLock = true; updatePreviewVoxel(0,0,0,false); euler.setFromQuaternion(cam.quaternion, 'YXZ'); }
     else { isPointerLocked = false; }
 }
 
@@ -1412,7 +1541,7 @@ function onKeyDown(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
     if (((e.ctrlKey || e.metaKey) && e.key === 'y') || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Z')) { e.preventDefault(); redo(); }
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') e.preventDefault();
-    if (e.key === ' ') { e.preventDefault(); cycleMode(); }
+    if (e.key === ' ') { e.preventDefault(); cycleMode(); } // Spacebar for mode toggle
     switch (e.key) { case '1': setActivePreset(0); break; case '2': setActivePreset(1); break; case '3': setActivePreset(2); break; }
 }
 
@@ -1565,7 +1694,7 @@ function onPointerDown(e) {
         cvs.requestPointerLock();
         return;
     }
-    if (isPointerLocked) return;
+    if (isPointerLocked) return; // If pointer is locked for freelook, prevent other interactions
 
     if (e.button === 0 && e.altKey) { 
         const hitResult = calculateRayTargetVoxelCoords(e.clientX, e.clientY);
@@ -1661,7 +1790,11 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
     e.preventDefault();
-    if (isPointerLocked) return;
+    if (isPointerLocked) { // If pointer is locked for freelook, only handle mouse movement for camera
+        mouseMovementX += e.movementX; // Accumulate movement
+        mouseMovementY += e.movementY; // Accumulate movement
+        return; // Important: return early to prevent voxel interaction when freelooking
+    }
 
     if (e.pointerType === 'touch' && activePointers.has(e.pointerId)) {
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
@@ -1857,6 +1990,17 @@ function moveDrawingLevel(direction) {
     showToast('Zeichenebene', `Achse: ${currentDrawingAxis.toUpperCase()}, Ebene: ${level}`, 'info', 1500);
 }
 
+function toggleMeshView() {
+    isMeshViewMode = !isMeshViewMode;
+    // Update the material for all existing chunks
+    chunks.forEach(chunk => {
+        chunk.instancedMesh.material = isMeshViewMode ? wireframeVoxelMaterial : standardVoxelMaterial;
+    });
+    // Update the preview voxel material
+    previewVoxelMaterial.wireframe = isMeshViewMode;
+    showToast('Mesh-Ansicht', isMeshViewMode ? 'Drahtgitter-Ansicht aktiviert.' : 'Standard-Ansicht aktiviert.', 'info', 2000);
+}
+
 
 window.onload = async function() {
     closeAllModals();
@@ -1890,22 +2034,22 @@ window.onload = async function() {
         scene.add(previewVoxelMesh); updatePreviewVoxel(0,0,0,false);
         rebuildHelpers();
 
+        // Initialize defaultVoxelGeometry
+        defaultVoxelGeometry = createBrickGeometry(VS);
+        // Get the actual height of the generated brick geometry to ensure correct placement
+        defaultVoxelGeometry.computeBoundingBox();
+        ACTUAL_BRICK_HEIGHT = defaultVoxelGeometry.boundingBox.max.y;
+
         window.addEventListener('resize', onResize);
         containerDiv.addEventListener('pointerdown', onPointerDown);
-        containerDiv.addEventListener('pointermove', onPointerMove);
+        containerDiv.addEventListener('pointermove', onPointerMove); // This listener now handles all pointer movement
         containerDiv.addEventListener('pointerup', onPointerUp);
         containerDiv.addEventListener('pointercancel', onPointerUp);
         containerDiv.addEventListener('pointerleave', onPointerLeave);
         containerDiv.addEventListener('wheel', onMouseWheel, { passive: false });
         document.addEventListener('keydown', onKeyDown); document.addEventListener('keyup', onKeyUp);
         document.addEventListener('pointerlockchange', onPointerLockChange, false);
-        containerDiv.addEventListener('mousemove', (e) => {
-            if (isPointerLocked) {
-                mouseMovementX = e.movementX;
-                mouseMovementY = e.movementY;
-                e.preventDefault();
-            }
-        });
+        // Removed the separate mousemove listener here, as onPointerMove now handles it
         containerDiv.addEventListener('contextmenu', (e) => e.preventDefault());
 
         document.getElementById('grid-size-slider').addEventListener('input', (e) => {
@@ -1989,12 +2133,7 @@ window.onload = async function() {
         document.getElementById('imageFileInput').addEventListener('change', handleImageFileSelect);
         document.getElementById('removeImageTemplateBtn').addEventListener('click', removeImageTemplate);
 
-        document.getElementById('menuToggle').addEventListener('click', () => {
-            const controlsPanel = document.getElementById('controls');
-            controlsPanel.classList.toggle('hidden');
-            if (!controlsPanel.classList.contains('hidden')) controlsPanel.classList.add('flex');
-            else controlsPanel.classList.remove('flex');
-        });
+        document.getElementById('toggleMeshViewBtn').addEventListener('click', toggleMeshView); // New button listener
 
         const mediaQuery = window.matchMedia('(max-width: 768px)');
         function handleMediaQueryChange(e) {
@@ -2139,15 +2278,24 @@ function animate() {
     requestAnimationFrame(animate);
     if (isPointerLocked) {
         if (firstMoveAfterLock) {
+            // Discard any accumulated movement from before the lock was active.
+            // This prevents a "jump" if the mouse was moving when RMB was pressed.
+            mouseMovementX = 0;
+            mouseMovementY = 0;
             firstMoveAfterLock = false;
-            mouseMovementX = mouseMovementY = 0;
-            return;
         }
-        euler.y -= (mouseMovementX || 0) * rotSpeed;
-        euler.x -= (mouseMovementY || 0) * rotSpeed;
+        
+        // Apply rotation based on accumulated movement
+        euler.y -= mouseMovementX * rotSpeed;
+        euler.x -= mouseMovementY * rotSpeed;
         euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
         cam.quaternion.setFromEuler(euler);
-        mouseMovementX = mouseMovementY = 0;
+        
+        // Reset movement accumulators for the next frame
+        mouseMovementX = 0;
+        mouseMovementY = 0; 
+
+        // Rest of the movement logic (w,s,a,d,e,q)
         const camDir = new THREE.Vector3(); cam.getWorldDirection(camDir);
         const rightDir = new THREE.Vector3().crossVectors(camDir, cam.up).normalize();
         const upVec = new THREE.Vector3(0, 1, 0); const currMoveSpeed = moveSpeed * 0.5;
@@ -2163,6 +2311,3 @@ function animate() {
     for (const chunk of chunks.values()) chunk.instancedMesh.visible = frustum.intersectsBox(chunk.boundingBox);
     ren.render(scene, cam);
 }
-</script>
-</body>
-</html>
