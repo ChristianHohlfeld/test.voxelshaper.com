@@ -651,28 +651,27 @@ function createBrickGeometry(unitSize) {
     // Standard LEGO dimensions in mm
     const lego_brick_width_mm = 8.0; // Width and Depth of a 1x1 brick
     const lego_brick_body_height_mm = 9.6; // Body height (3 plates)
-    // MODIFIED: Increased stud height for better stacking
-    const lego_stud_height_mm = 2.0; // Original was 1.8
+    const lego_stud_height_mm = 2.0; // MODIFIED: Increased stud height for better stacking
     const lego_stud_diameter_mm = 4.8;
     const lego_outer_wall_thickness_mm = 1.6;
 
     // Calculate scaling factors for each dimension to make the BODY unitSize x unitSize x unitSize
     const scaleX = unitSize / lego_brick_width_mm;
-    const scaleY = unitSize / lego_brick_body_height_mm; // For the body height
-    const scaleZ = unitSize / lego_brick_width_mm; // For depth, same as width
+    const scaleY = unitSize / lego_brick_body_height_mm;
+    const scaleZ = unitSize / lego_brick_width_mm;
 
     // Apply scaling factors to nominal dimensions
     const scaled_brick_width = lego_brick_width_mm * scaleX; // This will now be unitSize
     const scaled_brick_body_height = lego_brick_body_height_mm * scaleY; // This will now be unitSize
-    const scaled_stud_height = lego_stud_height_mm * scaleY; // Stud height scales with body height
-    const scaled_stud_diameter = lego_stud_diameter_mm * scaleX; // Stud diameter scales with width
-    const scaled_outer_wall_thickness = lego_outer_wall_thickness_mm * scaleX; // Wall thickness scales with width
-    const scaled_print_tolerance = printTolerance_mm * scaleX; // Tolerance scales with width
+    const scaled_stud_height = lego_stud_height_mm * scaleY;
+    const scaled_stud_diameter = lego_stud_diameter_mm * scaleX;
+    const scaled_outer_wall_thickness = lego_outer_wall_thickness_mm * scaleX;
+    const scaled_print_tolerance = printTolerance_mm * scaleX;
 
     const halfScaledWidth = scaled_brick_width / 2;
-    const innerSpan = scaled_brick_width - 2 * scaled_outer_wall_thickness;
+    const innerSpan = scaled_brick_width - 2 * scaled_outer_wall_thickness; // Inner dimension of the hollow brick
 
-    // 1. Outer Walls (main body) - same as before
+    // 1. Outer Walls (main body)
     const outerWallHeight = scaled_brick_body_height;
     const outerWallYPos = outerWallHeight / 2;
 
@@ -684,43 +683,58 @@ function createBrickGeometry(unitSize) {
     geometries.push(new THREE.BoxGeometry(scaled_outer_wall_thickness, outerWallHeight, scaled_brick_width).translate(-halfScaledWidth + scaled_outer_wall_thickness / 2, outerWallYPos, 0));
     geometries.push(new THREE.BoxGeometry(scaled_outer_wall_thickness, outerWallHeight, scaled_brick_width).translate(halfScaledWidth - scaled_outer_wall_thickness / 2, outerWallYPos, 0));
 
-    // 3. Square Stud (Top) - same logic, but scaled_stud_height is now larger
+    // 3. Square Stud (Top)
     const studYPos = scaled_brick_body_height + scaled_stud_height / 2;
     const squareStudGeo = new THREE.BoxGeometry(scaled_stud_diameter, scaled_stud_height, scaled_stud_diameter);
     squareStudGeo.translate(0, studYPos, 0);
     geometries.push(squareStudGeo);
 
-    // 4. Square Anti-Stud Recess (Bottom)
-    const scaledAntiStudHeight = scaled_brick_body_height; // This is the height of the recess
-    let holeInnerSide = scaled_stud_diameter + 2 * scaled_print_tolerance;
+    // 4. Anti-Stud Recess (Bottom) and Inner Support
+    // The anti-stud is a square hole. We need to define the material *around* this hole.
+    // Define the dimensions of the square hole for the stud
+    let antiStudHoleSide = scaled_stud_diameter + 2 * scaled_print_tolerance; // Slightly larger than stud for fit
 
-    let cornerPillarSide = (innerSpan - holeInnerSide) / 2;
-    const minPillarThickness = 0.02 * scaleX;
-    if (cornerPillarSide < minPillarThickness) {
-        cornerPillarSide = minPillarThickness;
-        holeInnerSide = innerSpan - 2 * minPillarThickness;
+    // Calculate the dimensions of the four "pillars" that define the square anti-stud hole.
+    // The total inner width is `innerSpan`.
+    // The hole width is `antiStudHoleSide`.
+    // The remaining width for the two pillars on one side is `innerSpan - antiStudHoleSide`.
+    // So, each pillar's side will be `(innerSpan - antiStudHoleSide) / 2`.
+    let pillarSide = (innerSpan - antiStudHoleSide) / 2;
+
+    // Ensure pillarSide is not negative or too small due to floating point inaccuracies or very large tolerances
+    const minPillarThickness = 0.05 * scaleX; // Minimum thickness for printability
+    if (pillarSide < minPillarThickness) {
+        // If calculated pillarSide is too small, we will use minPillarThickness for the pillars.
+        // We DO NOT adjust antiStudHoleSide here, as that would make the stud not fit.
+        pillarSide = minPillarThickness; // Force pillarSide to minimum thickness
     }
 
-    const halfHoleInnerSide = holeInnerSide / 2;
-    const halfCornerPillarSide = cornerPillarSide / 2;
+    const halfAntiStudHoleSide = antiStudHoleSide / 2;
+    const halfPillarSide = pillarSide / 2;
 
-    const xPosPillar = halfHoleInnerSide + halfCornerPillarSide;
-    const zPosPillar = halfHoleInnerSide + halfCornerPillarSide;
+    const xPosPillar = halfAntiStudHoleSide + halfPillarSide;
+    const zPosPillar = halfAntiStudHoleSide + halfPillarSide;
 
-    // Four Eck-Pfeiler for the anti-stud recess
-    geometries.push(new THREE.BoxGeometry(cornerPillarSide, scaledAntiStudHeight, cornerPillarSide).translate(xPosPillar, scaledAntiStudHeight / 2, zPosPillar));
-    geometries.push(new THREE.BoxGeometry(cornerPillarSide, scaledAntiStudHeight, cornerPillarSide).translate(-xPosPillar, scaledAntiStudHeight / 2, zPosPillar));
-    geometries.push(new THREE.BoxGeometry(cornerPillarSide, scaledAntiStudHeight, cornerPillarSide).translate(xPosPillar, scaledAntiStudHeight / 2, -zPosPillar));
-    geometries.push(new THREE.BoxGeometry(cornerPillarSide, scaledAntiStudHeight, cornerPillarSide).translate(-xPosPillar, scaledAntiStudHeight / 2, -zPosPillar));
+    const internalStructureYPos = scaled_brick_body_height / 2; // Y-position for all internal elements
 
-    // NEW: Central cross support for the anti-stud recess for more infill
-    const crossThickness = scaled_outer_wall_thickness / 2; // Half the outer wall thickness for the cross
-    const crossLength = innerSpan; // Should span the inner width/depth
+    // Four corner pillars for the anti-stud recess
+    geometries.push(new THREE.BoxGeometry(pillarSide, scaled_brick_body_height, pillarSide).translate(xPosPillar, internalStructureYPos, zPosPillar));
+    geometries.push(new THREE.BoxGeometry(pillarSide, scaled_brick_body_height, pillarSide).translate(-xPosPillar, internalStructureYPos, zPosPillar));
+    geometries.push(new THREE.BoxGeometry(pillarSide, scaled_brick_body_height, pillarSide).translate(xPosPillar, internalStructureYPos, -zPosPillar));
+    geometries.push(new THREE.BoxGeometry(pillarSide, scaled_brick_body_height, pillarSide).translate(-xPosPillar, internalStructureYPos, -zPosPillar));
 
-    // Horizontal part of the cross
-    geometries.push(new THREE.BoxGeometry(crossLength, scaledAntiStudHeight, crossThickness).translate(0, scaledAntiStudHeight / 2, 0));
-    // Vertical part of the cross
-    geometries.push(new THREE.BoxGeometry(crossThickness, scaledAntiStudHeight, crossLength).translate(0, scaledAntiStudHeight / 2, 0));
+    // Central cross support - this is the infill inside the anti-stud hole.
+    // It should be positioned within the `antiStudHoleSide` square.
+    // The arms should extend to almost the edge of the anti-stud hole, leaving a small gap for the stud.
+    const crossThickness = scaled_outer_wall_thickness / 2; // Thinner for internal support
+    const crossWidth = antiStudHoleSide - 2 * scaled_print_tolerance; // Slightly smaller than the hole for fit
+    const crossHeight = scaled_brick_body_height / 2; // Same height as the brick body / 2
+    const crossDepth = crossThickness; // Use crossThickness for depth of arms
+
+    // Horizontal part of the inner cross
+    geometries.push(new THREE.BoxGeometry(crossWidth, crossHeight, crossDepth).translate(0, internalStructureYPos, 0));
+    // Vertical part of the inner cross
+    geometries.push(new THREE.BoxGeometry(crossDepth, crossHeight, crossWidth).translate(0, internalStructureYPos, 0));
 
 
     const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
