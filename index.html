@@ -545,7 +545,7 @@ const presetColors = [
 ];
 let activePresetIndex = -1;
 let presetBoxes = []; // These are the original preset input[type="color"] elements
-let palettePresetBoxes = []; // These are the preset input[type="color"] elements inside the custom palette modal
+let palettePresetBoxes = []; // These are the the preset input[type="color"] elements inside the custom palette modal
 
 let mainDirectionalLight, fillDirectionalLight, hemisphereLight;
 let isShiftDragging = false;
@@ -651,7 +651,8 @@ function createBrickGeometry(unitSize) {
     // Standard LEGO dimensions in mm
     const lego_brick_width_mm = 8.0; // Width and Depth of a 1x1 brick
     const lego_brick_body_height_mm = 9.6; // Body height (3 plates)
-    const lego_stud_height_mm = 1.8;
+    // MODIFIED: Increased stud height for better stacking
+    const lego_stud_height_mm = 2.0; // Original was 1.8
     const lego_stud_diameter_mm = 4.8;
     const lego_outer_wall_thickness_mm = 1.6;
 
@@ -671,7 +672,7 @@ function createBrickGeometry(unitSize) {
     const halfScaledWidth = scaled_brick_width / 2;
     const innerSpan = scaled_brick_width - 2 * scaled_outer_wall_thickness;
 
-    // 1. Outer Walls (main body)
+    // 1. Outer Walls (main body) - same as before
     const outerWallHeight = scaled_brick_body_height;
     const outerWallYPos = outerWallHeight / 2;
 
@@ -683,18 +684,18 @@ function createBrickGeometry(unitSize) {
     geometries.push(new THREE.BoxGeometry(scaled_outer_wall_thickness, outerWallHeight, scaled_brick_width).translate(-halfScaledWidth + scaled_outer_wall_thickness / 2, outerWallYPos, 0));
     geometries.push(new THREE.BoxGeometry(scaled_outer_wall_thickness, outerWallHeight, scaled_brick_width).translate(halfScaledWidth - scaled_outer_wall_thickness / 2, outerWallYPos, 0));
 
-    // 3. Square Stud (Top)
+    // 3. Square Stud (Top) - same logic, but scaled_stud_height is now larger
     const studYPos = scaled_brick_body_height + scaled_stud_height / 2;
     const squareStudGeo = new THREE.BoxGeometry(scaled_stud_diameter, scaled_stud_height, scaled_stud_diameter);
     squareStudGeo.translate(0, studYPos, 0);
     geometries.push(squareStudGeo);
 
     // 4. Square Anti-Stud Recess (Bottom)
-    const scaledAntiStudHeight = scaled_brick_body_height;
+    const scaledAntiStudHeight = scaled_brick_body_height; // This is the height of the recess
     let holeInnerSide = scaled_stud_diameter + 2 * scaled_print_tolerance;
 
     let cornerPillarSide = (innerSpan - holeInnerSide) / 2;
-    const minPillarThickness = 0.02 * scaleX; // Use scaleX for min thickness
+    const minPillarThickness = 0.02 * scaleX;
     if (cornerPillarSide < minPillarThickness) {
         cornerPillarSide = minPillarThickness;
         holeInnerSide = innerSpan - 2 * minPillarThickness;
@@ -711,6 +712,16 @@ function createBrickGeometry(unitSize) {
     geometries.push(new THREE.BoxGeometry(cornerPillarSide, scaledAntiStudHeight, cornerPillarSide).translate(-xPosPillar, scaledAntiStudHeight / 2, zPosPillar));
     geometries.push(new THREE.BoxGeometry(cornerPillarSide, scaledAntiStudHeight, cornerPillarSide).translate(xPosPillar, scaledAntiStudHeight / 2, -zPosPillar));
     geometries.push(new THREE.BoxGeometry(cornerPillarSide, scaledAntiStudHeight, cornerPillarSide).translate(-xPosPillar, scaledAntiStudHeight / 2, -zPosPillar));
+
+    // NEW: Central cross support for the anti-stud recess for more infill
+    const crossThickness = scaled_outer_wall_thickness / 2; // Half the outer wall thickness for the cross
+    const crossLength = innerSpan; // Should span the inner width/depth
+
+    // Horizontal part of the cross
+    geometries.push(new THREE.BoxGeometry(crossLength, scaledAntiStudHeight, crossThickness).translate(0, scaledAntiStudHeight / 2, 0));
+    // Vertical part of the cross
+    geometries.push(new THREE.BoxGeometry(crossThickness, scaledAntiStudHeight, crossLength).translate(0, scaledAntiStudHeight / 2, 0));
+
 
     const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
     mergedGeometry.computeVertexNormals();
