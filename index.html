@@ -648,24 +648,24 @@ function createBrickGeometry(unitSize) {
     const geometries = [];
     const printTolerance_mm = 0.05;
 
-    // Standard LEGO dimensions in mm
-    const lego_brick_width_mm = 8.0; // Width and Depth of a 1x1 brick
-    const lego_brick_body_height_mm = 9.6; // Body height (3 plates)
-    const lego_stud_height_mm = 2.0; // MODIFIED: Increased stud height for better stacking
-    const lego_stud_diameter_mm = 4.8;
-    const lego_outer_wall_thickness_mm = 1.6;
+    // Standard brickdimensions in mm
+    const _brick_width_mm = 8.0; // Width and Depth of a 1x1 brick
+    const _brick_body_height_mm = 9.6; // Body height (3 plates)
+    const _stud_height_mm = 4.0; // MODIFIED: Increased stud height for better stacking
+    const _stud_diameter_mm = 4.8;
+    const _outer_wall_thickness_mm = 1.6;
 
     // Calculate scaling factors for each dimension to make the BODY unitSize x unitSize x unitSize
-    const scaleX = unitSize / lego_brick_width_mm;
-    const scaleY = unitSize / lego_brick_body_height_mm;
-    const scaleZ = unitSize / lego_brick_width_mm;
+    const scaleX = unitSize / _brick_width_mm;
+    const scaleY = unitSize / _brick_body_height_mm;
+    const scaleZ = unitSize / _brick_width_mm;
 
     // Apply scaling factors to nominal dimensions
-    const scaled_brick_width = lego_brick_width_mm * scaleX; // This will now be unitSize
-    const scaled_brick_body_height = lego_brick_body_height_mm * scaleY; // This will now be unitSize
-    const scaled_stud_height = lego_stud_height_mm * scaleY;
-    const scaled_stud_diameter = lego_stud_diameter_mm * scaleX;
-    const scaled_outer_wall_thickness = lego_outer_wall_thickness_mm * scaleX;
+    const scaled_brick_width = _brick_width_mm * scaleX; // This will now be unitSize
+    const scaled_brick_body_height = _brick_body_height_mm * scaleY; // This will now be unitSize
+    const scaled_stud_height = _stud_height_mm * scaleY;
+    const scaled_stud_diameter = _stud_diameter_mm * scaleX;
+    const scaled_outer_wall_thickness = _outer_wall_thickness_mm * scaleX;
     const scaled_print_tolerance = printTolerance_mm * scaleX;
 
     const halfScaledWidth = scaled_brick_width / 2;
@@ -684,7 +684,7 @@ function createBrickGeometry(unitSize) {
     geometries.push(new THREE.BoxGeometry(scaled_outer_wall_thickness, outerWallHeight, scaled_brick_width).translate(halfScaledWidth - scaled_outer_wall_thickness / 2, outerWallYPos, 0));
 
     // 3. Square Stud (Top)
-    const studYPos = scaled_brick_body_height + scaled_stud_height / 2;
+    const studYPos = (scaled_brick_body_height + scaled_stud_height / 2) - scaled_stud_height /2;
     const squareStudGeo = new THREE.BoxGeometry(scaled_stud_diameter, scaled_stud_height, scaled_stud_diameter);
     squareStudGeo.translate(0, studYPos, 0);
     geometries.push(squareStudGeo);
@@ -1259,7 +1259,7 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
 
     // Wichtig: Raycasting sollte immer mit der einfachen Box-Geometrie (collisionVoxelGeometry) erfolgen,
     // um sicherzustellen, dass die Intersektionen immer auf den Gitterzellen basieren und nicht auf
-    // der komplexen Geometrie des LEGO-Bausteins.
+    // der komplexen Geometrie des -Bausteins.
     const objectsToIntersect = Array.from(chunks.values()).map(chunk => chunk.collisionMesh);
     if (templateImageMesh) {
         templateImageMesh.raycast = function() {}; // Bildvorlage vom Raycasting ausschließen
