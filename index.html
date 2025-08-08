@@ -512,9 +512,10 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
     <button class="mobile-btn" id="mobile-color-picker-btn" aria-label="Farbe auswählen">🎨</button>
     <input type="color" id="mobile-color-input-hidden" value="#008080" class="hidden w-0 h-0 opacity-0 absolute pointer-events-none">
 
-    <button class="mobile-btn" id="mobile-axis-toggle" aria-label="Zeichenachse wechseln">
+    <!-- Removed mobile axis toggle button -->
+    <!-- <button class="mobile-btn" id="mobile-axis-toggle" aria-label="Zeichenachse wechseln">
         <span id="mobile-axis-icon" class="fas fa-arrows-alt-v"></span>
-    </button>
+    </button> -->
     <button class="mobile-btn" id="mobile-login-logout" aria-label="Anmelden oder Abmelden">🔑</button>
 </div>
 
@@ -593,6 +594,7 @@ const VOX_MASK = (1 << VOX_BITS) - 1;
 const SHIFT_X  = VOX_BITS * 2;
 const SHIFT_Y  = VOX_BITS;
 
+// FIX: Changed SHOSHIFT_Y to SHIFT_Y
 function key(x, y, z) { return ((x << SHIFT_X) | (y << SHIFT_Y) | z) >>> 0; }
 function parseKey(k) { return [(k >>> SHIFT_X) & VOX_MASK, (k >>> SHIFT_Y) & VOX_MASK, k & VOX_MASK]; }
 
@@ -950,26 +952,20 @@ function onPointerLeave(e) {
 function rebuildHelpers() {
     if (gridHelper) scene.remove(gridHelper); if (boxHelper) scene.remove(boxHelper);
     const size = GRID * VS;
-    if (isMobile) {
-        gridHelper = new THREE.GridHelper(size, GRID, 0x444444, 0x444444 ); gridHelper.position.set(size / 2, activeDrawingLevel.y * VS, size / 2);
-    } else {
-        if (currentDrawingAxis === 'y') {
-            gridHelper = new THREE.GridHelper(size, GRID, 0x444444, 0x444444 ); gridHelper.position.set(size / 2, activeDrawingLevel.y * VS, size / 2);
-        } else if (currentDrawingAxis === 'x') {
-            gridHelper = new THREE.GridHelper(size, GRID, 0x444444, 0x444444); gridHelper.rotation.z = Math.PI / 2; gridHelper.position.set(activeDrawingLevel.x * VS, size / 2, size / 2);
-        } else if (currentDrawingAxis === 'z') {
-            gridHelper = new THREE.GridHelper(size, GRID, 0x444444, 0x444444); gridHelper.rotation.x = Math.PI / 2; gridHelper.position.set(size / 2, size / 2, activeDrawingLevel.z * VS);
-        }
-    }
+    // Always use y-axis for grid helper for simplicity after removing axis toggle
+    gridHelper = new THREE.GridHelper(size, GRID, 0x444444, 0x444444 ); 
+    gridHelper.position.set(size / 2, activeDrawingLevel.y * VS, size / 2);
+    
     scene.add(gridHelper);
     const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(size, size, size));
     boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffff }));
     boxHelper.position.set(size / 2, size / 2, size / 2); scene.add(boxHelper);
 
-    const mobileAxisIcon = document.getElementById('mobile-axis-icon');
-    if (mobileAxisIcon) {
-        mobileAxisIcon.className = AxisIcons[currentDrawingAxis];
-    }
+    // Removed mobile axis icon update
+    // const mobileAxisIcon = document.getElementById('mobile-axis-icon');
+    // if (mobileAxisIcon) {
+    //     mobileAxisIcon.className = AxisIcons[currentDrawingAxis];
+    // }
 }
 
 function updateGridHelperPosition() {
@@ -1002,7 +998,6 @@ function cycleMode() {
     // NEW: Check tutorial progress
     if (tutorial.active) {
         const modeToggleBtn = document.getElementById('modeToggle');
-        // The tutorial step for changing to ADD mode is removed, so no check for it here.
         if (oldMode === Modes.ADD && currentMode === Modes.DELETE && tutorial.stepIndex === tutorial.getStepIndex('changeModeToDelete')) {
             tutorial.checkCondition(modeToggleBtn);
         } else if (oldMode === Modes.DELETE && currentMode === Modes.DRAW && tutorial.stepIndex === tutorial.getStepIndex('changeModeToDraw')) {
@@ -1240,17 +1235,10 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
             let planeNormal = new THREE.Vector3();
             let planeConstant = 0;
 
-            if (currentDrawingAxis === 'y') {
-                planeNormal.set(0, 1, 0);
-                planeConstant = -(activeDrawingLevel.y * VS);
-            } else if (currentDrawingAxis === 'x') {
-                planeNormal.set(1, 0, 0);
-                planeConstant = -(activeDrawingLevel.x * VS);
-            } else if (currentDrawingAxis === 'z') {
-                planeNormal.set(0, 0, 1);
-                planeConstant = -(activeDrawingLevel.z * VS);
-            }
-
+            // Since axis toggle is removed, default to Y-axis for plane interaction
+            planeNormal.set(0, 1, 0);
+            planeConstant = -(activeDrawingLevel.y * VS);
+            
             const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
             const intersectionPoint = new THREE.Vector3();
 
@@ -1263,10 +1251,8 @@ function calculateRayTargetVoxelCoords(clientX, clientY) {
                 let y = Math.floor(intersectionPoint.y / VS);
                 let z = Math.floor(intersectionPoint.z / VS);
 
-                // Crucially, snap to the activeDrawingLevel for the current axis.
-                if (currentDrawingAxis === 'y') y = activeDrawingLevel.y;
-                else if (currentDrawingAxis === 'x') x = activeDrawingLevel.x;
-                else if (currentDrawingAxis === 'z') z = activeDrawingLevel.z;
+                // Snap to the activeDrawingLevel for the default Y axis.
+                y = activeDrawingLevel.y;
 
                 x = Number(x);
                 y = Number(y);
@@ -1303,18 +1289,18 @@ function fillActiveLevel() {
     const voxelsToRemove = [];
     for (let x = 0; x < GRID; x++) { for (let z = 0; z < GRID; z++) {
         let gx, gy, gz;
-        if (currentDrawingAxis === 'y') { gx = x; gy = activeDrawingLevel.y; gz = z; }
-        else if (currentDrawingAxis === 'x') { gx = activeDrawingLevel.x; gy = x; gz = z; }
-        else if (currentDrawingAxis === 'z') { gx = x; gy = z; gz = activeDrawingLevel.z; }
+        // Since axis toggle is removed, default to Y-axis for fill level
+        gx = x; gy = activeDrawingLevel.y; gz = z;
+        
         const k = key(gx, gy, gz); if (voxels.has(k)) voxelsToRemove.push(k);
     }}
     voxelsToRemove.forEach(k => { const [gx, gy, gz] = parseKey(k); _removeSingleVoxel(gx, gy, gz); });
     const newState = [];
     for (let x = 0; x < GRID; x++) { for (let z = 0; z < GRID; z++) {
         let gx, gy, gz;
-        if (currentDrawingAxis === 'y') { gx = x; gy = activeDrawingLevel.y; gz = z; }
-        else if (currentDrawingAxis === 'x') { gx = activeDrawingLevel.x; gy = x; gz = z; }
-        else if (currentDrawingAxis === 'z') { gx = x; gy = z; gz = activeDrawingLevel.z; }
+        // Since axis toggle is removed, default to Y-axis for fill level
+        gx = x; gy = activeDrawingLevel.y; gz = z;
+        
         _addSingleVoxel(gx, gy, gz, currentColor); newState.push({ x: gx, y: gy, z: gz, color: currentColor, dimX: 1, dimY: 1, dimZ: 1 });
     }}
     addCommand('fillLevel', oldState, newState);
@@ -1409,7 +1395,7 @@ function resetToDefaultProject() {
     if (mobileColorInput) mobileColorInput.value = currentColor;
     localStorage.setItem('voxelEditorColor', currentColor);
 
-    activeDrawingLevel = { x: 0, y: 0, z: 0 }; currentDrawingAxis = 'y';
+    activeDrawingLevel = { x: 0, y: 0, z: 0 }; currentDrawingAxis = 'y'; // Keep currentDrawingAxis fixed to 'y'
     localStorage.setItem('voxelEditorActiveDrawingLevelX', activeDrawingLevel.x);
     localStorage.setItem('voxelEditorActiveDrawingLevelY', activeDrawingLevel.y);
     localStorage.setItem('voxelEditorActiveDrawingLevelZ', activeDrawingLevel.z);
@@ -1828,14 +1814,8 @@ function onPointerLockChange() {
 function onMouseWheel(e) {
     e.preventDefault();
     if (e.altKey) {
-        if (!isMobile && (currentMode === Modes.ADD || currentMode === Modes.DRAW)) {
-            if (e.shiftKey) { activeDrawingLevel.z = Math.max(0, Math.min(GRID - 1, activeDrawingLevel.z - Math.sign(e.deltaY))); currentDrawingAxis = 'z'; }
-            else if (e.ctrlKey) { activeDrawingLevel.x = Math.max(0, Math.min(GRID - 1, activeDrawingLevel.x - Math.sign(e.deltaY))); currentDrawingAxis = 'x'; }
-            else { activeDrawingLevel.y = Math.max(0, Math.min(GRID - 1, activeDrawingLevel.y - Math.sign(e.deltaY))); currentDrawingAxis = 'y'; }
-            updateGridHelperPosition();
-        } else {
-            cam.position.addScaledVector(cam.getWorldDirection(new THREE.Vector3()), e.deltaY * 0.005 * moveSpeed * 5);
-        }
+        // Removed axis-specific movement, only general camera zoom now
+        cam.position.addScaledVector(cam.getWorldDirection(new THREE.Vector3()), e.deltaY * 0.005 * moveSpeed * 5);
     } else {
         moveSpeed = Math.max(0.01, Math.min(1.0, moveSpeed - Math.sign(e.deltaY) * 0.01));
         document.getElementById('fly-speed-slider').value = moveSpeed; document.getElementById('fly-speed-display').textContent = moveSpeed.toFixed(2); localStorage.setItem('voxelEditorFlySpeed', moveSpeed);
@@ -2441,25 +2421,26 @@ function onPointerMove(e) {
 }
 
 
-function cycleDrawingAxis() {
-    const axes = ['x', 'y', 'z'];
-    const currentIndex = axes.indexOf(currentDrawingAxis);
-    currentDrawingAxis = axes[(currentIndex + 1) % axes.length];
-    updateGridHelperPosition();
-    showToast('Zeichenachse', `Achse: ${currentDrawingAxis.toUpperCase()}`, 'info', 1500);
+// Removed cycleDrawingAxis function and related logic
+// function cycleDrawingAxis() {
+//     const axes = ['x', 'y', 'z'];
+//     const currentIndex = axes.indexOf(currentDrawingAxis);
+//     currentDrawingAxis = axes[(currentIndex + 1) % axes.length];
+//     updateGridHelperPosition();
+//     showToast('Zeichenachse', `Achse: ${currentDrawingAxis.toUpperCase()}`, 'info', 1500);
 
-    // NEW: Check tutorial progress
-    if (tutorial.active && tutorial.stepIndex === tutorial.getStepIndex('changeAxis')) {
-        tutorial.checkCondition(document.getElementById('mobile-axis-toggle'));
-    }
-}
+//     // NEW: Check tutorial progress
+//     if (tutorial.active && tutorial.stepIndex === tutorial.getStepIndex('changeAxis')) {
+//         tutorial.checkCondition(document.getElementById('mobile-axis-toggle'));
+//     }
+// }
 
 function moveDrawingLevel(direction) {
     if (currentMode !== Modes.ADD && currentMode !== Modes.DRAW) {
         showToast('Hinweis', 'Ebenensteuerung nur im Hinzufügen- oder Zeichenmodus verfügbar.', 'warning', 2000);
         return;
     }
-    let level = activeDrawingLevel[currentDrawingAxis];
+    let level = activeDrawingLevel[currentDrawingAxis]; // currentDrawingAxis is now fixed to 'y'
 
     if (!Number.isFinite(level)) {
         level = 0;
@@ -2597,7 +2578,6 @@ const tutorial = {
                 nextText: "Weiter",
                 targetElement: () => boxHelper
             },
-            // Removed 'changeModeToAdd' as it's default and handled by 'addVoxel'
             {
                 id: "addVoxel",
                 title: "Voxel hinzufügen",
@@ -2605,7 +2585,14 @@ const tutorial = {
                 condition: () => this.voxelAddedThisStep, // Now checks for any voxel added
                 reward: "Voxel hinzugefügt!",
                 nextText: "Weiter",
-                onStepEnter: () => { this.voxelAddedThisStep = false; }, // Reset flag on step entry
+                onStepEnter: () => {
+                    this.voxelAddedThisStep = false;
+                    // Ensure currentMode is ADD when entering this step
+                    if (currentMode !== Modes.ADD) {
+                        currentMode = Modes.ADD;
+                        document.getElementById('current-mode').textContent = `Modus: ${currentMode}`;
+                    }
+                },
                 targetElement: () => previewVoxelMesh
             },
             {
@@ -2762,7 +2749,6 @@ const tutorial = {
                 nextText: "Weiter",
                 targetElement: () => boxHelper
             },
-            // Removed 'changeModeToAdd' as it's default and handled by 'addVoxel'
             {
                 id: "addVoxel",
                 title: "Voxel hinzufügen",
@@ -2770,7 +2756,14 @@ const tutorial = {
                 condition: () => this.voxelAddedThisStep, // Now checks for any voxel added
                 reward: "Voxel hinzugefügt!",
                 nextText: "Weiter",
-                onStepEnter: () => { this.voxelAddedThisStep = false; }, // Reset flag on step entry
+                onStepEnter: () => {
+                    this.voxelAddedThisStep = false;
+                    // Ensure currentMode is ADD when entering this step
+                    if (currentMode !== Modes.ADD) {
+                        currentMode = Modes.ADD;
+                        document.getElementById('current-mode').textContent = `Modus: ${currentMode}`;
+                    }
+                },
                 targetElement: () => previewVoxelMesh
             },
             {
@@ -3125,7 +3118,7 @@ window.onload = function() {
     const mobileModeToggle = document.getElementById('mobile-mode-toggle');
     const mobileColorPickerBtn = document.getElementById('mobile-color-picker-btn');
     const mobileColorInputHidden = document.getElementById('mobile-color-input-hidden');
-    const mobileAxisToggle = document.getElementById('mobile-axis-toggle');
+    // const mobileAxisToggle = document.getElementById('mobile-axis-toggle'); // Removed mobile axis toggle
     const mobileLoginLogout = document.getElementById('mobile-login-logout');
     
     // Camera Control Buttons
@@ -3471,7 +3464,7 @@ window.onload = function() {
     uploadToHubBtn.addEventListener('click', openUploadModal);
     uploadConfirmBtn.addEventListener('click', uploadProjectToHub);
     uploadCancelBtn.addEventListener('click', () => uploadProjectModal.close());
-    goToHubBtn.addEventListener('click', () => window.open('https://hub.voxelshaper.com/', '_blank'));
+    goToHubBtn.addEventListener('click', () => window.open('https://voxelshaper.com/hub', '_blank')); // Replace with actual hub URL
 
     authModalCloseBtn.addEventListener('click', closeAuthModal);
     signInGoogleBtn.addEventListener('click', window.signInWithGoogle);
@@ -3515,7 +3508,7 @@ window.onload = function() {
              tutorial.checkCondition(mobileColorPickerBtn); // Pass the mobile button as wobble target
         }
     });
-    mobileAxisToggle.addEventListener('click', cycleDrawingAxis);
+    // mobileAxisToggle.addEventListener('click', cycleDrawingAxis); // Removed axis toggle listener
     mobileLoginLogout.addEventListener('click', loginLogout);
 
     // Start the animation loop
