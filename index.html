@@ -563,7 +563,7 @@ const VoxelApp = {
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
         document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
-        document.getElementById('clearBtnMobile').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
+        document.getElementById('clearBtnMobile').addEventListener('click', () => this.clearAll());
 
         // Keyboard shortcuts for desktop
         document.addEventListener('keydown', (e) => {
