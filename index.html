@@ -509,10 +509,12 @@ const VoxelApp = {
         this.updateLoginStateUI();
     },
 
-    loginWithRedirect: function(providerName) {
-        window.location.href = `https://${this.API_BASE_URL}/auth/${providerName}?state=${window.location.href.split('#')[0]}`;
-    },
 
+loginWithRedirect(provider) {
+  const here  = location.origin + location.pathname + location.search; // no hash
+  const state = encodeURIComponent(here);
+  location.assign(`https://${this.API_BASE_URL}/auth/${provider}?state=${state}`);
+},
     sendMagicLink: async function() {
         const email = document.getElementById('magicLinkEmail').value;
         if (!email) {
