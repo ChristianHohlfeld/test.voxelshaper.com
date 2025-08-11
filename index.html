@@ -210,6 +210,17 @@
             <button id="signInGithubBtn" class="btn bg-neutral text-neutral-content">With GitHub</button>
             <form id="magicLinkForm" class="flex flex-col gap-2 w-full mt-4">
                 <input type="email" id="magicLinkEmail" placeholder="Enter your email" class="input input-bordered w-full">
+                
+                <!-- Checkboxen für AGB und Newsletter -->
+                <label class="label cursor-pointer justify-start gap-2">
+                    <input type="checkbox" id="agbCheckbox" class="checkbox" />
+                    <span class="label-text">Hiermit stimme ich den AGBs und Datenschutzbestimmungen zu.</span>
+                </label>
+                <label class="label cursor-pointer justify-start gap-2">
+                    <input type="checkbox" id="newsletterCheckbox" class="checkbox" />
+                    <span class="label-text">Ich möchte Neuigkeiten und Angebote per E-Mail erhalten.</span>
+                </label>
+
                 <button type="submit" class="btn btn-primary">Send Magic Link</button>
             </form>
         </div>
@@ -351,7 +362,7 @@ const VoxelApp = {
                 this.user = user;
                 // No need to set the token in localStorage, it's in the cookie.
                 this.updateLoginStateUI();
-                this.showToast('Login Successful', 'You are now logged in via OAuth!', 'success');
+                this.showToast('Login Successful', 'You are now logged in via OAuth!', 'info');
             } catch (e) {
                 console.error("OAuth redirect user fetch failed:", e);
                 this.showToast('Login Error', 'Failed to retrieve user data after OAuth.', 'error');
@@ -383,7 +394,7 @@ const VoxelApp = {
                 this.user = response.user;
                 localStorage.setItem('vs_session', response.jwt);
                 this.updateLoginStateUI();
-                this.showToast('Login Successful', 'You are now logged in!', 'success');
+                this.showToast('Login Successful', 'You are now logged in!', 'info');
             } catch (e) {
                 this.showToast('Login Error', e.message, 'error');
             } finally {
@@ -410,6 +421,10 @@ const VoxelApp = {
             this.loadProjectFromModelId(urlModelId);
             window.history.replaceState({}, document.title, window.location.pathname);
         }
+        
+        // Load checkbox states from local storage
+        document.getElementById('agbCheckbox').checked = localStorage.getItem('agbCheckbox') === 'true';
+        document.getElementById('newsletterCheckbox').checked = localStorage.getItem('newsletterCheckbox') === 'true';
     },
 
     setupDOM: function() {
@@ -538,6 +553,16 @@ const VoxelApp = {
         document.getElementById('magicLinkForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.sendMagicLink();
+        });
+
+        // Event listener for the AGB checkbox to save state
+        document.getElementById('agbCheckbox').addEventListener('change', (e) => {
+            localStorage.setItem('agbCheckbox', e.target.checked);
+        });
+        
+        // Event listener for the newsletter checkbox to save state
+        document.getElementById('newsletterCheckbox').addEventListener('change', (e) => {
+            localStorage.setItem('newsletterCheckbox', e.target.checked);
         });
 
         // Clear Modal Listeners
@@ -976,7 +1001,9 @@ const VoxelApp = {
     showToast: function(title, message, type = 'info', duration = 2000) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
-        toast.className = `alert alert-${type} shadow-lg`;
+        // Use `alert-info` for success messages to make them less visually aggressive.
+        const alertClass = type === 'success' ? 'alert-info' : `alert-${type}`;
+        toast.className = `alert ${alertClass} shadow-lg`;
         toast.innerHTML = `<div><strong>${title}</strong><br><span>${message}</span></div>`;
         container.appendChild(toast);
         setTimeout(() => toast.remove(), duration);
@@ -997,7 +1024,7 @@ const VoxelApp = {
         const a = document.createElement('a');
         a.href = url; a.download = 'voxel-project.json'; a.click();
         URL.revokeObjectURL(url);
-        this.showToast('Project Saved', 'File downloaded as voxel-project.json', 'success');
+        this.showToast('Project Saved', 'File downloaded as voxel-project.json', 'info');
     },
 
     loadJSON: function(event) {
@@ -1021,7 +1048,7 @@ const VoxelApp = {
                 this.rebuildSceneFromVoxels();
                 this.rebuildHelpers(); this.resetCamera();
                 this.history = []; this.historyPointer = -1;
-                this.showToast('Project Loaded', 'Successfully loaded from file.', 'success');
+                this.showToast('Project Loaded', 'Successfully loaded from file.', 'info');
             } catch (err) { this.showToast('Load Error', 'Invalid project file.', 'error'); }
         };
         reader.readAsText(file);
@@ -1055,7 +1082,7 @@ const VoxelApp = {
         a.href = url; a.download = 'voxel-model.stl'; a.click();
         URL.revokeObjectURL(url);
         mergedGeometry.dispose(); geometries.forEach(g => g.dispose());
-        this.showToast('Export Complete', 'Downloaded voxel-model.stl', 'success');
+        this.showToast('Export Complete', 'Downloaded voxel-model.stl', 'info');
     },
 
     // --- Hub Integration ---
@@ -1086,8 +1113,16 @@ const VoxelApp = {
 
     sendMagicLink: async function() {
         const email = document.getElementById('magicLinkEmail').value;
+        const acceptsAgb = document.getElementById('agbCheckbox').checked;
+        const receivesMarketingEmails = document.getElementById('newsletterCheckbox').checked;
+
         if (!email) {
             this.showToast('Error', 'Please enter your email.', 'error');
+            return;
+        }
+
+        if (!acceptsAgb) {
+            this.showToast('Error', 'Bitte AGBs akzeptieren.', 'error');
             return;
         }
 
@@ -1095,7 +1130,7 @@ const VoxelApp = {
             await this.request('/auth/magic-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email, receivesMarketingEmails, acceptsAgb })
             });
             document.getElementById('authModal').close();
             document.getElementById('magicLinkVerifyModal').showModal();
@@ -1145,7 +1180,7 @@ const VoxelApp = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(hubDocument)
             });
-            this.showToast('Upload Successful!', `Project saved with ID: ${response.modelId}`, 'success');
+            this.showToast('Upload Successful!', `Project saved with ID: ${response.modelId}`, 'info');
         } catch (error) { 
             this.showToast('Upload Failed', error.message, 'error'); 
         }
@@ -1167,7 +1202,7 @@ const VoxelApp = {
             this.rebuildSceneFromVoxels();
             this.rebuildHelpers(); 
             this.resetCamera();
-            this.showToast('Project Loaded', `Loaded "${data.title}"`, 'success');
+            this.showToast('Project Loaded', `Loaded "${data.title}"`, 'info');
         } catch (error) { 
             this.showToast('Load Error', error.message, 'error'); 
         }
@@ -1345,7 +1380,7 @@ const VoxelApp = {
                 scaledHeight: planeHeight
             };
             document.getElementById('removeImageBtn').classList.remove('hidden');
-            this.showToast('Image Template Loaded', '', 'success');
+            this.showToast('Image Template Loaded', '', 'info');
         };
         img.src = imageData.src;
     },
