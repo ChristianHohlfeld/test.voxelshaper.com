@@ -1054,8 +1054,8 @@ const VoxelApp = {
     },
     
     signInWithProvider: function(providerName) {
-        // Redirect to the backend's OAuth endpoint
-        window.location.href = `${this.BACKEND_URL}/auth/${providerName}?redirect=${window.location.origin}`;
+        // Redirect to the backend's OAuth endpoint, passing the current URL as the state
+        window.location.href = `${this.BACKEND_URL}/auth/${providerName}?state=${encodeURIComponent(window.location.href)}`;
     },
 
     sendMagicLink: async function() {
