@@ -133,6 +133,19 @@
     <div class="flex items-center justify-between p-2 bg-base-200 border-t border-base-content/20">
         <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-mode-toggle" aria-label="Toggle Mode"><i id="mobile-mode-icon" class="fas fa-plus"></i></button>
         <input type="color" id="mobile-color-picker" value="#FFFFFF" class="w-14 h-14 rounded-full p-1 border-2 border-base-content/50">
+        <div class="dropdown dropdown-top dropdown-end">
+            <label tabindex="0" class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-file-menu" aria-label="Open File Menu">📂</label>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+                <li><a id="saveBtnMobile">Save</a></li>
+                <li><a id="loadBtnMobile">Load</a></li>
+                <li><a id="exportBtnMobile">Export</a></li>
+                <div class="divider my-1"></div>
+                <li><a id="loadImageBtnMobile">Load Reference Image</a></li>
+                <li><a id="removeImageBtnMobile" class="hidden">Remove Reference Image</a></li>
+                <div class="divider my-1"></div>
+                <li><a id="clearBtnMobile" class="text-error">Clear Scene</a></li>
+            </ul>
+        </div>
         <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-login-logout" aria-label="Login or Logout">🔑</button>
     </div>
     <div class="flex flex-col gap-2 fixed top-1/2 right-2 -translate-y-1/2 z-10">
@@ -423,8 +436,17 @@ const VoxelApp = {
         }
         
         // Load checkbox states from local storage
-        document.getElementById('agbCheckbox').checked = localStorage.getItem('agbCheckbox') === 'true';
-        document.getElementById('newsletterCheckbox').checked = localStorage.getItem('newsletterCheckbox') === 'true';
+        const agbChecked = localStorage.getItem('agbCheckbox');
+        const newsletterChecked = localStorage.getItem('newsletterCheckbox');
+        if (agbChecked !== null) {
+            document.getElementById('agbCheckbox').checked = agbChecked === 'true';
+        }
+        if (newsletterChecked !== null) {
+            document.getElementById('newsletterCheckbox').checked = newsletterChecked === 'true';
+        } else {
+             // Default to false if not in local storage
+             document.getElementById('newsletterCheckbox').checked = false;
+        }
     },
 
     setupDOM: function() {
@@ -536,6 +558,12 @@ const VoxelApp = {
         document.getElementById('mobileInvertLookY').addEventListener('change', (e) => this.setControl('invertLookY', e.target.checked));
         document.getElementById('mobileInvertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
         document.getElementById('mobile-login-logout').addEventListener('click', () => this.loginLogout());
+        document.getElementById('saveBtnMobile').addEventListener('click', () => this.saveJSON());
+        document.getElementById('loadBtnMobile').addEventListener('click', () => document.getElementById('fileInput').click());
+        document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
+        document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
+        document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
+        document.getElementById('clearBtnMobile').addEventListener('click', () => this.clearAll());
 
         // Modals & Hub
         document.getElementById('loginLogoutBtn').addEventListener('click', () => this.loginLogout());
