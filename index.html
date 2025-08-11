@@ -253,7 +253,10 @@ const VoxelApp = {
     DRAG_THRESHOLD: 5,
     FLY_SPEED: 0.1,
     MAX_HISTORY_SIZE: 50,
-    BACKEND_URL: 'https://api.voxelshaper.com',
+    // Dynamically set BACKEND_URL based on the hostname
+    BACKEND_URL: `https://api.${window.location.hostname.replace('test.', '')}`,
+    // Dynamically set HUB_URL based on the hostname
+    HUB_URL: `https://hub.${window.location.hostname.replace('test.', '')}`,
 
     // --- State ---
     scene: null, cam: null, ren: null, gridHelper: null, boxHelper: null,
@@ -310,7 +313,7 @@ const VoxelApp = {
         this.setupDOM();
         this.setupThree();
         this.setupEventListeners();
-        this.authCheckAndInit(); // New auth check entry point
+        this.authCheckAndInit();
         this.handleResize();
         this.animate();
         console.log("VoxelShaper Initialized with custom backend");
@@ -341,25 +344,36 @@ const VoxelApp = {
         return data;
     },
 
+    // New function to handle the redirect after OAuth and fetch user data
+    handleOAuthRedirect: async function() {
+        if (window.location.hash.includes('#oauth_success')) {
+            try {
+                // The backend has already set the JWT cookie, so we can now fetch the user.
+                const user = await this.request('/api/user/me');
+                this.user = user;
+                // No need to set the token in localStorage, it's in the cookie.
+                this.updateLoginStateUI();
+                this.showToast('Login Successful', 'You are now logged in via OAuth!', 'success');
+            } catch (e) {
+                console.error("OAuth redirect user fetch failed:", e);
+                this.showToast('Login Error', 'Failed to retrieve user data after OAuth.', 'error');
+            } finally {
+                // Clean up the URL hash
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+    },
+
     // New function to check for auth token and fetch user data
     authCheckAndInit: async function() {
-        const token = localStorage.getItem('vs_session');
         const urlParams = new URLSearchParams(window.location.hash.substring(1));
         const magicLinkToken = urlParams.get('token');
 
-        if (token) {
-            this.token = token;
-            try {
-                this.user = await this.request('/api/user/me');
-                this.updateLoginStateUI();
-            } catch (e) {
-                console.error("Auth check failed:", e);
-                localStorage.removeItem('vs_session');
-                this.token = null;
-                this.user = null;
-                this.updateLoginStateUI();
-            }
-        } else if (magicLinkToken) {
+        // Check for an OAuth redirect fragment first
+        await this.handleOAuthRedirect();
+
+        // If the user isn't logged in from the OAuth redirect, check for a magic link token
+        if (!this.user && magicLinkToken) {
              // Handle magic link verification
             try {
                 const response = await this.request('/auth/verify-magic-link', {
@@ -367,9 +381,9 @@ const VoxelApp = {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: magicLinkToken })
                 });
-                this.token = response.jwt;
+                // Magic link success will give a token and user object
                 this.user = response.user;
-                localStorage.setItem('vs_session', this.token);
+                localStorage.setItem('vs_session', response.jwt);
                 this.updateLoginStateUI();
                 this.showToast('Login Successful', 'You are now logged in!', 'success');
             } catch (e) {
@@ -379,6 +393,18 @@ const VoxelApp = {
             }
         }
         
+        // If the user still isn't logged in, try to fetch user details with existing cookie/local storage token
+        if (!this.user) {
+            try {
+                const user = await this.request('/api/user/me');
+                this.user = user;
+                this.updateLoginStateUI();
+            } catch (e) {
+                // This is expected if no token is present, so we don't need a toast
+                console.log("No active session found.");
+            }
+        }
+
         // Load model from URL if present
         const urlModelId = new URLSearchParams(window.location.search).get('modelId');
         if (urlModelId) {
@@ -499,7 +525,7 @@ const VoxelApp = {
 
         // Modals & Hub
         document.getElementById('loginLogoutBtn').addEventListener('click', () => this.loginLogout());
-        document.getElementById('goToHubBtn').addEventListener('click', () => window.open('https://hub.voxelshaper.com', '_blank'));
+        document.getElementById('goToHubBtn').addEventListener('click', () => window.open(this.HUB_URL, '_blank'));
         document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
         document.getElementById('uploadConfirmBtn').addEventListener('click', (e) => {
             e.preventDefault();
@@ -1038,10 +1064,11 @@ const VoxelApp = {
         if (this.user) {
             // Logout
             try {
+                // We don't need to pass the JWT in the body, as it's handled via the cookie
                 await this.request('/auth/logout', { method: 'POST' });
-                localStorage.removeItem('vs_session');
+                // Note: The backend will clear the cookie. The frontend state also needs to be reset.
                 this.user = null;
-                this.token = null;
+                this.token = null; // This is not strictly necessary as we rely on the cookie, but good practice
                 this.updateLoginStateUI();
                 this.showToast('Logged Out', '', 'info');
             } catch (e) {
