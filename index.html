@@ -114,7 +114,6 @@
 
     <div class="flex-grow"></div>
 
-    <!-- The login/logout and hub buttons are updated for the new API -->
     <button id="loginLogoutBtn" class="btn btn-sm btn-info">Login</button>
     <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
     <button id="uploadToHubBtn" class="btn btn-sm btn-warning hidden">Upload</button>
@@ -186,36 +185,28 @@
 <dialog id="uploadProjectModal" class="modal">
     <div class="modal-box">
         <h3 class="font-bold text-lg">Upload Project to Hub</h3>
-        <form id="uploadForm" class="flex flex-col gap-4 py-4">
+        <form method="dialog" class="flex flex-col gap-4 py-4">
             <input type="text" id="uploadTitle" placeholder="Project Title" class="input input-bordered w-full">
             <textarea id="uploadDescription" placeholder="Description" class="textarea textarea-bordered w-full"></textarea>
             <select id="uploadCategory" class="select select-bordered w-full"><option disabled selected>Select Category</option></select>
             <div class="flex gap-4">
-                <label><input type="radio" name="uploadVisibility" value="public" class="radio radio-primary mr-1" checked> Public</label>
+                <label><input type="radio" name="uploadVisibility" value="public" checked class="radio radio-primary mr-1"> Public</label>
                 <label><input type="radio" name="uploadVisibility" value="private" class="radio radio-primary mr-1"> Private</label>
             </div>
             <div class="modal-action">
-                <button type="submit" id="uploadConfirmBtn" class="btn btn-success">Upload</button>
-                <button type="button" class="btn" onclick="uploadProjectModal.close()">Cancel</button>
+                <button id="uploadConfirmBtn" class="btn btn-success">Upload</button>
+                <button class="btn">Cancel</button>
             </div>
         </form>
     </div>
 </dialog>
 
-<!-- The auth modal is no longer needed since the API handles redirects. We'll use this for the Magic Link login instead. -->
 <dialog id="authModal" class="modal">
     <div class="modal-box text-center">
         <h3 class="font-bold text-lg">Login to VoxelShaper Hub</h3>
         <div class="py-4 flex flex-col gap-3">
-            <!-- New buttons for direct links to API endpoints -->
-            <button id="signInGoogleBtn" class="btn btn-error text-white">Login with Google</button>
-            <button id="signInGithubBtn" class="btn bg-neutral text-neutral-content">Login with GitHub</button>
-            <div class="divider">OR</div>
-            <p>Use a Magic Link to log in via email:</p>
-            <form id="magicLinkForm" class="flex flex-col gap-2">
-                <input type="email" id="magicLinkEmail" placeholder="Your email address" class="input input-bordered w-full">
-                <button type="submit" class="btn btn-primary">Send Magic Link</button>
-            </form>
+            <button id="signInGoogleBtn" class="btn btn-error text-white">With Google</button>
+            <button id="signInGithubBtn" class="btn bg-neutral text-neutral-content">With GitHub</button>
         </div>
         <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
     </div>
@@ -238,7 +229,24 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
-<!-- The Firebase script block is now completely removed -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut, GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, collection, addDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    window.firebase = { initializeApp, getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, GoogleAuthProvider, GithubAuthProvider, signInWithPopup, getFirestore, doc, getDoc, collection, addDoc, serverTimestamp };
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    window.firebaseApp = window.firebase.initializeApp(firebaseConfig);
+    window.auth = window.firebase.getAuth(window.firebaseApp);
+    window.db = window.firebase.getFirestore(window.firebaseApp);
+    if (window.VoxelApp) { window.VoxelApp.init(); }
+</script>
 
 <script>
 const VoxelApp = {
@@ -251,7 +259,6 @@ const VoxelApp = {
     DRAG_THRESHOLD: 5,
     FLY_SPEED: 0.1,
     MAX_HISTORY_SIZE: 50,
-    API_BASE_URL: 'api.voxelshaper.com', // Use the provided API URL
 
     // --- State ---
     scene: null, cam: null, ren: null, gridHelper: null, boxHelper: null,
@@ -292,8 +299,8 @@ const VoxelApp = {
         invertStrafeX: false, invertStrafeY: false,
     },
 
-    // --- User State (re-created to be API-based) ---
-    currentUser: null,
+    // --- Firebase State ---
+    currentUserId: null, currentUser: null,
 
     // --- Modes and Icons ---
     Modes: {
@@ -307,19 +314,10 @@ const VoxelApp = {
         this.setupDOM();
         this.setupThree();
         this.setupEventListeners();
-        this.checkAuthStatus();
+        this.setupFirebase();
         this.handleResize();
         this.animate();
-        console.log("VoxelShaper Initialized with API Integration");
-        
-        // Handle OAuth success hash fragment
-        if (window.location.hash === '#oauth_success') {
-            this.showToast('Login Successful', 'Welcome back!', 'success');
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else if (window.location.search.includes('auth_error')) {
-            this.showToast('Login Failed', 'There was an issue logging in. Please try again.', 'error');
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        console.log("VoxelShaper Initialized - Production Controls Restored");
     },
 
     setupDOM: function() {
@@ -346,13 +344,6 @@ const VoxelApp = {
         this.controls.invertStrafeY = localStorage.getItem('invertStrafeY') === 'true';
         
         this.updateAllControlInputs();
-
-        // Handle model loading from URL if present
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('modelId')) {
-            this.loadProjectFromModelId(urlParams.get('modelId'));
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
     },
 
     setupThree: function() {
@@ -379,6 +370,7 @@ const VoxelApp = {
         this.previewVoxel.visible = false;
         this.scene.add(this.previewVoxel);
 
+        // Extrude Gizmo
         const extrudeGizmoGeometry = new THREE.PlaneGeometry(this.VS, this.VS);
         const extrudeGizmoMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
         this.extrudeGizmoMesh = new THREE.Mesh(extrudeGizmoGeometry, extrudeGizmoMaterial);
@@ -442,17 +434,13 @@ const VoxelApp = {
         document.getElementById('loginLogoutBtn').addEventListener('click', () => this.loginLogout());
         document.getElementById('goToHubBtn').addEventListener('click', () => window.open('https://hub.voxelshaper.com', '_blank'));
         document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
-        document.getElementById('uploadForm').addEventListener('submit', (e) => {
+        document.getElementById('uploadConfirmBtn').addEventListener('click', (e) => {
             e.preventDefault();
             this.uploadProjectToHub();
             document.getElementById('uploadProjectModal').close();
         });
-        document.getElementById('signInGoogleBtn').addEventListener('click', () => this.loginWithRedirect('google'));
-        document.getElementById('signInGithubBtn').addEventListener('click', () => this.loginWithRedirect('github'));
-        document.getElementById('magicLinkForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.sendMagicLink();
-        });
+        document.getElementById('signInGoogleBtn').addEventListener('click', () => this.signInWithProvider('google'));
+        document.getElementById('signInGithubBtn').addEventListener('click', () => this.signInWithProvider('github'));
 
         // Clear Modal Listeners
         document.getElementById('confirmClearBtn').addEventListener('click', () => {
@@ -468,161 +456,24 @@ const VoxelApp = {
             document.getElementById('exportOptionsModal').close();
         });
     },
-
-    // New API-based authentication and data functions
-    checkAuthStatus: async function() {
-        try {
-            const response = await fetch(`https://${this.API_BASE_URL}/api/user/me`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
-            if (response.ok) {
-                this.currentUser = await response.json();
-            } else {
-                this.currentUser = null;
-            }
-        } catch (error) {
-            console.error('Failed to check auth status:', error);
-            this.currentUser = null;
-        } finally {
-            this.updateLoginStateUI();
-        }
-    },
-
-    loginLogout: async function() {
-        if (this.currentUser) {
-            try {
-                await fetch(`https://${this.API_BASE_URL}/auth/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
+    
+    setupFirebase: function() {
+        if (!window.auth) { console.error("Firebase Auth not initialized."); return; }
+        window.firebase.setPersistence(window.auth, window.firebase.browserLocalPersistence)
+            .then(() => {
+                window.firebase.onAuthStateChanged(window.auth, (user) => {
+                    this.currentUser = user; this.currentUserId = user ? user.uid : null;
+                    this.updateLoginStateUI();
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.has('modelId')) {
+                        this.loadProjectFromModelId(urlParams.get('modelId'));
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
                 });
-                this.showToast('Logged Out', '', 'info');
-                this.currentUser = null;
-            } catch (error) {
-                this.showToast('Logout Failed', 'Please try again.', 'error');
-            }
-        } else {
-            document.getElementById('authModal').showModal();
-        }
-        this.updateLoginStateUI();
-    },
-
-
-loginWithRedirect(provider) {
-  const here  = location.origin + location.pathname + location.search; // no hash
-  const state = encodeURIComponent(here);
-  location.assign(`https://${this.API_BASE_URL}/auth/${provider}?state=${state}`);
-},
-    sendMagicLink: async function() {
-        const email = document.getElementById('magicLinkEmail').value;
-        if (!email) {
-            this.showToast('Error', 'Please enter a valid email address.', 'error');
-            return;
-        }
-        try {
-            const response = await fetch(`https://${this.API_BASE_URL}/auth/magic-link`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email })
             });
-            if (response.ok) {
-                this.showToast('Magic Link Sent', 'Check your email for a login link!', 'success');
-            } else {
-                const errorData = await response.json();
-                this.showToast('Error', errorData.error, 'error');
-            }
-        } catch (error) {
-            this.showToast('Error', 'Failed to send magic link. Please check your network connection.', 'error');
-        }
-        document.getElementById('authModal').close();
     },
 
-    uploadProjectToHub: async function() {
-        if (!this.currentUser) {
-            this.showToast('Error', 'You must be logged in to upload.', 'error');
-            return;
-        }
-        if (this.voxels.size === 0) {
-            this.showToast('Error', 'Cannot upload an empty project.', 'error');
-            return;
-        }
-        const title = document.getElementById('uploadTitle').value;
-        if (!title) {
-            this.showToast('Error', 'Title is required.', 'error');
-            return;
-        }
-        this.showToast('Uploading...', 'Please wait...', 'info');
-        
-        const projectData = {
-            gridSize: this.GRID,
-            voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
-                const [x, y, z] = this.parseKey(k);
-                return { x, y, z, color: v.color };
-            })
-        };
-
-        const uploadPayload = {
-            title: title,
-            description: document.getElementById('uploadDescription').value,
-            category: document.getElementById('uploadCategory').value,
-            visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
-            projectData: projectData
-        };
-
-        try {
-            const response = await fetch(`https://${this.API_BASE_URL}/api/models`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(uploadPayload),
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                this.showToast('Upload Successful!', result.message, 'success');
-            } else {
-                const errorData = await response.json();
-                this.showToast('Upload Failed', errorData.error, 'error');
-            }
-        } catch (error) {
-            this.showToast('Upload Failed', 'A network error occurred.', 'error');
-        }
-    },
-
-    loadProjectFromModelId: async function(modelId) {
-        this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
-        try {
-            const response = await fetch(`https://${this.API_BASE_URL}/api/models/${modelId}`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.voxels.clear();
-                this.GRID = data.projectData.gridSize || this.GRID_DEFAULT;
-                localStorage.setItem('voxelEditorGridSize', this.GRID);
-                data.projectData.voxels.forEach(v => {
-                    const k = this.key(v.x, v.y, v.z);
-                    this.voxels.set(k, { color: v.color });
-                });
-                this.rebuildSceneFromVoxels();
-                this.rebuildHelpers(); this.resetCamera();
-                this.history = [];
-                this.historyPointer = -1;
-                this.showToast('Project Loaded', `Loaded "${data.title}"`, 'success');
-            } else {
-                const errorData = await response.json();
-                this.showToast('Load Error', errorData.error, 'error');
-            }
-        } catch (error) {
-            this.showToast('Load Error', 'A network error occurred.', 'error');
-        }
-    },
-
-    // --- Event Handlers (no changes needed) ---
+    // --- Event Handlers ---
     onPointerDown: function(e) {
         e.preventDefault();
         
@@ -931,7 +782,7 @@ loginWithRedirect(provider) {
             }
         }
         
-        const meshes = this.scene.children.filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh);
+        const meshes = Array.from(this.voxels.values()).map(v => v.mesh);
         const intersects = raycaster.intersectObjects(meshes);
 
         if (intersects.length > 0) {
@@ -949,7 +800,7 @@ loginWithRedirect(provider) {
             return coords;
         } else {
             const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-              if (isInitialClick) {
+             if (isInitialClick) {
                 this.mouseState.drawingPlane.copy(plane);
             }
             const intersectionPoint = new THREE.Vector3();
@@ -1028,13 +879,10 @@ loginWithRedirect(provider) {
         const isLoggedIn = !!this.currentUser;
         document.getElementById('loginLogoutBtn').textContent = isLoggedIn ? 'Logout' : 'Login';
         document.getElementById('uploadToHubBtn').classList.toggle('hidden', !isLoggedIn);
-        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '?';
+        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
         let userDisplay = '';
         if (isLoggedIn && this.currentUser.photoURL) {
             userDisplay = `<img src="${this.currentUser.photoURL}" alt="User" class="w-6 h-6 rounded-full">`;
-        }
-        if (isLoggedIn && this.currentUser.displayName) {
-             userDisplay += `<span>${this.currentUser.displayName}</span>`;
         }
         document.getElementById('userIdDisplay').innerHTML = userDisplay;
     },
@@ -1122,6 +970,73 @@ loginWithRedirect(provider) {
         URL.revokeObjectURL(url);
         mergedGeometry.dispose(); geometries.forEach(g => g.dispose());
         this.showToast('Export Complete', 'Downloaded voxel-model.stl', 'success');
+    },
+
+    // --- Hub Integration ---
+    loginLogout: function() {
+        if (this.currentUser) { window.firebase.signOut(window.auth); this.showToast('Logged Out', '', 'info'); } 
+        else { document.getElementById('authModal').showModal(); }
+    },
+    
+    signInWithProvider: async function(providerName) {
+        const provider = providerName === 'google' ? new window.firebase.GoogleAuthProvider() : new window.firebase.GithubAuthProvider();
+        try {
+            await window.firebase.signInWithPopup(window.auth, provider);
+            document.getElementById('authModal').close();
+            this.showToast('Login Successful', `Welcome!`, 'success');
+        } catch (error) { this.showToast('Login Error', error.message, 'error'); }
+    },
+
+    uploadProjectToHub: async function() {
+        if (!this.currentUser) { this.showToast('Error', 'You must be logged in to upload.', 'error'); return; }
+        if (this.voxels.size === 0) { this.showToast('Error', 'Cannot upload an empty project.', 'error'); return; }
+        const title = document.getElementById('uploadTitle').value;
+        if (!title) { this.showToast('Error', 'Title is required.', 'error'); return; }
+        this.showToast('Uploading...', 'Please wait...', 'info');
+        const projectData = {
+            gridSize: this.GRID,
+            voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
+                const [x, y, z] = this.parseKey(k);
+                return { x, y, z, color: v.color };
+            })
+        };
+        const hubDocument = {
+            title: title,
+            description: document.getElementById('uploadDescription').value,
+            category: document.getElementById('uploadCategory').value,
+            visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
+            uploaderUid: this.currentUser.uid,
+            uploaderEmail: this.currentUser.email,
+            timestamp: window.firebase.serverTimestamp(),
+            projectData: projectData
+        };
+        try {
+            const docRef = await window.firebase.addDoc(window.firebase.collection(window.db, "models"), hubDocument);
+            this.showToast('Upload Successful!', `Project saved with ID: ${docRef.id}`, 'success');
+        } catch (error) { this.showToast('Upload Failed', error.message, 'error'); }
+    },
+
+    loadProjectFromModelId: async function(modelId) {
+        this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
+        try {
+            const docRef = window.firebase.doc(window.db, "models", modelId);
+            const docSnap = await window.firebase.getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.visibility === 'private' && data.uploaderUid !== this.currentUserId) {
+                    this.showToast('Access Denied', 'This project is private.', 'error'); return;
+                }
+                this.voxels.clear();
+                this.GRID = data.projectData.gridSize || this.GRID_DEFAULT;
+                data.projectData.voxels.forEach(v => {
+                    const k = this.key(v.x, v.y, v.z);
+                    this.voxels.set(k, { color: v.color });
+                });
+                this.rebuildSceneFromVoxels();
+                this.rebuildHelpers(); this.resetCamera();
+                this.showToast('Project Loaded', `Loaded "${data.title}"`, 'success');
+            } else { this.showToast('Error', 'Project not found.', 'error'); }
+        } catch (error) { this.showToast('Load Error', error.message, 'error'); }
     },
 
     // --- Animation Loop ---
@@ -1315,7 +1230,9 @@ loginWithRedirect(provider) {
 };
 
 window.VoxelApp = VoxelApp;
-window.onload = () => VoxelApp.init();
+if (window.firebase) {
+    VoxelApp.init();
+}
 
 </script>
 
