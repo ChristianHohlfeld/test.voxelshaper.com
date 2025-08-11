@@ -229,9 +229,23 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
-<!-- Backend API base (no Firebase) -->
-<script>
-  window.API_BASE = 'https://api.voxelshaper.com';
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut, GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, collection, addDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    window.firebase = { initializeApp, getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, GoogleAuthProvider, GithubAuthProvider, signInWithPopup, getFirestore, doc, getDoc, collection, addDoc, serverTimestamp };
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    window.firebaseApp = window.firebase.initializeApp(firebaseConfig);
+    window.auth = window.firebase.getAuth(window.firebaseApp);
+    window.db = window.firebase.getFirestore(window.firebaseApp);
+    if (window.VoxelApp) { window.VoxelApp.init(); }
 </script>
 
 <script>
@@ -262,7 +276,7 @@ const VoxelApp = {
     selectedVoxels: new Set(),
     selectionMeshes: new Map(),
     extrudeGizmoMesh: null,
-
+    
     // --- Pointer & Mouse State ---
     activePointers: new Map(),
     isPointerDown: false,
@@ -275,10 +289,18 @@ const VoxelApp = {
         isMarqueeSelecting: false,
         marqueeStart: {x: 0, y: 0},
     },
-    touchState: { isTapCandidate: false, lastPinchDist: null },
+    touchState: {
+        isTapCandidate: false, lastPinchDist: null,
+    },
 
-    // --- Auth/Session State (from your API) ---
-    currentUser: null, // { id, email, isAdmin, photoURL, displayName, createdAt }
+    // --- Control Settings ---
+    controls: {
+        invertLookX: false, invertLookY: false, invertZoom: false,
+        invertStrafeX: false, invertStrafeY: false,
+    },
+
+    // --- Firebase State ---
+    currentUserId: null, currentUser: null,
 
     // --- Modes and Icons ---
     Modes: {
@@ -287,15 +309,15 @@ const VoxelApp = {
         DRAW: { name: 'Draw', icon: 'fas fa-paint-brush' }
     },
 
-    // --- Init ---
+    // --- Key Functions ---
     init: function() {
         this.setupDOM();
         this.setupThree();
         this.setupEventListeners();
-        this.setupSessionAuth();  // << use backend session instead of Firebase
+        this.setupFirebase();
         this.handleResize();
         this.animate();
-        console.log("VoxelShaper Initialized (API auth)");
+        console.log("VoxelShaper Initialized - Production Controls Restored");
     },
 
     setupDOM: function() {
@@ -357,13 +379,7 @@ const VoxelApp = {
 
         this.rebuildHelpers();
     },
-
-    // --- Controls ---
-    controls: {
-        invertLookX: false, invertLookY: false, invertZoom: false,
-        invertStrafeX: false, invertStrafeY: false,
-    },
-
+    
     setupEventListeners: function() {
         window.addEventListener('resize', () => this.handleResize());
         this.containerDiv.addEventListener('pointerdown', (e) => this.onPointerDown(e));
@@ -377,6 +393,7 @@ const VoxelApp = {
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
 
         this.cvs.addEventListener('contextmenu', (e) => e.preventDefault());
+        
         document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
 
         // Desktop UI
@@ -422,18 +439,16 @@ const VoxelApp = {
             this.uploadProjectToHub();
             document.getElementById('uploadProjectModal').close();
         });
-
-        // Auth Provider buttons (redirect to backend OAuth)
         document.getElementById('signInGoogleBtn').addEventListener('click', () => this.signInWithProvider('google'));
         document.getElementById('signInGithubBtn').addEventListener('click', () => this.signInWithProvider('github'));
 
-        // Clear Modal
+        // Clear Modal Listeners
         document.getElementById('confirmClearBtn').addEventListener('click', () => {
             this.clearAllConfirmed();
             document.getElementById('clearConfirmationModal').close();
         });
-
-        // Export Modal
+        
+        // Export Modal Listener
         document.getElementById('confirmExportBtn').addEventListener('click', () => {
             const scaleUnit = document.querySelector('input[name="exportScaleUnit"]:checked').value;
             const upAxis = document.querySelector('input[name="exportUpAxis"]:checked').value;
@@ -441,46 +456,37 @@ const VoxelApp = {
             document.getElementById('exportOptionsModal').close();
         });
     },
-
-    // --- Session via Backend ---
-    setupSessionAuth: async function() {
-        // If we just came back from OAuth
-        if (window.location.hash === '#oauth_success') {
-            this.showToast('Login Successful', 'Welcome!', 'success');
-            history.replaceState({}, document.title, window.location.pathname + window.location.search);
-        }
-        // Check current session
-        await this.refreshUser();
-
-        // Auto-load model if ?modelId=... present
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('modelId')) {
-            this.loadProjectFromModelId(urlParams.get('modelId'));
-            // keep the param for shareable links; remove if you prefer:
-            // history.replaceState({}, document.title, window.location.pathname);
-        }
+    
+    setupFirebase: function() {
+        if (!window.auth) { console.error("Firebase Auth not initialized."); return; }
+        window.firebase.setPersistence(window.auth, window.firebase.browserLocalPersistence)
+            .then(() => {
+                window.firebase.onAuthStateChanged(window.auth, (user) => {
+                    this.currentUser = user; this.currentUserId = user ? user.uid : null;
+                    this.updateLoginStateUI();
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.has('modelId')) {
+                        this.loadProjectFromModelId(urlParams.get('modelId'));
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                });
+            });
     },
 
-    refreshUser: async function() {
-        try {
-            const res = await fetch(`${window.API_BASE}/api/user/me`, { credentials: 'include' });
-            if (!res.ok) throw new Error('not logged');
-            this.currentUser = await res.json();
-        } catch {
-            this.currentUser = null;
-        }
-        this.updateLoginStateUI();
-    },
-
-    // --- Event Handlers (pointer/keyboard/wheel) ---
+    // --- Event Handlers ---
     onPointerDown: function(e) {
         e.preventDefault();
+        
         if (!this.isMobile) {
             const desktopControlsDropdown = document.querySelector('#controls .dropdown > label');
-            if (desktopControlsDropdown) desktopControlsDropdown.blur();
+            if (desktopControlsDropdown) {
+                desktopControlsDropdown.blur();
+            }
         } else {
             const mobileControlsModal = document.getElementById('mobileControlsModal');
-            if (mobileControlsModal.open) mobileControlsModal.close();
+            if (mobileControlsModal.open) {
+                mobileControlsModal.close();
+            }
         }
 
         this.currentStroke = new Map();
@@ -810,7 +816,10 @@ const VoxelApp = {
     },
     
     updatePreviewVoxel: function(coords) {
-        if (this.currentMode === 'SELECT') { this.previewVoxel.visible = false; return; }
+        if (this.currentMode === 'SELECT') {
+            this.previewVoxel.visible = false;
+            return;
+        }
         if (coords && coords.x >= 0 && coords.x < this.GRID && coords.y >= 0 && coords.y < this.GRID && coords.z >= 0 && coords.z < this.GRID) {
             this.previewVoxel.position.set(coords.x * this.VS + 0.5, coords.y * this.VS + 0.5, coords.z * this.VS + 0.5);
             this.previewVoxel.material.opacity = this.currentMode === 'DELETE' ? 0.2 : 0.5;
@@ -820,7 +829,9 @@ const VoxelApp = {
         }
     },
 
-    clearAll: function() { document.getElementById('clearConfirmationModal').showModal(); },
+    clearAll: function() {
+        document.getElementById('clearConfirmationModal').showModal();
+    },
 
     clearAllConfirmed: function() {
         const oldVoxels = new Map(this.voxels);
@@ -961,26 +972,19 @@ const VoxelApp = {
         this.showToast('Export Complete', 'Downloaded voxel-model.stl', 'success');
     },
 
-    // --- Hub Integration (via your API) ---
-    loginLogout: async function() {
-        if (this.currentUser) {
-            try {
-                await fetch(`${window.API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
-            } catch (_) {}
-            this.currentUser = null;
-            this.updateLoginStateUI();
-            this.showToast('Logged Out', '', 'info');
-        } else {
-            document.getElementById('authModal').showModal();
-        }
+    // --- Hub Integration ---
+    loginLogout: function() {
+        if (this.currentUser) { window.firebase.signOut(window.auth); this.showToast('Logged Out', '', 'info'); } 
+        else { document.getElementById('authModal').showModal(); }
     },
     
-    signInWithProvider: function(providerName) {
-        const returnTo = window.location.origin + window.location.pathname; // where to come back
-        const url = providerName === 'google'
-            ? `${window.API_BASE}/auth/google?state=${encodeURIComponent(returnTo)}`
-            : `${window.API_BASE}/auth/github?state=${encodeURIComponent(returnTo)}`;
-        window.location.href = url; // full redirect; backend sets cookie and redirects back with #oauth_success
+    signInWithProvider: async function(providerName) {
+        const provider = providerName === 'google' ? new window.firebase.GoogleAuthProvider() : new window.firebase.GithubAuthProvider();
+        try {
+            await window.firebase.signInWithPopup(window.auth, provider);
+            document.getElementById('authModal').close();
+            this.showToast('Login Successful', `Welcome!`, 'success');
+        } catch (error) { this.showToast('Login Error', error.message, 'error'); }
     },
 
     uploadProjectToHub: async function() {
@@ -996,51 +1000,42 @@ const VoxelApp = {
                 return { x, y, z, color: v.color };
             })
         };
-        const doc = {
-            title,
+        const hubDocument = {
+            title: title,
             description: document.getElementById('uploadDescription').value,
             category: document.getElementById('uploadCategory').value,
             visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
-            fileName: null,
-            projectData
+            uploaderUid: this.currentUser.uid,
+            uploaderEmail: this.currentUser.email,
+            timestamp: window.firebase.serverTimestamp(),
+            projectData: projectData
         };
         try {
-            const res = await fetch(`${window.API_BASE}/api/models`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(doc)
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || `HTTP ${res.status}`);
-            }
-            const data = await res.json();
-            this.showToast('Upload Successful!', `Model ID: ${data.modelId}`, 'success');
+            const docRef = await window.firebase.addDoc(window.firebase.collection(window.db, "models"), hubDocument);
+            this.showToast('Upload Successful!', `Project saved with ID: ${docRef.id}`, 'success');
         } catch (error) { this.showToast('Upload Failed', error.message, 'error'); }
     },
 
     loadProjectFromModelId: async function(modelId) {
         this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
         try {
-            const res = await fetch(`${window.API_BASE}/api/models/${encodeURIComponent(modelId)}`, { credentials: 'include' });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            // Optional visibility check (server-side enforcement recommended)
-            if (data.visibility === 'private' && (!this.currentUser || this.currentUser.id !== data.uploaderUid)) {
-                this.showToast('Access Denied', 'This project is private.', 'error'); return;
-            }
-            this.voxels.clear();
-            this.GRID = (data.projectData && data.projectData.gridSize) || this.GRID_DEFAULT;
-            if (data.projectData && Array.isArray(data.projectData.voxels)) {
+            const docRef = window.firebase.doc(window.db, "models", modelId);
+            const docSnap = await window.firebase.getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.visibility === 'private' && data.uploaderUid !== this.currentUserId) {
+                    this.showToast('Access Denied', 'This project is private.', 'error'); return;
+                }
+                this.voxels.clear();
+                this.GRID = data.projectData.gridSize || this.GRID_DEFAULT;
                 data.projectData.voxels.forEach(v => {
                     const k = this.key(v.x, v.y, v.z);
                     this.voxels.set(k, { color: v.color });
                 });
-            }
-            this.rebuildSceneFromVoxels();
-            this.rebuildHelpers(); this.resetCamera();
-            this.showToast('Project Loaded', `Loaded "${data.title}"`, 'success');
+                this.rebuildSceneFromVoxels();
+                this.rebuildHelpers(); this.resetCamera();
+                this.showToast('Project Loaded', `Loaded "${data.title}"`, 'success');
+            } else { this.showToast('Error', 'Project not found.', 'error'); }
         } catch (error) { this.showToast('Load Error', error.message, 'error'); }
     },
 
@@ -1077,22 +1072,17 @@ const VoxelApp = {
         this.ren.render(this.scene, this.cam);
     },
 
-    // --- Scene rebuild & history ---
+    // --- NEW/REFACTORED FUNCTIONS ---
     rebuildSceneFromVoxels: function() {
-        this.scene.children
-            .filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh)
-            .forEach(c => {
-                this.scene.remove(c);
-                c.geometry.dispose();
-                c.material.dispose();
-            });
+        this.scene.children.filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh).forEach(c => {
+            this.scene.remove(c);
+            c.geometry.dispose();
+            c.material.dispose();
+        });
 
         this.voxels.forEach((voxelData, key) => {
             const [x, y, z] = this.parseKey(key);
-            const voxelMesh = new THREE.Mesh(
-                new THREE.BoxGeometry(this.VS, this.VS, this.VS),
-                new THREE.MeshLambertMaterial({ color: voxelData.color })
-            );
+            const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: voxelData.color }));
             voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
             voxelMesh.castShadow = true;
             voxelMesh.receiveShadow = true;
@@ -1106,7 +1096,9 @@ const VoxelApp = {
             this.history.splice(this.historyPointer + 1);
         }
         this.history.push(changes);
-        if (this.history.length > this.MAX_HISTORY_SIZE) this.history.shift();
+        if (this.history.length > this.MAX_HISTORY_SIZE) {
+            this.history.shift();
+        }
         this.historyPointer = this.history.length - 1;
     },
 
@@ -1114,8 +1106,11 @@ const VoxelApp = {
         if (this.historyPointer < 0) return;
         const changes = this.history[this.historyPointer];
         changes.forEach((change, key) => {
-            if (change.before === null) this.voxels.delete(key);
-            else this.voxels.set(key, { color: change.before });
+            if (change.before === null) {
+                this.voxels.delete(key);
+            } else {
+                this.voxels.set(key, { color: change.before });
+            }
         });
         this.historyPointer--;
         this.rebuildSceneFromVoxels();
@@ -1126,8 +1121,11 @@ const VoxelApp = {
         this.historyPointer++;
         const changes = this.history[this.historyPointer];
         changes.forEach((change, key) => {
-            if (change.after === null) this.voxels.delete(key);
-            else this.voxels.set(key, { color: change.after });
+            if (change.after === null) {
+                this.voxels.delete(key);
+            } else {
+                this.voxels.set(key, { color: change.after });
+            }
         });
         this.rebuildSceneFromVoxels();
     },
@@ -1172,8 +1170,9 @@ const VoxelApp = {
         }
     },
     
-    // --- Reference image helpers ---
-    loadImageTemplate: function() { document.getElementById('imageFileInput').click(); },
+    loadImageTemplate: function() {
+        document.getElementById('imageFileInput').click();
+    },
 
     handleImageFileSelect: function(event) {
         const file = event.target.files[0];
@@ -1231,7 +1230,10 @@ const VoxelApp = {
 };
 
 window.VoxelApp = VoxelApp;
-VoxelApp.init();
+if (window.firebase) {
+    VoxelApp.init();
+}
+
 </script>
 
 </body>
