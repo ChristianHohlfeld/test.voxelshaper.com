@@ -563,7 +563,23 @@ const VoxelApp = {
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
         document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
-        document.getElementById('clearBtnMobile').addEventListener('click', () => this.clearAll());
+        document.getElementById('clearBtnMobile').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
+
+        // Keyboard shortcuts for desktop
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key.toLowerCase()) {
+                    case 's':
+                        e.preventDefault();
+                        this.saveJSON();
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        document.getElementById('fileInput').click();
+                        break;
+                }
+            }
+        });
 
         // Modals & Hub
         document.getElementById('loginLogoutBtn').addEventListener('click', () => this.loginLogout());
