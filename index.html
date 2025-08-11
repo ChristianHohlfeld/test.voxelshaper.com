@@ -364,14 +364,14 @@ const VoxelApp = {
 
     // New function to check for auth token and fetch user data
     authCheckAndInit: async function() {
-        const urlParams = new URLSearchParams(window.location.hash.substring(1));
-        const magicLinkToken = urlParams.get('token');
+        // The magic link token is in the hash, so we don't need URLSearchParams
+        const magicLinkToken = window.location.hash.substring(1);
 
         // Check for an OAuth redirect fragment first
         await this.handleOAuthRedirect();
 
         // If the user isn't logged in from the OAuth redirect, check for a magic link token
-        if (!this.user && magicLinkToken) {
+        if (!this.user && magicLinkToken && !magicLinkToken.includes('oauth_success')) {
              // Handle magic link verification
             try {
                 const response = await this.request('/auth/verify-magic-link', {
@@ -961,7 +961,7 @@ const VoxelApp = {
         const isLoggedIn = !!this.user;
         document.getElementById('loginLogoutBtn').textContent = isLoggedIn ? 'Logout' : 'Login';
         document.getElementById('uploadToHubBtn').classList.toggle('hidden', !isLoggedIn);
-        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
+        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '�';
         
         let userDisplay = '';
         if (isLoggedIn) {
@@ -1365,6 +1365,4 @@ const VoxelApp = {
 
 VoxelApp.init();
 </script>
-
-</body>
-</html>
+</body></html>
