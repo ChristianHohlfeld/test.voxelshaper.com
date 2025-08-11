@@ -472,7 +472,7 @@ const VoxelApp = {
     // New API-based authentication and data functions
     checkAuthStatus: async function() {
         try {
-            const response = await fetch(https://${this.API_BASE_URL}/api/user/me, {
+            const response = await fetch(`https://${this.API_BASE_URL}/api/user/me`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
@@ -493,7 +493,7 @@ const VoxelApp = {
     loginLogout: async function() {
         if (this.currentUser) {
             try {
-                await fetch(https://${this.API_BASE_URL}/auth/logout, {
+                await fetch(`https://${this.API_BASE_URL}/auth/logout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include'
@@ -510,7 +510,7 @@ const VoxelApp = {
     },
 
     loginWithRedirect: function(providerName) {
-        window.location.href = https://${this.API_BASE_URL}/auth/${providerName}?state=${window.location.href.split('#')[0]};
+        window.location.href = `https://${this.API_BASE_URL}/auth/${providerName}?state=${window.location.href.split('#')[0]}`;
     },
 
     sendMagicLink: async function() {
@@ -520,7 +520,7 @@ const VoxelApp = {
             return;
         }
         try {
-            const response = await fetch(https://${this.API_BASE_URL}/auth/magic-link, {
+            const response = await fetch(`https://${this.API_BASE_URL}/auth/magic-link`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email })
@@ -570,7 +570,7 @@ const VoxelApp = {
         };
 
         try {
-            const response = await fetch(https://${this.API_BASE_URL}/api/models, {
+            const response = await fetch(`https://${this.API_BASE_URL}/api/models`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(uploadPayload),
@@ -590,9 +590,9 @@ const VoxelApp = {
     },
 
     loadProjectFromModelId: async function(modelId) {
-        this.showToast('Loading Project...', Fetching model ${modelId}, 'info');
+        this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
         try {
-            const response = await fetch(https://${this.API_BASE_URL}/api/models/${modelId}, {
+            const response = await fetch(`https://${this.API_BASE_URL}/api/models/${modelId}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -610,7 +610,7 @@ const VoxelApp = {
                 this.rebuildHelpers(); this.resetCamera();
                 this.history = [];
                 this.historyPointer = -1;
-                this.showToast('Project Loaded', Loaded "${data.title}", 'success');
+                this.showToast('Project Loaded', `Loaded "${data.title}"`, 'success');
             } else {
                 const errorData = await response.json();
                 this.showToast('Load Error', errorData.error, 'error');
@@ -829,13 +829,13 @@ const VoxelApp = {
         slider.min = minSize;
         
         if (newSize < minSize) {
-            this.showToast('Error', Grid cannot be smaller than the current model (${minSize}³)., 'error');
+            this.showToast('Error', `Grid cannot be smaller than the current model (${minSize}³).`, 'error');
             slider.value = minSize;
             return;
         }
 
         this.GRID = newSize;
-        document.getElementById('grid-size-display').textContent = ${this.GRID}³;
+        document.getElementById('grid-size-display').textContent = `${this.GRID}³`;
         localStorage.setItem('voxelEditorGridSize', this.GRID);
         this.rebuildHelpers(); this.resetCamera();
     },
@@ -852,7 +852,7 @@ const VoxelApp = {
             this.controls[controlName] = value;
             localStorage.setItem(controlName, value);
             this.updateAllControlInputs();
-            this.showToast('Setting Changed', ${controlName.replace('invert', 'Invert ')} is now ${value ? 'On' : 'Off'}, 'info', 1500);
+            this.showToast('Setting Changed', `${controlName.replace('invert', 'Invert ')} is now ${value ? 'On' : 'Off'}`, 'info', 1500);
         }
     },
 
@@ -1018,7 +1018,7 @@ const VoxelApp = {
     
     updateModeUI: function() {
         const modeInfo = this.Modes[this.currentMode];
-        document.getElementById('current-mode').textContent = Mode: ${modeInfo.name};
+        document.getElementById('current-mode').textContent = `Mode: ${modeInfo.name}`;
         if(this.isMobile) document.getElementById('mobile-mode-icon').className = modeInfo.icon;
     },
 
@@ -1026,13 +1026,13 @@ const VoxelApp = {
         const isLoggedIn = !!this.currentUser;
         document.getElementById('loginLogoutBtn').textContent = isLoggedIn ? 'Logout' : 'Login';
         document.getElementById('uploadToHubBtn').classList.toggle('hidden', !isLoggedIn);
-        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '�';
+        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '?';
         let userDisplay = '';
         if (isLoggedIn && this.currentUser.photoURL) {
-            userDisplay = <img src="${this.currentUser.photoURL}" alt="User" class="w-6 h-6 rounded-full">;
+            userDisplay = `<img src="${this.currentUser.photoURL}" alt="User" class="w-6 h-6 rounded-full">`;
         }
         if (isLoggedIn && this.currentUser.displayName) {
-             userDisplay += <span>${this.currentUser.displayName}</span>;
+             userDisplay += `<span>${this.currentUser.displayName}</span>`;
         }
         document.getElementById('userIdDisplay').innerHTML = userDisplay;
     },
@@ -1040,8 +1040,8 @@ const VoxelApp = {
     showToast: function(title, message, type = 'info', duration = 2000) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
-        toast.className = alert alert-${type} shadow-lg;
-        toast.innerHTML = <div><strong>${title}</strong><br><span>${message}</span></div>;
+        toast.className = `alert alert-${type} shadow-lg`;
+        toast.innerHTML = `<div><strong>${title}</strong><br><span>${message}</span></div>`;
         container.appendChild(toast);
         setTimeout(() => toast.remove(), duration);
     },
@@ -1236,7 +1236,7 @@ const VoxelApp = {
 
     updateAllControlInputs: function() {
         document.getElementById('grid-size-slider').value = this.GRID;
-        document.getElementById('grid-size-display').textContent = ${this.GRID}³;
+        document.getElementById('grid-size-display').textContent = `${this.GRID}³`;
         document.getElementById('color-picker-input').value = this.currentColor;
         if (this.isMobile) document.getElementById('mobile-color-picker').value = this.currentColor;
 
