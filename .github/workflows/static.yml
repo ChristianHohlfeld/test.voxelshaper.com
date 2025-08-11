@@ -35,9 +35,19 @@ jobs:
 
       - name: Replace domain in all HTML files
         run: |
-          echo "🔄 Replacing voxelshaper.com → test.voxelshaper.com..."
+          echo "🔄 Replacing voxelshaper.com → test.voxelshaper.com (excluding api.*)..."
+          # Add test. to hosts under voxelshaper.com EXCEPT when host already starts with test. or api.
           find out -name '*.html' \
-            -exec perl -i -pe 's~https://(?!test\.)([^/]*voxelshaper\.com)~https://test.$1~g' {} \;
+            -exec perl -i -pe 's~https://(?!(?:test\.|api\.))([^/]*voxelshaper\.com)~https://test.$1~g' {} +
+
+      - name: Verify no test.api leak
+        run: |
+          if grep -Rn "https://test\.api\.voxelshaper\.com" out; then
+            echo "::error::Found forbidden URL: test.api.voxelshaper.com"
+            exit 1
+          else
+            echo "✅ No test.api.voxelshaper.com links found."
+          fi
 
       - name: 🔧 Inject TEST banner
         run: |
