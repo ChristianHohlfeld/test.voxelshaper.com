@@ -323,14 +323,12 @@ const VoxelApp = {
     request: async function(endpoint, options = {}) {
         const url = `${this.BACKEND_URL}${endpoint}`;
         const headers = options.headers || {};
-        const token = localStorage.getItem('vs_session');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        
+        // The backend sets an HTTP-only cookie, so we need to ensure credentials are sent
+        // for cross-origin requests.
         const response = await fetch(url, {
             ...options,
-            headers: headers
+            headers: headers,
+            credentials: 'include'
         });
 
         const contentType = response.headers.get('content-type');
@@ -396,6 +394,7 @@ const VoxelApp = {
         // If the user still isn't logged in, try to fetch user details with existing cookie/local storage token
         if (!this.user) {
             try {
+                // This call will now include the cookie thanks to the fix in the request function
                 const user = await this.request('/api/user/me');
                 this.user = user;
                 this.updateLoginStateUI();
