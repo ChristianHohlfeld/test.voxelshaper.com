@@ -112,6 +112,11 @@
     
     <button id="resetCameraBtn" class="btn btn-sm btn-neutral">Reset View</button>
 
+    <!-- NEW: Fly Speed Slider -->
+    <label for="fly-speed-slider" class="text-sm ml-4">Fly Speed:</label>
+    <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
+    <span id="fly-speed-display" class="font-bold text-primary text-sm">0.10</span>
+
     <div class="flex-grow"></div>
 
     <button id="loginLogoutBtn" class="btn btn-sm btn-info">Login</button>
@@ -275,7 +280,6 @@ const VoxelApp = {
     PAN_SPEED: 0.05,
     PINCH_ZOOM_MULT: 50,
     DRAG_THRESHOLD: 5,
-    FLY_SPEED: 0.1,
     MAX_HISTORY_SIZE: 50,
     // Dynamically set BACKEND_URL based on the hostname
     BACKEND_URL: `https://api.${window.location.hostname.replace('test.', '')}`,
@@ -288,6 +292,7 @@ const VoxelApp = {
     cvs: null, containerDiv: null,
     currentColor: '#ffffff',
     GRID: 10,
+    flySpeed: 0.1, // Moved from config to state
     currentMode: 'ADD',
     isMobile: false,
     history: [],
@@ -343,24 +348,61 @@ const VoxelApp = {
         console.log("VoxelShaper Initialized with custom backend");
     },
     
-    // Helper function to handle API requests
+    // --- MODIFIED: Helper function to handle API requests with CSRF ---
     request: async function(endpoint, options = {}) {
         const url = `${this.BACKEND_URL}${endpoint}`;
-        const headers = options.headers || {};
-        // The backend sets an HTTP-only cookie, so we need to ensure credentials are sent
-        // for cross-origin requests.
-        const response = await fetch(url, {
+        
+        // Merge user options with defaults. `credentials: 'include'` is critical.
+        const mergedOptions = {
+            credentials: 'include',
             ...options,
-            headers: headers,
-            credentials: 'include'
-        });
+            headers: {
+                ...(options.headers || {})
+            }
+        };
+
+        const method = (mergedOptions.method || 'GET').toUpperCase();
+
+        // For methods that can modify data, we must first get a CSRF token.
+        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+            try {
+                // 1. Fetch the CSRF token from the backend.
+                // This request also needs credentials to be part of the same session.
+                const csrfResponse = await fetch(`${this.BACKEND_URL}/api/csrf`, {
+                    credentials: 'include'
+                });
+                
+                if (!csrfResponse.ok) {
+                    throw new Error(`CSRF token fetch failed with status ${csrfResponse.status}`);
+                }
+                
+                const { csrf } = await csrfResponse.json();
+
+                // 2. Add the fetched CSRF token to the headers of the actual request.
+                mergedOptions.headers['X-CSRF-Token'] = csrf;
+
+            } catch (csrfError) {
+                console.error("CSRF Token fetch error:", csrfError);
+                this.showToast('Security Error', 'Could not verify your session. Please refresh and try again.', 'error');
+                // Re-throw the error to prevent the original request from being sent without a token.
+                throw csrfError;
+            }
+        }
+        
+        // 3. Proceed with the original request, now including credentials and the CSRF token if required.
+        const response = await fetch(url, mergedOptions);
 
         const contentType = response.headers.get('content-type');
         const isJson = contentType && contentType.includes('application/json');
-        const data = isJson ? await response.json() : await response.text();
+        
+        // Handle cases where there might not be a JSON body (e.g., 204 No Content).
+        let data;
+        if (response.status !== 204) {
+            data = isJson ? await response.json() : await response.text();
+        }
 
         if (!response.ok) {
-            const errorMessage = isJson ? data.error : data;
+            const errorMessage = isJson ? (data.error || JSON.stringify(data)) : data;
             throw new Error(errorMessage || `Request to ${endpoint} failed with status ${response.status}`);
         }
         return data;
@@ -466,6 +508,7 @@ const VoxelApp = {
 
         this.GRID = parseInt(localStorage.getItem('voxelEditorGridSize') || this.GRID_DEFAULT);
         this.currentColor = localStorage.getItem('voxelEditorColor') || '#ffffff';
+        this.flySpeed = parseFloat(localStorage.getItem('voxelEditorFlySpeed') || 0.1);
         this.controls.invertLookX = localStorage.getItem('invertLookX') === 'true';
         this.controls.invertLookY = localStorage.getItem('invertLookY') === 'true';
         this.controls.invertZoom = localStorage.getItem('invertZoom') === 'true';
@@ -527,9 +570,10 @@ const VoxelApp = {
 
         // Desktop UI
         document.getElementById('grid-size-slider').addEventListener('input', (e) => this.setGridSize(parseInt(e.target.value)));
+        document.getElementById('fly-speed-slider').addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
         document.getElementById('color-picker-input').addEventListener('input', (e) => this.setColor(e.target.value));
         document.getElementById('modeToggle').addEventListener('click', () => this.cycleMode());
-        document.getElementById('clearBtn').addEventListener('click', () => this.clearAll());
+        document.getElementById('clearBtn').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
         document.getElementById('saveBtn').addEventListener('click', () => this.saveJSON());
         document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtn').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
@@ -563,7 +607,7 @@ const VoxelApp = {
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
         document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
-        document.getElementById('clearBtnMobile').addEventListener('click', () => this.clearAll());
+        document.getElementById('clearBtnMobile').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
 
         // Keyboard shortcuts for desktop
         document.addEventListener('keydown', (e) => {
@@ -783,11 +827,21 @@ const VoxelApp = {
         }
     },
 
+    // MODIFIED: Handles both zooming and fly speed adjustment
     onMouseWheel: function(e) {
         e.preventDefault();
-        let zoomAmount = e.deltaY * 0.001 * this.PINCH_ZOOM_MULT;
-        if (this.controls.invertZoom) zoomAmount *= -1;
-        this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomAmount);
+        // Check if we are in pointer-lock (fly) mode
+        if (document.pointerLockElement === this.cvs) {
+            // Adjust fly speed
+            const speedChange = e.deltaY > 0 ? -0.01 : 0.01; // Scoll down decreases, up increases
+            const newSpeed = this.flySpeed + speedChange;
+            this.setFlySpeed(newSpeed);
+        } else {
+            // Zoom camera
+            let zoomAmount = e.deltaY * 0.001 * this.PINCH_ZOOM_MULT;
+            if (this.controls.invertZoom) zoomAmount *= -1;
+            this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomAmount);
+        }
     },
     
     onKeyDown: function(e) {
@@ -849,6 +903,19 @@ const VoxelApp = {
         localStorage.setItem('voxelEditorColor', this.currentColor);
         this.updateAllControlInputs();
         this.previewVoxel.material.color.set(this.currentColor);
+    },
+
+    // NEW: Function to set and update fly speed
+    setFlySpeed: function(newSpeed) {
+        const minSpeed = 0.01;
+        const maxSpeed = 1.0;
+        // Clamp the speed to be within the allowed range
+        this.flySpeed = Math.max(minSpeed, Math.min(maxSpeed, newSpeed));
+        
+        document.getElementById('fly-speed-display').textContent = this.flySpeed.toFixed(2);
+        document.getElementById('fly-speed-slider').value = this.flySpeed;
+        
+        localStorage.setItem('voxelEditorFlySpeed', this.flySpeed);
     },
     
     setControl: function(controlName, value) {
@@ -978,10 +1045,6 @@ const VoxelApp = {
         } else {
             this.previewVoxel.visible = false;
         }
-    },
-
-    clearAll: function() {
-        document.getElementById('clearConfirmationModal').showModal();
     },
 
     clearAllConfirmed: function() {
@@ -1134,11 +1197,9 @@ const VoxelApp = {
         if (this.user) {
             // Logout
             try {
-                // We don't need to pass the JWT in the body, as it's handled via the cookie
                 await this.request('/auth/logout', { method: 'POST' });
-                // Note: The backend will clear the cookie. The frontend state also needs to be reset.
                 this.user = null;
-                this.token = null; // This is not strictly necessary as we rely on the cookie, but good practice
+                this.token = null;
                 this.updateLoginStateUI();
                 this.showToast('Logged Out', '', 'info');
             } catch (e) {
@@ -1171,10 +1232,16 @@ const VoxelApp = {
         }
 
         try {
+            // This now uses the CSRF-aware request function
             await this.request('/auth/magic-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, receivesMarketingEmails, acceptsAgb })
+                body: JSON.stringify({ 
+                    email, 
+                    receivesMarketingEmails, 
+                    acceptsAgb,
+                    redirect: window.location.origin + window.location.pathname
+                })
             });
             document.getElementById('authModal').close();
             document.getElementById('magicLinkVerifyModal').showModal();
@@ -1209,13 +1276,13 @@ const VoxelApp = {
             })
         };
         
+        // --- FIXED: Aligned keys with backend expectations ---
         const hubDocument = {
-            title: title,
+            name: title, // Changed from 'title'
             description: document.getElementById('uploadDescription').value,
             category: document.getElementById('uploadCategory').value,
             visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
-            // Uploader info is handled by the backend from the JWT
-            projectData: JSON.stringify(projectData)
+            project_json: JSON.stringify(projectData) // Changed from 'projectData'
         };
         
         try {
@@ -1236,7 +1303,7 @@ const VoxelApp = {
             const data = await this.request(`/api/models/${modelId}`);
             
             this.voxels.clear();
-            const projectData = JSON.parse(data.projectData);
+            const projectData = JSON.parse(data.project_json); // Adjusted to match backend response
             this.GRID = projectData.gridSize || this.GRID_DEFAULT;
             projectData.voxels.forEach(v => {
                 const k = this.key(v.x, v.y, v.z);
@@ -1246,7 +1313,7 @@ const VoxelApp = {
             this.rebuildSceneFromVoxels();
             this.rebuildHelpers(); 
             this.resetCamera();
-            this.showToast('Project Loaded', `Loaded "${data.title}"`, 'info');
+            this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info'); // Adjusted to match backend response
         } catch (error) { 
             this.showToast('Load Error', error.message, 'error'); 
         }
@@ -1271,11 +1338,11 @@ const VoxelApp = {
             this.cam.getWorldDirection(forward);
             const right = new THREE.Vector3().crossVectors(forward, this.cam.up).normalize();
             
-            const strafeXSpeed = this.controls.invertStrafeX ? -this.FLY_SPEED : this.FLY_SPEED;
-            const strafeYSpeed = this.controls.invertStrafeY ? -this.FLY_SPEED : this.FLY_SPEED;
+            const strafeXSpeed = this.controls.invertStrafeX ? -this.flySpeed : this.flySpeed;
+            const strafeYSpeed = this.controls.invertStrafeY ? -this.flySpeed : this.flySpeed;
 
-            if (this.keyboard['w']) this.cam.position.addScaledVector(forward, this.FLY_SPEED);
-            if (this.keyboard['s']) this.cam.position.addScaledVector(forward, -this.FLY_SPEED);
+            if (this.keyboard['w']) this.cam.position.addScaledVector(forward, this.flySpeed);
+            if (this.keyboard['s']) this.cam.position.addScaledVector(forward, -this.flySpeed);
             if (this.keyboard['a']) this.cam.position.addScaledVector(right, -strafeXSpeed);
             if (this.keyboard['d']) this.cam.position.addScaledVector(right, strafeXSpeed);
             if (this.keyboard['e']) this.cam.position.y += strafeYSpeed;
@@ -1287,10 +1354,10 @@ const VoxelApp = {
 
     // --- NEW/REFACTORED FUNCTIONS ---
     rebuildSceneFromVoxels: function() {
-        this.scene.children.filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh).forEach(c => {
+        this.scene.children.filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh && c !== this.extrudeGizmoMesh).forEach(c => {
             this.scene.remove(c);
-            c.geometry.dispose();
-            c.material.dispose();
+            if(c.geometry) c.geometry.dispose();
+            if(c.material) c.material.dispose();
         });
 
         this.voxels.forEach((voxelData, key) => {
@@ -1352,10 +1419,12 @@ const VoxelApp = {
         
         this.GRID = this.GRID_DEFAULT;
         this.currentColor = '#ffffff';
+        this.flySpeed = 0.1;
 
         Object.keys(this.controls).forEach(key => localStorage.setItem(key, this.controls[key]));
         localStorage.setItem('voxelEditorGridSize', this.GRID);
         localStorage.setItem('voxelEditorColor', this.currentColor);
+        localStorage.setItem('voxelEditorFlySpeed', this.flySpeed);
 
         this.updateAllControlInputs();
         
@@ -1369,6 +1438,8 @@ const VoxelApp = {
         document.getElementById('grid-size-display').textContent = `${this.GRID}³`;
         document.getElementById('color-picker-input').value = this.currentColor;
         if (this.isMobile) document.getElementById('mobile-color-picker').value = this.currentColor;
+
+        this.setFlySpeed(this.flySpeed); // Updates slider and display
 
         document.getElementById('invertLookX').checked = this.controls.invertLookX;
         document.getElementById('invertLookY').checked = this.controls.invertLookY;
@@ -1424,6 +1495,7 @@ const VoxelApp = {
                 scaledHeight: planeHeight
             };
             document.getElementById('removeImageBtn').classList.remove('hidden');
+            document.getElementById('removeImageBtnMobile').classList.remove('hidden');
             this.showToast('Image Template Loaded', '', 'info');
         };
         img.src = imageData.src;
@@ -1437,6 +1509,7 @@ const VoxelApp = {
             this.templateImageMesh = null;
             this.templateImageData = null;
             document.getElementById('removeImageBtn').classList.add('hidden');
+            document.getElementById('removeImageBtnMobile').classList.add('hidden');
             this.showToast('Image Template Removed', '', 'info');
         }
     }
