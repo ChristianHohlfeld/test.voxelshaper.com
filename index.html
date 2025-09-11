@@ -1090,7 +1090,17 @@ const VoxelApp = {
     loginLogout: async function() {
         if (this.user) {
             try {
-                await this.request('/auth/logout', { method: 'POST' });
+                // Direct fetch for logout, bypassing CSRF
+                const response = await fetch(`${this.BACKEND_URL}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Logout failed' }));
+                    throw new Error(errorData.error);
+                }
+
                 this.user = null;
                 this.token = null;
                 this.updateLoginStateUI();
@@ -1337,7 +1347,7 @@ const VoxelApp = {
     },
 
     rebuildSceneFromVoxels: function() {
-        this.scene.children.filter(c => c.isMesh && c.name === "voxel").forEach(c => {
+        this.scene.children.filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh && c !== this.extrudeGizmoMesh).forEach(c => {
             this.scene.remove(c);
             if(c.geometry) c.geometry.dispose();
             if(c.material) c.material.dispose();
@@ -1349,7 +1359,6 @@ const VoxelApp = {
             voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
             voxelMesh.castShadow = true;
             voxelMesh.receiveShadow = true;
-            voxelMesh.name = "voxel";
             this.scene.add(voxelMesh);
             voxelData.mesh = voxelMesh;
         });
@@ -1516,4 +1525,6 @@ VoxelApp.init();
 
 </body>
 </html>
+"
+fix pls
 
