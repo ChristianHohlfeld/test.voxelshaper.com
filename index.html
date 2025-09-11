@@ -341,7 +341,7 @@ const VoxelApp = {
         this.authCheckAndInit();
         this.handleResize();
         this.animate();
-        console.log("VoxelShaper Initialized with custom backend");
+        console.log("VoxelShaper Initialized");
     },
     
     request: async function(endpoint, options = {}) {
@@ -560,7 +560,7 @@ const VoxelApp = {
         document.getElementById('mobileInvertLookX').addEventListener('change', (e) => this.setControl('invertLookX', e.target.checked));
         document.getElementById('mobileInvertLookY').addEventListener('change', (e) => this.setControl('invertLookY', e.target.checked));
         document.getElementById('mobileInvertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
-        document.getElementById('mobile-login-logout').addEventListener('click', () => this.loginLogout());
+        document.getElementById('mobile-login-logout').addEventListener('click', this.loginLogout.bind(this));
         document.getElementById('saveBtnMobile').addEventListener('click', () => this.saveJSON());
         document.getElementById('loadBtnMobile').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
@@ -571,6 +571,8 @@ const VoxelApp = {
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key.toLowerCase()) {
+                    case 'z': e.preventDefault(); this.undo(); break;
+                    case 'y': e.preventDefault(); this.redo(); break;
                     case 's': e.preventDefault(); this.saveJSON(); break;
                     case 'o': e.preventDefault(); document.getElementById('fileInput').click(); break;
                 }
@@ -578,7 +580,7 @@ const VoxelApp = {
         });
 
         // Modals & Hub
-        document.getElementById('loginLogoutBtn').addEventListener('click', () => this.loginLogout());
+        document.getElementById('loginLogoutBtn').addEventListener('click', this.loginLogout.bind(this));
         document.getElementById('goToHubBtn').addEventListener('click', () => window.open(this.HUB_URL, '_blank'));
         document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
         document.getElementById('uploadConfirmBtn').addEventListener('click', (e) => {
@@ -641,8 +643,11 @@ const VoxelApp = {
             if (e.button === 0) {
                 if (this.currentMode !== 'SELECT') {
                     this.mouseState.isModifying = true;
-                    const coords = this.getVoxelCoordsFromScreen(e.clientX, e.clientY, true);
+                    const coords = this.calculateRayTarget(e.clientX, e.clientY);
                     if (coords) {
+                        if (this.currentMode === 'ADD') {
+                            this.mouseState.dragFixedLayerCoord = coords[this.currentDrawingAxis];
+                        }
                         this.modifyVoxel(coords.x, coords.y, coords.z);
                         this.mouseState.lastActionCoords = coords;
                     }
@@ -702,20 +707,24 @@ const VoxelApp = {
                 const dist = Math.hypot(e.clientX - this.mouseState.downX, e.clientY - this.mouseState.downY);
                 if (dist > this.DRAG_THRESHOLD) {
                     this.mouseState.isDragging = true;
-                    const coords = this.getVoxelCoordsFromScreen(e.clientX, e.clientY, false);
-                    if (coords && this.mouseState.lastActionCoords && (coords.x !== this.mouseState.lastActionCoords.x || coords.y !== this.mouseState.lastActionCoords.y || coords.z !== this.mouseState.lastActionCoords.z)) {
-                         this.drawVoxelLine(this.mouseState.lastActionCoords, coords);
-                         this.mouseState.lastActionCoords = coords;
+                    let coords = this.calculateRayTarget(e.clientX, e.clientY);
+                    if (coords) {
+                        if (this.mouseState.dragFixedLayerCoord !== null) {
+                            coords[this.currentDrawingAxis] = this.mouseState.dragFixedLayerCoord;
+                        }
+                        if (this.mouseState.lastActionCoords && (coords.x !== this.mouseState.lastActionCoords.x || coords.y !== this.mouseState.lastActionCoords.y || coords.z !== this.mouseState.lastActionCoords.z)) {
+                            this.drawVoxelLine(this.mouseState.lastActionCoords, coords);
+                            this.mouseState.lastActionCoords = coords;
+                        }
                     }
                 }
             }
-
             this.mouseState.lastX = e.clientX;
             this.mouseState.lastY = e.clientY;
         }
         
         if (!this.mouseState.isModifying && !this.mouseState.isPanning && !this.isPointerDown && document.pointerLockElement !== this.cvs) {
-             const coords = this.getVoxelCoordsFromScreen(e.clientX, e.clientY, false);
+             const coords = this.calculateRayTarget(e.clientX, e.clientY);
              this.updatePreviewVoxel(coords);
         } else {
             this.previewVoxel.visible = false;
@@ -734,7 +743,7 @@ const VoxelApp = {
 
         if (this.isMobile) {
             if (this.isPointerDown && this.touchState.isTapCandidate) {
-                const coords = this.getVoxelCoordsFromScreen(this.mouseState.downX, this.mouseState.downY, true);
+                const coords = this.calculateRayTarget(this.mouseState.downX, this.mouseState.downY);
                 if (coords && this.currentMode !== 'SELECT') this.modifyVoxel(coords.x, coords.y, coords.z);
             }
             this.activePointers.delete(e.pointerId);
@@ -752,7 +761,7 @@ const VoxelApp = {
             this.mouseState.isRotating = false;
             this.mouseState.isDragging = false;
             this.mouseState.lastActionCoords = null;
-            this.mouseState.drawingPlane = new THREE.Plane();
+            this.mouseState.dragFixedLayerCoord = null;
         }
     },
 
@@ -807,7 +816,6 @@ const VoxelApp = {
         this.ren.setPixelRatio(this.isMobile ? 1.5 : window.devicePixelRatio);
     },
 
-    // --- Core Logic ---
     key: (x, y, z) => (x | (y << 10) | (z << 20)) >>> 0,
     parseKey: (k) => [k & 1023, (k >> 10) & 1023, (k >> 20) & 1023],
 
@@ -834,9 +842,9 @@ const VoxelApp = {
         }
 
         this.GRID = newSize;
-        document.getElementById('grid-size-display').textContent = `${this.GRID}³`;
-        localStorage.setItem('voxelEditorGridSize', this.GRID);
-        this.rebuildHelpers(); this.resetCamera();
+        this.updateAllControlInputs();
+        this.rebuildHelpers(); 
+        this.resetCamera();
     },
     
     setColor: function(newColor) {
@@ -850,10 +858,8 @@ const VoxelApp = {
         const minSpeed = 0.01;
         const maxSpeed = 1.0;
         this.flySpeed = Math.max(minSpeed, Math.min(maxSpeed, newSpeed));
-        
         document.getElementById('fly-speed-display').textContent = this.flySpeed.toFixed(2);
         document.getElementById('fly-speed-slider').value = this.flySpeed;
-        
         localStorage.setItem('voxelEditorFlySpeed', this.flySpeed);
     },
     
@@ -929,7 +935,7 @@ const VoxelApp = {
         }
     },
 
-    getVoxelCoordsFromScreen: function(clientX, clientY, isInitialClick) {
+    calculateRayTarget: function(clientX, clientY) {
         const rect = this.cvs.getBoundingClientRect();
         const mouse = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
         const raycaster = new THREE.Raycaster();
@@ -942,23 +948,11 @@ const VoxelApp = {
             const hit = intersects[0];
             const pos = hit.point.clone();
             
-            if (isInitialClick) {
-                this.mouseState.drawingPlane.setFromNormalAndCoplanarPoint(hit.face.normal, hit.point);
+            if (this.currentMode === 'ADD') { 
+                pos.add(hit.face.normal.multiplyScalar(0.5)); 
+            } else { 
+                pos.sub(hit.face.normal.multiplyScalar(0.5)); 
             }
-            
-            if (this.mouseState.isDragging) {
-                const intersectionPoint = new THREE.Vector3();
-                if (raycaster.ray.intersectPlane(this.mouseState.drawingPlane, intersectionPoint)) {
-                    return {
-                        x: Math.round(intersectionPoint.x / this.VS - 0.5),
-                        y: Math.round(intersectionPoint.y / this.VS - 0.5),
-                        z: Math.round(intersectionPoint.z / this.VS - 0.5)
-                    };
-                }
-            }
-
-            if (this.currentMode === 'ADD') { pos.add(hit.face.normal.multiplyScalar(0.5)); } 
-            else { pos.sub(hit.face.normal.multiplyScalar(0.5)); }
 
             return { x: Math.floor(pos.x / this.VS), y: Math.floor(pos.y / this.VS), z: Math.floor(pos.z / this.VS) };
 
@@ -1066,7 +1060,21 @@ const VoxelApp = {
         if(this.isMobile) document.getElementById('mobile-mode-icon').className = modeInfo.icon;
     },
 
-    updateLoginStateUI: function() { /* ... same ... */ },
+    updateLoginStateUI: function() {
+        const isLoggedIn = !!this.user;
+        document.getElementById('loginLogoutBtn').textContent = isLoggedIn ? 'Logout' : 'Login';
+        document.getElementById('uploadToHubBtn').classList.toggle('hidden', !isLoggedIn);
+        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
+        
+        let userDisplay = '';
+        if (isLoggedIn && this.user) {
+            userDisplay += `<span>${this.user.displayName || this.user.email}</span>`;
+            if (this.user.photoURL) {
+                userDisplay = `<img src="${this.user.photoURL}" alt="User" class="w-6 h-6 rounded-full">` + userDisplay;
+            }
+        }
+        document.getElementById('userIdDisplay').innerHTML = userDisplay;
+    },
     
     showToast: function(title, message, type = 'info', duration = 2000) {
         const container = document.getElementById('toast-container');
@@ -1076,6 +1084,134 @@ const VoxelApp = {
         toast.innerHTML = `<div><strong>${title}</strong><br><span>${message}</span></div>`;
         container.appendChild(toast);
         setTimeout(() => toast.remove(), duration);
+    },
+
+    // --- Hub Integration ---
+    loginLogout: async function() {
+        if (this.user) {
+            try {
+                await this.request('/auth/logout', { method: 'POST' });
+                this.user = null;
+                this.token = null;
+                this.updateLoginStateUI();
+                this.showToast('Logged Out', '', 'info');
+            } catch (e) {
+                this.showToast('Logout Error', e.message, 'error');
+            }
+        } else {
+            document.getElementById('authModal').showModal();
+        }
+    },
+    
+    signInWithProvider: function(providerName) {
+        window.location.href = `${this.BACKEND_URL}/auth/${providerName}?state=${encodeURIComponent(window.location.href)}`;
+    },
+
+    sendMagicLink: async function() {
+        const email = document.getElementById('magicLinkEmail').value;
+        const acceptsAgb = document.getElementById('agbCheckbox').checked;
+        const receivesMarketingEmails = document.getElementById('newsletterCheckbox').checked;
+
+        if (!email) {
+            this.showToast('Error', 'Please enter your email.', 'error');
+            return;
+        }
+
+        if (!acceptsAgb) {
+            this.showToast('Error', 'Bitte AGBs akzeptieren.', 'error');
+            return;
+        }
+
+        try {
+            await this.request('/auth/magic-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email, 
+                    receivesMarketingEmails, 
+                    acceptsAgb,
+                    redirect: window.location.origin + window.location.pathname
+                })
+            });
+            document.getElementById('authModal').close();
+            document.getElementById('magicLinkVerifyModal').showModal();
+        } catch (e) {
+            this.showToast('Error', e.message, 'error');
+        }
+    },
+
+    uploadProjectToHub: async function() {
+        if (!this.user) { 
+            this.showToast('Error', 'You must be logged in to upload.', 'error'); 
+            return; 
+        }
+        if (this.voxels.size === 0) { 
+            this.showToast('Error', 'Cannot upload an empty project.', 'error'); 
+            return; 
+        }
+        
+        const title = document.getElementById('uploadTitle').value;
+        if (!title) { 
+            this.showToast('Error', 'Title is required.', 'error'); 
+            return; 
+        }
+        
+        this.showToast('Uploading...', 'Please wait...', 'info');
+        
+        const projectData = {
+            gridSize: this.GRID,
+            voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
+                const [x, y, z] = this.parseKey(k);
+                return { x, y, z, color: v.color };
+            })
+        };
+        
+        const hubDocument = {
+            name: title,
+            description: document.getElementById('uploadDescription').value,
+            category: document.getElementById('uploadCategory').value,
+            visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
+            project_json: JSON.stringify(projectData)
+        };
+        
+        try {
+            const response = await this.request('/api/models', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(hubDocument)
+            });
+            this.showToast('Upload Successful!', `Project saved with ID: ${response.modelId}`, 'info');
+        } catch (error) { 
+            this.showToast('Upload Failed', error.message, 'error'); 
+        }
+    },
+
+    loadProjectFromModelId: async function(modelId) {
+        this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
+        try {
+            const data = await this.request(`/api/models/${modelId}`);
+            
+            this.voxels.forEach(v => {
+                this.scene.remove(v.mesh);
+                v.mesh.geometry.dispose();
+                v.mesh.material.dispose();
+            });
+            this.voxels.clear();
+
+            const projectData = JSON.parse(data.project_json);
+            this.GRID = projectData.gridSize || this.GRID_DEFAULT;
+            projectData.voxels.forEach(v => {
+                const k = this.key(v.x, v.y, v.z);
+                this.voxels.set(k, { color: v.color });
+            });
+            
+            this.rebuildSceneFromVoxels();
+            this.rebuildHelpers(); 
+            this.resetCamera();
+            this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
+        } catch (error) { 
+            this.showToast('Load Error', error.message, 'error'); 
+        }
     },
 
     saveJSON: function() {
@@ -1117,25 +1253,56 @@ const VoxelApp = {
                 
                 data.voxels.forEach(v => {
                     const k = this.key(v.x, v.y, v.z);
-                    this.voxels.set(k, { color: v.color }); // Load without mesh
+                    this.voxels.set(k, { color: v.color });
                 });
+
                 if (data.templateImageData) {
                     this.loadImageFromData(data.templateImageData);
                 } else {
                     this.removeImageTemplate();
                 }
-                this.rebuildSceneFromVoxels(); // Build all meshes
+
+                this.rebuildSceneFromVoxels();
                 this.rebuildHelpers(); 
                 this.updateAllControlInputs();
                 this.resetCamera();
                 this.history = []; this.historyPointer = -1;
                 this.showToast('Project Loaded', 'Successfully loaded from file.', 'info');
-            } catch (err) { this.showToast('Load Error', 'Invalid project file.', 'error'); }
+            } catch (err) { this.showToast('Load Error', `Invalid project file. ${err.message}`, 'error'); }
         };
         reader.readAsText(file);
     },
     
-    exportSTL: function(scaleUnit = 'mm', upAxis = 'Z') { /* ... same ... */ },
+    exportSTL: function(scaleUnit = 'mm', upAxis = 'Z') {
+        if (this.voxels.size === 0) { this.showToast('Export Error', 'Scene is empty.', 'warning'); return; }
+        this.showToast('Exporting...', 'Generating STL file...', 'info');
+        const exporter = new THREE.STLExporter();
+        const geometries = [];
+        const scale = scaleUnit === 'cm' ? 10 : 1;
+
+        this.voxels.forEach((v,k) => {
+            const [x,y,z] = this.parseKey(k);
+            const geom = new THREE.BoxGeometry(this.VS * scale, this.VS * scale, this.VS * scale);
+            geom.translate(x * this.VS * scale + (0.5 * scale), y * this.VS * scale + (0.5 * scale), z * this.VS * scale + (0.5 * scale));
+            geometries.push(geom);
+        });
+
+        const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+        
+        if (upAxis === 'Z') {
+            mergedGeometry.rotateX(-Math.PI / 2);
+        }
+
+        const mesh = new THREE.Mesh(mergedGeometry);
+        const stlString = exporter.parse(mesh, { binary: false });
+        const blob = new Blob([stlString], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'voxel-model.stl'; a.click();
+        URL.revokeObjectURL(url);
+        mergedGeometry.dispose(); geometries.forEach(g => g.dispose());
+        this.showToast('Export Complete', 'Downloaded voxel-model.stl', 'info');
+    },
 
     animate: function() {
         requestAnimationFrame(() => this.animate());
@@ -1170,7 +1337,7 @@ const VoxelApp = {
     },
 
     rebuildSceneFromVoxels: function() {
-        this.scene.children.filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh && c !== this.extrudeGizmoMesh).forEach(c => {
+        this.scene.children.filter(c => c.isMesh && c.name === "voxel").forEach(c => {
             this.scene.remove(c);
             if(c.geometry) c.geometry.dispose();
             if(c.material) c.material.dispose();
@@ -1182,6 +1349,7 @@ const VoxelApp = {
             voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
             voxelMesh.castShadow = true;
             voxelMesh.receiveShadow = true;
+            voxelMesh.name = "voxel";
             this.scene.add(voxelMesh);
             voxelData.mesh = voxelMesh;
         });
@@ -1203,7 +1371,7 @@ const VoxelApp = {
         const changes = this.history[this.historyPointer];
         changes.forEach((change, key) => {
             const [x, y, z] = this.parseKey(key);
-            if (change.before === null) {
+            if (change.before === null) { // Voxel was added, so we remove it
                 const existingVoxel = this.voxels.get(key);
                 if (existingVoxel) {
                     this.scene.remove(existingVoxel.mesh);
@@ -1211,12 +1379,12 @@ const VoxelApp = {
                     existingVoxel.mesh.material.dispose();
                     this.voxels.delete(key);
                 }
-            } else {
+            } else { // Voxel was deleted or recolored, so we restore it
                 const existingVoxel = this.voxels.get(key);
-                if(existingVoxel) {
+                if(existingVoxel) { // It was recolored
                     existingVoxel.mesh.material.color.set(change.before.color);
                     existingVoxel.color = change.before.color;
-                } else {
+                } else { // It was deleted
                      const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: change.before.color }));
                     voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
                     voxelMesh.castShadow = true;
@@ -1235,7 +1403,7 @@ const VoxelApp = {
         const changes = this.history[this.historyPointer];
         changes.forEach((change, key) => {
              const [x, y, z] = this.parseKey(key);
-            if (change.after === null) {
+            if (change.after === null) { // Voxel was deleted
                 const existingVoxel = this.voxels.get(key);
                 if (existingVoxel) {
                     this.scene.remove(existingVoxel.mesh);
@@ -1243,12 +1411,12 @@ const VoxelApp = {
                     existingVoxel.mesh.material.dispose();
                     this.voxels.delete(key);
                 }
-            } else {
+            } else { // Voxel was added or recolored
                  const existingVoxel = this.voxels.get(key);
-                 if (existingVoxel) {
+                 if (existingVoxel) { // It was recolored
                     existingVoxel.mesh.material.color.set(change.after.color);
                     existingVoxel.color = change.after.color;
-                 } else {
+                 } else { // It was added
                     const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: change.after.color }));
                     voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
                     voxelMesh.castShadow = true;
@@ -1286,7 +1454,33 @@ const VoxelApp = {
         document.getElementById('mobile-cycle-axis').textContent = this.currentDrawingAxis.toUpperCase();
     },
 
-    resetToDefaults: function() { /* ... same ... */ },
+    resetToDefaults: function() {
+        this.controls.invertLookX = false;
+        this.controls.invertLookY = false;
+        this.controls.invertZoom = false;
+        this.controls.invertStrafeX = false;
+        this.controls.invertStrafeY = false;
+        
+        this.GRID = this.GRID_DEFAULT;
+        this.currentColor = '#ffffff';
+        this.flySpeed = 0.1;
+        this.currentDrawingAxis = 'y';
+        this.activeDrawingLevel = { x: 0, y: 0, z: 0 };
+
+        Object.keys(this.controls).forEach(key => localStorage.setItem(key, this.controls[key]));
+        localStorage.setItem('voxelEditorGridSize', this.GRID);
+        localStorage.setItem('voxelEditorColor', this.currentColor);
+        localStorage.setItem('voxelEditorFlySpeed', this.flySpeed);
+        localStorage.setItem('currentDrawingAxis', this.currentDrawingAxis);
+        localStorage.setItem('activeDrawingLevel', JSON.stringify(this.activeDrawingLevel));
+
+        this.updateAllControlInputs();
+        
+        this.clearAllConfirmed();
+        this.rebuildHelpers();
+        this.resetCamera();
+        this.showToast('Settings Reset', 'All settings have been reset to their default values.', 'info');
+    },
 
     updateAllControlInputs: function() {
         document.getElementById('grid-size-slider').value = this.GRID;
@@ -1311,10 +1505,10 @@ const VoxelApp = {
         this.updateAxisAndLevelUI();
     },
     
-    loadImageTemplate: function() { /* ... same ... */ },
-    handleImageFileSelect: function(event) { /* ... same ... */ },
-    loadImageFromData: function(imageData) { /* ... same ... */ },
-    removeImageTemplate: function() { /* ... same ... */ }
+    loadImageTemplate: function() { /* ... */ },
+    handleImageFileSelect: function(event) { /* ... */ },
+    loadImageFromData: function(imageData) { /* ... */ },
+    removeImageTemplate: function() { /* ... */ }
 };
 
 VoxelApp.init();
