@@ -393,61 +393,64 @@ const VoxelApp = {
             }
         }
     },
-authCheckAndInit: async function () {
-  // 0) Token auch aus dem HASH (#token=...) lesen
+authCheckAndInit: async function() {
+  await this.handleOAuthRedirect();
+
+  // Token aus Query ODER Hash holen
+  const urlParams  = new URLSearchParams(window.location.search || '');
   const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
-  const hashToken = hashParams.get('token');
+  const magicLinkToken = urlParams.get('token') || hashParams.get('token');
 
-  // 1) Token aus Query (?token=...) lesen
-  const url = new URL(window.location);
-  const queryToken = url.searchParams.get('token');
-
-  const token = hashToken || queryToken;
-  if (token) {
+  if (!this.user && magicLinkToken) {
     try {
-      const resp = await this.request('/auth/verify-magic-link', {
+      const response = await this.request('/auth/verify-magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ token: magicLinkToken })
       });
-      this.user = resp.user;
+      this.user = response.user;
       this.updateLoginStateUI();
       this.showToast('Login Successful', 'You are now logged in!', 'info');
     } catch (e) {
       this.showToast('Login Error', e.message, 'error');
     } finally {
-      // Hash & Query aufräumen
-      hashParams.delete('token');
-      url.searchParams.delete('token');
-      const clean = url.pathname + (url.searchParams.toString() ? '?'+url.searchParams.toString() : '');
-      window.history.replaceState({}, document.title, clean); // Hash wird damit entfernt
+      // Query & Hash säubern
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete('token');
+      clean.hash = '';
+      window.history.replaceState({}, document.title, clean.toString());
     }
   }
 
-  // 2) Session prüfen
   if (!this.user) {
     try {
-      const me = await this.request('/api/user/me');
-      this.user = me;
+      const user = await this.request('/api/user/me');
+      this.user = user;
       this.updateLoginStateUI();
-    } catch { /* keine Session – ok */ }
+    } catch (e) {
+      console.log("No active session found.");
+    }
   }
 
-  // 3) Model-Deep-Link optional laden
-  const modelId = (new URLSearchParams(window.location.search)).get('modelId');
-  if (modelId) {
-    await this.loadProjectFromModelId(modelId);
-    const clean2 = new URL(window.location);
-    clean2.searchParams.delete('modelId');
-    window.history.replaceState({}, document.title, clean2.pathname);
+  // optional: /?modelId=... laden
+  const urlModelId = urlParams.get('modelId');
+  if (urlModelId) {
+    await this.loadProjectFromModelId(urlModelId);
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.delete('modelId');
+    window.history.replaceState({}, document.title, newUrl.pathname);
   }
 
-  // 4) UI-Checkboxen aus LocalStorage
+  // AGB/Newsletter-Checkboxen aus LocalStorage wiederherstellen
   const agbChecked = localStorage.getItem('agbCheckbox');
   const newsletterChecked = localStorage.getItem('newsletterCheckbox');
-  if (agbChecked !== null) document.getElementById('agbCheckbox').checked = (agbChecked === 'true');
-  document.getElementById('newsletterCheckbox').checked = (newsletterChecked === 'true');
+  if (agbChecked !== null) {
+    document.getElementById('agbCheckbox').checked = agbChecked === 'true';
+  }
+  document.getElementById('newsletterCheckbox').checked =
+    newsletterChecked ? (newsletterChecked === 'true') : false;
 },
+
 
   
     setupDOM: function() {
