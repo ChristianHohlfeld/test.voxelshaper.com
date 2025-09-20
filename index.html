@@ -354,10 +354,10 @@ const VoxelApp = {
         const method = (mergedOptions.method || 'GET').toUpperCase();
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
             try {
-                const csrfResponse = await fetch(`${this.BACKEND_URL}/api/csrf`, { credentials: 'include' });
-                if (!csrfResponse.ok) throw new Error(`CSRF token fetch failed with status ${csrfResponse.status}`);
-                const { csrf } = await csrfResponse.json();
-                mergedOptions.headers['X-CSRF-Token'] = csrf;
+const csrfResponse = await fetch(`${this.BACKEND_URL}/auth/csrf`, { credentials: 'include', cache: 'no-store' });
+if (!csrfResponse.ok) throw new Error(`CSRF token fetch failed with status ${csrfResponse.status}`);
+const { token } = await csrfResponse.json();
+mergedOptions.headers['X-CSRF-Token'] = token;
             } catch (csrfError) {
                 console.error("CSRF Token fetch error:", csrfError);
                 this.showToast('Security Error', 'Could not verify your session. Please refresh and try again.', 'error');
@@ -1087,31 +1087,21 @@ const VoxelApp = {
     },
 
     // --- Hub Integration ---
-    loginLogout: async function() {
-        if (this.user) {
-            try {
-                // Direct fetch for logout, bypassing CSRF
-                const response = await fetch(`${this.BACKEND_URL}/auth/logout`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ error: 'Logout failed' }));
-                    throw new Error(errorData.error);
-                }
-
-                this.user = null;
-                this.token = null;
-                this.updateLoginStateUI();
-                this.showToast('Logged Out', '', 'info');
-            } catch (e) {
-                this.showToast('Logout Error', e.message, 'error');
-            }
-        } else {
-            document.getElementById('authModal').showModal();
-        }
-    },
+loginLogout: async function() {
+  if (this.user) {
+    try {
+      await this.request('/auth/logout', { method: 'POST' }); // <— CSRF automatisch
+      this.user = null;
+      this.token = null;
+      this.updateLoginStateUI();
+      this.showToast('Logged Out', '', 'info');
+    } catch (e) {
+      this.showToast('Logout Error', e.message, 'error');
+    }
+  } else {
+    document.getElementById('authModal').showModal();
+  }
+ },
     
     signInWithProvider: function(providerName) {
         window.location.href = `${this.BACKEND_URL}/auth/${providerName}?state=${encodeURIComponent(window.location.href)}`;
