@@ -282,9 +282,7 @@ const VoxelApp = {
     DRAG_THRESHOLD: 5,
     MAX_HISTORY_SIZE: 50,
     BACKEND_URL: "https://api.voxelshaper.com",
-HUB_URL: (window.location.hostname.startsWith('test.')
-  ? 'https://test.hub.voxelshaper.com'
-  : 'https://hub.voxelshaper.com'),
+    HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://hub.test.voxelshaper.com' : 'https://hub.voxelshaper.com'),
 
     // --- State ---
     scene: null, cam: null, ren: null, gridHelper: null, boxHelper: null,
@@ -356,10 +354,10 @@ HUB_URL: (window.location.hostname.startsWith('test.')
         const method = (mergedOptions.method || 'GET').toUpperCase();
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
             try {
-const csrfResponse = await fetch(`${this.BACKEND_URL}/auth/csrf`, { credentials: 'include', cache: 'no-store' });
-if (!csrfResponse.ok) throw new Error(`CSRF token fetch failed with status ${csrfResponse.status}`);
-const { token } = await csrfResponse.json();
-mergedOptions.headers['X-CSRF-Token'] = token;
+                const csrfResponse = await fetch(`${this.BACKEND_URL}/auth/csrf`, { credentials: 'include' });
+                if (!csrfResponse.ok) throw new Error(`CSRF token fetch failed with status ${csrfResponse.status}`);
+                const { token } = await csrfResponse.json();
+                mergedOptions.headers['X-CSRF-Token'] = token;
             } catch (csrfError) {
                 console.error("CSRF Token fetch error:", csrfError);
                 this.showToast('Security Error', 'Could not verify your session. Please refresh and try again.', 'error');
@@ -398,8 +396,9 @@ mergedOptions.headers['X-CSRF-Token'] = token;
 
     authCheckAndInit: async function() {
         await this.handleOAuthRedirect();
-        const magicLinkToken = window.location.hash.substring(1);
-        if (!this.user && magicLinkToken && !magicLinkToken.includes('oauth_success')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const magicLinkToken = urlParams.get('token');
+        if (!this.user && magicLinkToken) {
             try {
                 const response = await this.request('/auth/verify-magic-link', {
                     method: 'POST',
@@ -407,13 +406,14 @@ mergedOptions.headers['X-CSRF-Token'] = token;
                     body: JSON.stringify({ token: magicLinkToken })
                 });
                 this.user = response.user;
-                localStorage.setItem('vs_session', response.jwt);
                 this.updateLoginStateUI();
                 this.showToast('Login Successful', 'You are now logged in!', 'info');
             } catch (e) {
                 this.showToast('Login Error', e.message, 'error');
             } finally {
-                window.history.replaceState({}, document.title, window.location.pathname);
+                const cleanUrl = new URL(window.location);
+                cleanUrl.searchParams.delete('token');
+                window.history.replaceState({}, document.title, cleanUrl.toString());
             }
         }
         if (!this.user) {
@@ -425,10 +425,12 @@ mergedOptions.headers['X-CSRF-Token'] = token;
                 console.log("No active session found.");
             }
         }
-        const urlModelId = new URLSearchParams(window.location.search).get('modelId');
+        const urlModelId = urlParams.get('modelId');
         if (urlModelId) {
-            this.loadProjectFromModelId(urlModelId);
-            window.history.replaceState({}, document.title, window.location.pathname);
+            await this.loadProjectFromModelId(urlModelId);
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('modelId');
+            window.history.replaceState({}, document.title, newUrl.pathname);
         }
         const agbChecked = localStorage.getItem('agbCheckbox');
         const newsletterChecked = localStorage.getItem('newsletterCheckbox');
@@ -612,6 +614,97 @@ mergedOptions.headers['X-CSRF-Token'] = token;
         });
     },
 
+    uploadProjectToHub: async function() {
+        if (!this.user) {
+            this.showToast('Error', 'You must be logged in to upload.', 'error');
+            return;
+        }
+        if (this.voxels.size === 0) {
+            this.showToast('Error', 'Cannot upload an empty project.', 'error');
+            return;
+        }
+    
+        const title = document.getElementById('uploadTitle').value;
+        if (!title) {
+            this.showToast('Error', 'Title is required.', 'error');
+            return;
+        }
+    
+        this.showToast('Uploading...', 'Please wait...', 'info');
+    
+        const projectData = {
+            gridSize: this.GRID,
+            voxels: Object.fromEntries(
+                Array.from(this.voxels.entries()).map(([k, v]) => {
+                    const [x, y, z] = this.parseKey(k);
+                    return [`${x},${y},${z}`, v.color];
+                })
+            )
+        };
+    
+        const hubDocument = {
+            name: title,
+            description: document.getElementById('uploadDescription').value,
+            category: document.getElementById('uploadCategory').value,
+            visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
+            project_json: projectData
+        };
+    
+        try {
+            const response = await this.request('/api/models', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(hubDocument)
+            });
+            this.showToast('Upload Successful!', `Project saved. Model ID: ${response.public_id}`, 'info');
+        } catch (error) {
+            this.showToast('Upload Failed', error.message, 'error');
+        }
+    },
+
+    loadProjectFromModelId: async function(modelId) {
+        this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
+        try {
+            const data = await this.request(`/api/models/${modelId}`);
+    
+            this.voxels.forEach(v => {
+                this.scene.remove(v.mesh);
+                v.mesh.geometry.dispose();
+                v.mesh.material.dispose();
+            });
+            this.voxels.clear();
+    
+            const projectData = data.project_json;
+    
+            if (!projectData || !projectData.voxels || typeof projectData.voxels !== 'object') {
+                throw new Error("Invalid or empty project data received from API.");
+            }
+    
+            this.GRID = projectData.gridSize || this.GRID_DEFAULT;
+    
+            for (const key in projectData.voxels) {
+                if (Object.prototype.hasOwnProperty.call(projectData.voxels, key)) {
+                    const coords = key.split(',').map(Number);
+                    if (coords.length === 3) {
+                        const [x, y, z] = coords;
+                        const k = this.key(x, y, z);
+                        this.voxels.set(k, { color: projectData.voxels[key] });
+                    }
+                }
+            }
+            
+            this.rebuildSceneFromVoxels();
+            this.rebuildHelpers();
+            this.resetCamera();
+            this.updateAllControlInputs();
+            this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
+    
+        } catch (error) {
+            console.error("Failed to load project from Hub:", error);
+            this.showToast('Load Error', error.message, 'error');
+        }
+    },
+
     onPointerDown: function(e) {
         e.preventDefault();
         
@@ -756,7 +849,7 @@ mergedOptions.headers['X-CSRF-Token'] = token;
             }
         } else {
              if (e.button === 2 && document.pointerLockElement === this.cvs) {
-                document.exitPointerLock();
+                 document.exitPointerLock();
              }
             this.mouseState.isModifying = false;
             this.mouseState.isPanning = false;
@@ -1070,7 +1163,7 @@ mergedOptions.headers['X-CSRF-Token'] = token;
         
         let userDisplay = '';
         if (isLoggedIn && this.user) {
-            userDisplay += `<span>${this.user.displayName || this.user.email}</span>`;
+            userDisplay += `<span>${this.user.name || this.user.email}</span>`;
             if (this.user.photoURL) {
                 userDisplay = `<img src="${this.user.photoURL}" alt="User" class="w-6 h-6 rounded-full">` + userDisplay;
             }
@@ -1088,22 +1181,21 @@ mergedOptions.headers['X-CSRF-Token'] = token;
         setTimeout(() => toast.remove(), duration);
     },
 
-    // --- Hub Integration ---
-loginLogout: async function() {
-  if (this.user) {
-    try {
-      await this.request('/auth/logout', { method: 'POST' }); // <— CSRF automatisch
-      this.user = null;
-      this.token = null;
-      this.updateLoginStateUI();
-      this.showToast('Logged Out', '', 'info');
-    } catch (e) {
-      this.showToast('Logout Error', e.message, 'error');
-    }
-  } else {
-    document.getElementById('authModal').showModal();
-  }
- },
+    loginLogout: async function() {
+        if (this.user) {
+            try {
+                await this.request('/auth/logout', { method: 'POST' });
+                this.user = null;
+                this.token = null;
+                this.updateLoginStateUI();
+                this.showToast('Logged Out', '', 'info');
+            } catch (e) {
+                this.showToast('Logout Error', e.message, 'error');
+            }
+        } else {
+            document.getElementById('authModal').showModal();
+        }
+    },
     
     signInWithProvider: function(providerName) {
         window.location.href = `${this.BACKEND_URL}/auth/${providerName}?state=${encodeURIComponent(window.location.href)}`;
@@ -1142,101 +1234,6 @@ loginLogout: async function() {
         }
     },
 
-uploadProjectToHub: async function() {
-    if (!this.user) {
-        this.showToast('Error', 'You must be logged in to upload.', 'error');
-        return;
-    }
-    if (this.voxels.size === 0) {
-        this.showToast('Error', 'Cannot upload an empty project.', 'error');
-        return;
-    }
-
-    const title = document.getElementById('uploadTitle').value;
-    if (!title) {
-        this.showToast('Error', 'Title is required.', 'error');
-        return;
-    }
-
-    this.showToast('Uploading...', 'Please wait...', 'info');
-
-    // KORREKTUR: Erzeugt das vom Hub erwartete Objekt/Map-Format.
-    // Anstelle eines Arrays von Objekten wird ein einzelnes Objekt
-    // mit "x,y,z"-Schlüsseln erstellt.
-    const projectData = {
-        gridSize: this.GRID,
-        voxels: Object.fromEntries(
-            Array.from(this.voxels.entries()).map(([k, v]) => {
-                const [x, y, z] = this.parseKey(k);
-                // Erzeugt den Key "x,y,z" und den Wert "#color"
-                return [`${x},${y},${z}`, v.color];
-            })
-        )
-    };
-
-    const hubDocument = {
-        name: title,
-        description: document.getElementById('uploadDescription').value,
-        category: document.getElementById('uploadCategory').value,
-        visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
-        project_json: projectData
-    };
-
-    try {
-        const response = await this.request('/api/models', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(hubDocument)
-        });
-        this.showToast('Upload Successful!', `Project saved with ID: ${response.modelId}`, 'info');
-    } catch (error) {
-        this.showToast('Upload Failed', error.message, 'error');
-    }
-},
-
-loadProjectFromModelId: async function(modelId) {
-    this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
-    try {
-        const data = await this.request(`/api/models/${modelId}`);
-
-        // Bestehende Szene leeren
-        this.voxels.forEach(v => {
-            this.scene.remove(v.mesh);
-            v.mesh.geometry.dispose();
-            v.mesh.material.dispose();
-        });
-        this.voxels.clear();
-
-        // KORREKTUR: `data.project_json` ist bereits ein Objekt, da das Backend es parst.
-        // Ein erneutes `JSON.parse()` führt zum Fehler und wird hier entfernt.
-        const projectData = data.project_json;
-
-        if (!projectData || !projectData.voxels) {
-            throw new Error("Invalid or empty project data received from API.");
-        }
-
-        this.GRID = projectData.gridSize || this.GRID_DEFAULT;
-
-        // Diese Logik muss nun das Objekt/Map-Format verarbeiten.
-        for (const key in projectData.voxels) {
-            const coords = key.split(',').map(Number);
-            if (coords.length === 3) {
-                const [x, y, z] = coords;
-                const k = this.key(x, y, z);
-                this.voxels.set(k, { color: projectData.voxels[key] });
-            }
-        }
-        
-        this.rebuildSceneFromVoxels();
-        this.rebuildHelpers();
-        this.resetCamera();
-        this.updateAllControlInputs(); // UI (z.B. Grid-Slider) aktualisieren
-        this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
-
-    } catch (error) {
-        this.showToast('Load Error', error.message, 'error');
-    }
-},
     saveJSON: function() {
         const data = { 
             gridSize: this.GRID, 
@@ -1274,10 +1271,12 @@ loadProjectFromModelId: async function(modelId) {
                 this.currentDrawingAxis = data.currentDrawingAxis || 'y';
                 this.activeDrawingLevel = data.activeDrawingLevel || { x: 0, y: 0, z: 0 };
                 
-                data.voxels.forEach(v => {
-                    const k = this.key(v.x, v.y, v.z);
-                    this.voxels.set(k, { color: v.color });
-                });
+                if (Array.isArray(data.voxels)) {
+                    data.voxels.forEach(v => {
+                        const k = this.key(v.x, v.y, v.z);
+                        this.voxels.set(k, { color: v.color });
+                    });
+                }
 
                 if (data.templateImageData) {
                     this.loadImageFromData(data.templateImageData);
@@ -1456,6 +1455,7 @@ loadProjectFromModelId: async function(modelId) {
         this.currentDrawingAxis = axes[(currentIndex + 1) % axes.length];
         this.updateAxisAndLevelUI();
         this.rebuildHelpers();
+        this.updateTemplateImagePosition(); // Update image position on axis cycle
         localStorage.setItem('currentDrawingAxis', this.currentDrawingAxis);
     },
 
@@ -1465,6 +1465,7 @@ loadProjectFromModelId: async function(modelId) {
         this.activeDrawingLevel[this.currentDrawingAxis] = Math.max(0, Math.min(this.GRID - 1, level));
         this.updateAxisAndLevelUI();
         this.rebuildHelpers();
+        this.updateTemplateImagePosition(); // Update image position on level change
         localStorage.setItem('activeDrawingLevel', JSON.stringify(this.activeDrawingLevel));
     },
 
@@ -1527,10 +1528,90 @@ loadProjectFromModelId: async function(modelId) {
         this.updateAxisAndLevelUI();
     },
     
-    loadImageTemplate: function() { /* ... */ },
-    handleImageFileSelect: function(event) { /* ... */ },
-    loadImageFromData: function(imageData) { /* ... */ },
-    removeImageTemplate: function() { /* ... */ }
+    loadImageTemplate: function() {
+        document.getElementById('imageFileInput').click();
+    },
+    handleImageFileSelect: function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.templateImageData = e.target.result;
+            this.loadImageFromData(this.templateImageData);
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ''; // Reset input to allow reloading the same file
+    },
+    loadImageFromData: function(imageData) {
+        this.removeImageTemplate(); // Clear any existing image first
+
+        const loader = new THREE.TextureLoader();
+        loader.load(imageData, (texture) => {
+            const img = texture.image;
+            const aspect = img.width / img.height;
+            const size = this.GRID * this.VS;
+            
+            let planeWidth, planeHeight;
+            if (aspect >= 1) {
+                planeWidth = size;
+                planeHeight = size / aspect;
+            } else {
+                planeHeight = size;
+                planeWidth = size * aspect;
+            }
+
+            const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthTest: false });
+            
+            this.templateImageMesh = new THREE.Mesh(geometry, material);
+            this.updateTemplateImagePosition();
+            this.scene.add(this.templateImageMesh);
+
+            // Update UI
+            document.getElementById('removeImageBtn').classList.remove('hidden');
+            document.getElementById('removeImageBtnMobile').classList.remove('hidden');
+            document.getElementById('loadImageBtn').classList.add('hidden');
+            document.getElementById('loadImageBtnMobile').classList.add('hidden');
+        });
+    },
+    removeImageTemplate: function() {
+        if (this.templateImageMesh) {
+            this.scene.remove(this.templateImageMesh);
+            this.templateImageMesh.geometry.dispose();
+            this.templateImageMesh.material.map.dispose();
+            this.templateImageMesh.material.dispose();
+            this.templateImageMesh = null;
+        }
+        this.templateImageData = null;
+
+        // Update UI
+        document.getElementById('removeImageBtn').classList.add('hidden');
+        document.getElementById('removeImageBtnMobile').classList.add('hidden');
+        document.getElementById('loadImageBtn').classList.remove('hidden');
+        document.getElementById('loadImageBtnMobile').classList.remove('hidden');
+    },
+    updateTemplateImagePosition: function() {
+        if (!this.templateImageMesh) return;
+        
+        const size = this.GRID * this.VS;
+        const offset = 0.01; // Slight offset to prevent z-fighting with the grid helper
+
+        switch (this.currentDrawingAxis) {
+            case 'y':
+                this.templateImageMesh.position.set(size / 2, this.activeDrawingLevel.y * this.VS + offset, size / 2);
+                this.templateImageMesh.rotation.set(-Math.PI / 2, 0, 0);
+                break;
+            case 'x':
+                this.templateImageMesh.position.set(this.activeDrawingLevel.x * this.VS + offset, size / 2, size / 2);
+                this.templateImageMesh.rotation.set(0, -Math.PI / 2, 0);
+                break;
+            case 'z':
+                this.templateImageMesh.position.set(size / 2, size / 2, this.activeDrawingLevel.z * this.VS + offset);
+                this.templateImageMesh.rotation.set(0, 0, 0);
+                break;
+        }
+    }
 };
 
 VoxelApp.init();
@@ -1538,3 +1619,4 @@ VoxelApp.init();
 
 </body>
 </html>
+
