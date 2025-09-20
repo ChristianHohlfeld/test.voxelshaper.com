@@ -1221,34 +1221,49 @@ uploadProjectToHub: async function() {
         }
     },
 
-    loadProjectFromModelId: async function(modelId) {
-        this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
-        try {
-            const data = await this.request(`/api/models/${modelId}`);
-            
-            this.voxels.forEach(v => {
-                this.scene.remove(v.mesh);
-                v.mesh.geometry.dispose();
-                v.mesh.material.dispose();
-            });
-            this.voxels.clear();
+loadProjectFromModelId: async function(modelId) {
+    this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
+    try {
+        const data = await this.request(`/api/models/${modelId}`);
 
-            const projectData = JSON.parse(data.project_json);
-            this.GRID = projectData.gridSize || this.GRID_DEFAULT;
-            projectData.voxels.forEach(v => {
-                const k = this.key(v.x, v.y, v.z);
-                this.voxels.set(k, { color: v.color });
-            });
-            
-            this.rebuildSceneFromVoxels();
-            this.rebuildHelpers(); 
-            this.resetCamera();
-            this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
-        } catch (error) { 
-            this.showToast('Load Error', error.message, 'error'); 
+        // Bestehende Szene leeren
+        this.voxels.forEach(v => {
+            this.scene.remove(v.mesh);
+            v.mesh.geometry.dispose();
+            v.mesh.material.dispose();
+        });
+        this.voxels.clear();
+
+        // KORREKTUR: `data.project_json` ist bereits ein Objekt, da das Backend es parst.
+        // Ein erneutes `JSON.parse()` führt zum Fehler und wird hier entfernt.
+        const projectData = data.project_json;
+
+        if (!projectData || !projectData.voxels) {
+            throw new Error("Invalid or empty project data received from API.");
         }
-    },
 
+        this.GRID = projectData.gridSize || this.GRID_DEFAULT;
+
+        // Diese Logik muss nun das Objekt/Map-Format verarbeiten.
+        for (const key in projectData.voxels) {
+            const coords = key.split(',').map(Number);
+            if (coords.length === 3) {
+                const [x, y, z] = coords;
+                const k = this.key(x, y, z);
+                this.voxels.set(k, { color: projectData.voxels[key] });
+            }
+        }
+        
+        this.rebuildSceneFromVoxels();
+        this.rebuildHelpers();
+        this.resetCamera();
+        this.updateAllControlInputs(); // UI (z.B. Grid-Slider) aktualisieren
+        this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
+
+    } catch (error) {
+        this.showToast('Load Error', error.message, 'error');
+    }
+},
     saveJSON: function() {
         const data = { 
             gridSize: this.GRID, 
