@@ -1150,32 +1150,57 @@ const VoxelApp = {
         }
     },
 
-    uploadProjectToHub: async function() {
-        if (!this.user) { 
-            this.showToast('Error', 'You must be logged in to upload.', 'error'); 
-            return; 
-        }
-        if (this.voxels.size === 0) { 
-            this.showToast('Error', 'Cannot upload an empty project.', 'error'); 
-            return; 
-        }
-        
-        const title = document.getElementById('uploadTitle').value;
-        if (!title) { 
-            this.showToast('Error', 'Title is required.', 'error'); 
-            return; 
-        }
-        
-        this.showToast('Uploading...', 'Please wait...', 'info');
-        
-        const projectData = {
-            gridSize: this.GRID,
-            voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
+uploadProjectToHub: async function() {
+    if (!this.user) {
+        this.showToast('Error', 'You must be logged in to upload.', 'error');
+        return;
+    }
+    if (this.voxels.size === 0) {
+        this.showToast('Error', 'Cannot upload an empty project.', 'error');
+        return;
+    }
+
+    const title = document.getElementById('uploadTitle').value;
+    if (!title) {
+        this.showToast('Error', 'Title is required.', 'error');
+        return;
+    }
+
+    this.showToast('Uploading...', 'Please wait...', 'info');
+
+    // KORREKTUR: Erzeugt das vom Hub erwartete Objekt/Map-Format.
+    // Anstelle eines Arrays von Objekten wird ein einzelnes Objekt
+    // mit "x,y,z"-Schlüsseln erstellt.
+    const projectData = {
+        gridSize: this.GRID,
+        voxels: Object.fromEntries(
+            Array.from(this.voxels.entries()).map(([k, v]) => {
                 const [x, y, z] = this.parseKey(k);
-                return { x, y, z, color: v.color };
+                // Erzeugt den Key "x,y,z" und den Wert "#color"
+                return [`${x},${y},${z}`, v.color];
             })
-        };
-        
+        )
+    };
+
+    const hubDocument = {
+        name: title,
+        description: document.getElementById('uploadDescription').value,
+        category: document.getElementById('uploadCategory').value,
+        visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
+        project_json: projectData
+    };
+
+    try {
+        const response = await this.request('/api/models', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(hubDocument)
+        });
+        this.showToast('Upload Successful!', `Project saved with ID: ${response.modelId}`, 'info');
+    } catch (error) {
+        this.showToast('Upload Failed', error.message, 'error');
+    }
+},
         const hubDocument = {
             name: title,
             description: document.getElementById('uploadDescription').value,
