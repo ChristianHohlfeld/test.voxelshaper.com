@@ -1201,25 +1201,6 @@ uploadProjectToHub: async function() {
         this.showToast('Upload Failed', error.message, 'error');
     }
 },
-        const hubDocument = {
-            name: title,
-            description: document.getElementById('uploadDescription').value,
-            category: document.getElementById('uploadCategory').value,
-            visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
-            project_json: JSON.stringify(projectData)
-        };
-        
-        try {
-            const response = await this.request('/api/models', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(hubDocument)
-            });
-            this.showToast('Upload Successful!', `Project saved with ID: ${response.modelId}`, 'info');
-        } catch (error) { 
-            this.showToast('Upload Failed', error.message, 'error'); 
-        }
-    },
 
 loadProjectFromModelId: async function(modelId) {
     this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
