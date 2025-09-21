@@ -234,7 +234,7 @@
                  <div class="divider my-1"></div>
                  <li id="mobile-upload-li" class="hidden"><a><button id="mobile-upload" class="w-full text-left">Upload to Hub</button></a></li>
                  <li id="mobile-login-li"><a id="mobile-login-logout">Login</a></li>
-                 <li id="mobile-logout-li" class="hidden"><a><button class="w-full text-left text-error">Logout</button></a></li>
+                 <li id="mobile-logout-li" class="hidden"><a><button id="mobile-logout" class="w-full text-left text-error">Logout</button></a></li>
             </ul>
         </div>
 
@@ -703,6 +703,8 @@ const VoxelApp = {
         document.getElementById('mobileInvertLookY').addEventListener('change', (e) => this.setControl('invertLookY', e.target.checked));
         document.getElementById('mobileInvertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
         document.getElementById('mobile-login-logout').addEventListener('click', this.loginLogout.bind(this));
+        const mobileLogoutBtn = document.getElementById('mobile-logout');
+        if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', this.loginLogout.bind(this));
         document.getElementById('saveBtnMobile').addEventListener('click', () => this.saveJSON());
         document.getElementById('loadBtnMobile').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
@@ -1069,6 +1071,7 @@ const VoxelApp = {
         this.updateAllControlInputs();
         this.rebuildHelpers(); 
         this.resetCamera();
+        this.updateTemplateImagePosition();
     },
     
     setColor: function(newColor) {
@@ -1270,6 +1273,11 @@ const VoxelApp = {
     },
 
     resetCamera: function() {
+        this.currentDrawingAxis = 'y';
+        this.activeDrawingLevel = { x: 0, y: 0, z: 0 };
+        this.updateAxisAndLevelUI();
+        this.rebuildHelpers();
+
         const size = this.GRID * this.VS;
         this.cam.position.set(size, size * 1.2, size * 1.5);
         this.cam.lookAt(size / 2, size / 2, size / 2);
@@ -1286,9 +1294,16 @@ const VoxelApp = {
         const isLoggedIn = !!this.user;
         document.getElementById('loginLogoutBtn').textContent = isLoggedIn ? 'Logout' : 'Login';
         document.getElementById('uploadToHubBtn').classList.toggle('hidden', !isLoggedIn);
-        document.getElementById('mobile-upload').classList.toggle('hidden', !isLoggedIn);
-        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
         
+        const uploadLi = document.getElementById('mobile-upload-li');
+        if (uploadLi) uploadLi.classList.toggle('hidden', !isLoggedIn);
+
+        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
+        const loginLi  = document.getElementById('mobile-login-li');
+        const logoutLi = document.getElementById('mobile-logout-li');
+        if (loginLi)  loginLi.classList.toggle('hidden',  isLoggedIn);
+        if (logoutLi) logoutLi.classList.toggle('hidden', !isLoggedIn);
+
         const userIdDisplay = document.getElementById('userIdDisplay');
         userIdDisplay.replaceChildren();
         if (isLoggedIn && this.user) {
@@ -1359,7 +1374,8 @@ const VoxelApp = {
                         const [x, y, z] = this.parseKey(k);
                         return { x, y, z, color: v.color };
                     }),
-                    templateImageData: this.templateImageData
+                    templateImageData: this.templateImageData,
+                    templateImagePinnedY: this.templateImagePinnedY,
                 };
                 sessionStorage.setItem('unsavedVoxelData', JSON.stringify(data));
                 this.showToast('Progress Saved', 'Your work will be restored after login.', 'info', 2500);
@@ -1415,7 +1431,8 @@ const VoxelApp = {
                 const [x, y, z] = this.parseKey(k);
                 return { x, y, z, color: v.color };
             }),
-            templateImageData: this.templateImageData
+            templateImageData: this.templateImageData,
+            templateImagePinnedY: this.templateImagePinnedY,
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1442,6 +1459,7 @@ const VoxelApp = {
                     this.voxels.set(k, { color: v.color });
                 });
             }
+            this.templateImagePinnedY = (data.templateImagePinnedY ?? null);
             if (data.templateImageData) {
                 this.loadImageFromData(data.templateImageData);
             } else {
@@ -1493,8 +1511,8 @@ const VoxelApp = {
             mergedGeometry.rotateX(-Math.PI / 2);
         }
         const mesh = new THREE.Mesh(mergedGeometry);
-        const stlString = exporter.parse(mesh, { binary: false });
-        const blob = new Blob([stlString], { type: 'text/plain' });
+        const stlString = exporter.parse(mesh, { binary: true });
+        const blob = new Blob([stlString], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = 'voxel-model.stl'; a.click();
@@ -1637,7 +1655,6 @@ const VoxelApp = {
         this.activeDrawingLevel[this.currentDrawingAxis] = Math.max(0, Math.min(this.GRID - 1, level));
         this.updateAxisAndLevelUI();
         this.rebuildHelpers();
-        this.updateTemplateImagePosition();
         localStorage.setItem('activeDrawingLevel', JSON.stringify(this.activeDrawingLevel));
     },
 
@@ -1692,6 +1709,15 @@ const VoxelApp = {
         this.updateAxisAndLevelUI();
     },
     
+    disposeTemplateImageMesh: function () {
+      if (this.templateImageMesh) {
+        this.scene.remove(this.templateImageMesh);
+        this.templateImageMesh.geometry.dispose();
+        if (this.templateImageMesh.material.map) this.templateImageMesh.material.map.dispose();
+        this.templateImageMesh.material.dispose();
+        this.templateImageMesh = null;
+      }
+    },
     loadImageTemplate: function() {
         document.getElementById('imageFileInput').click();
     },
@@ -1707,7 +1733,7 @@ const VoxelApp = {
         event.target.value = '';
     },
     loadImageFromData: function(imageData) {
-        this.removeImageTemplate();
+        this.disposeTemplateImageMesh();
         const loader = new THREE.TextureLoader();
         loader.load(imageData, (texture) => {
             const img = texture.image;
@@ -1730,7 +1756,9 @@ const VoxelApp = {
                 depthWrite: false
             });
             this.templateImageMesh = new THREE.Mesh(geometry, material);
-            this.templateImagePinnedY = (this.activeDrawingLevel?.y ?? 0);
+            if (this.templateImagePinnedY == null) {
+              this.templateImagePinnedY = (this.activeDrawingLevel?.y ?? 0);
+            }
             this.templateImageMesh.renderOrder = -1;
             this.updateTemplateImagePosition();
             this.scene.add(this.templateImageMesh);
@@ -1749,6 +1777,7 @@ const VoxelApp = {
             this.templateImageMesh = null;
         }
         this.templateImageData = null;
+        this.templateImagePinnedY = null;
         document.getElementById('removeImageBtn').classList.add('hidden');
         document.getElementById('removeImageBtnMobile').classList.add('hidden');
         document.getElementById('loadImageBtn').classList.remove('hidden');
@@ -1777,7 +1806,8 @@ const VoxelApp = {
                     const [x, y, z] = this.parseKey(k);
                     return { x, y, z, color: v.color };
                 }),
-                templateImageData: this.templateImageData
+                templateImageData: this.templateImageData,
+                templateImagePinnedY: this.templateImagePinnedY,
             };
             localStorage.setItem('voxelshaper_autosave', JSON.stringify(data));
         } catch (e) {
