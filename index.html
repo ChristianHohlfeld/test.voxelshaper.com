@@ -1,121 +1,85 @@
-<html lang="de" data-theme="dark"><head>
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
     <meta charset="UTF-8">
     <meta property="og:title" content="VoxelShaper – Create in 3D, Effortlessly">
     <meta property="og:description" content="A powerful, intuitive voxel-based 3D editor – made for makers, artists, and coders.">
     <meta property="og:url" content="https://test.voxelshaper.com/">
     <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>[TEST] [TEST] VoxelShaper – Simplified Voxel Editor</title>
+    <title>[TEST] VoxelShaper – Simplified Voxel Editor</title>
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        :root { --toast-z-index: 9999;
-}
+        :root { --toast-z-index: 9999; }
         html, body {
             overflow: hidden;
-height: 100%;
+            height: 100%;
             margin: 0;
             padding: 0;
             touch-action: none;
         }
         body {
             display: flex;
-flex-direction: column;
+            flex-direction: column;
         }
         #container {
-            height: 100svh; /* Patched for robustness */
-position: relative;
+            flex-grow: 1;
+            position: relative;
         }
         #voxelCanvas {
             position: absolute;
-top: 0;
+            top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             cursor: crosshair;
-}
+        }
         .mobile-btn {
             width: 50px;
-height: 50px;
+            height: 50px;
             font-size: 1.25rem;
             border-radius: 50%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
+        }
         #controls {
             flex-wrap: nowrap !important;
-}
+        }
         input[type="color"] {
             -webkit-appearance: none;
--moz-appearance: none;
+            -moz-appearance: none;
             appearance: none;
             padding: 0;
             border: none;
             background-color: transparent;
-}
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0;
-}
-        input[type="color"]::-webkit-color-swatch { border: 1px solid #555; border-radius: 50%;
-}
-        input[type="color"]::-moz-color-swatch { border: 1px solid #555; border-radius: 50%;
-}
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid #555; border-radius: 50%; }
+        input[type="color"]::-moz-color-swatch { border: 1px solid #555; border-radius: 50%; }
         .marquee {
             position: absolute;
-border: 1px dashed #ffff00;
+            border: 1px dashed #ffff00;
             background-color: rgba(255, 255, 0, 0.1);
             pointer-events: none;
             display: none;
-}
+        }
     </style>
-    
-    <style>
-      /* Rotations-Overlay */
-      .orientation-overlay {
-        position: fixed; inset: 0;
-        display: none; align-items: center; justify-content: center;
-        background: rgba(0,0,0,.6);
-        color: #fff; font: 600 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        z-index: 2147483646;
-        text-align: center; padding: 24px;
-      }
-      .orientation-overlay.show { display: flex; }
-    </style>
-    <style>
-      :root { --safe-bottom: env(safe-area-inset-bottom); --safe-top: env(safe-area-inset-top); }
-
-      /* Untere Mobile-Bar fixieren & Safe-Area beachten */
-      #mobile-ui-container .mobile-bottom-bar {
-        position: fixed; left: 0; right: 0; bottom: 0;
-        padding-bottom: calc(var(--safe-bottom) + 8px);
-        z-index: 40; /* über Canvas */
-      }
-
-      /* Platz unten, damit nichts verdeckt wirkt, obwohl Bar fixed ist */
-      body.has-mobile-bar {
-        padding-bottom: calc(64px + var(--safe-bottom));
-      }
-    </style>
-
-    <style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647} (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: 
-;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 |
-MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}html,:host{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.right-2{right:0.5rem}.top-1\/2{top:50%}.top-2{top:0.5rem}.z-10{z-index:10}.z-50{z-index:50}.z-\[1\]{z-index:1}.my-1{margin-top:0.25rem;margin-bottom:0.25rem}.mb-4{margin-bottom:1rem}.ml-2{margin-left:0.5rem}.ml-4{margin-left:1rem}.mr-1{margin-right:0.25rem}.mr-2{margin-right:0.5rem}.mt-4{margin-top:1rem}.flex{display:flex}.hidden{display:none}.h-14{height:3.5rem}.h-6{height:1.5rem}.min-h-screen{min-height:100vh}.w-14{width:3.5rem}.w-28{width:7rem}.w-52{width:13rem}.w-6{width:1.5rem}.w-full{width:100%}.min-w-28{min-width:7rem}.max-w-xs{max-width:20rem}.flex-grow{flex-grow:1}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.overflow-hidden{overflow:hidden}.text-ellipsis{text-overflow:ellipsis}.whitespace-nowrap{white-space:nowrap}.rounded-full{border-radius:9999px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.font-bold{font-weight:700}.normal-case{text-transform:none}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow{--tw-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}@media (min-width: 768px){.md\:flex{display:flex}.md\:hidden{display:none}}</style><style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647} (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: 
-;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* !
-tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.right-2{right:0.5rem}.top-1\/2{top:50%}.top-2{top:0.5rem}.z-10{z-index:10}.z-50{z-index:50}.z-\[1\]{z-index:1}.my-1{margin-top:0.25rem;margin-bottom:0.25rem}.mb-4{margin-bottom:1rem}.ml-2{margin-left:0.5rem}.ml-4{margin-left:1rem}.mr-1{margin-right:0.25rem}.mr-2{margin-right:0.5rem}.mt-4{margin-top:1rem}.flex{display:flex}.hidden{display:none}.h-14{height:3.5rem}.h-6{height:1.5rem}.min-h-screen{min-height:100vh}.w-14{width:3.5rem}.w-28{width:7rem}.w-52{width:13rem}.w-6{width:1.5rem}.w-full{width:100%}.min-w-28{min-width:7rem}.max-w-xs{max-width:20rem}.flex-grow{flex-grow:1}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.overflow-hidden{overflow:hidden}.text-ellipsis{text-overflow:ellipsis}.whitespace-nowrap{white-space:nowrap}.rounded-full{border-radius:9999px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.font-bold{font-weight:700}.normal-case{text-transform:none}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow{--tw-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}@media (min-width: 768px){.md\:flex{display:flex}.md\:hidden{display:none}}</style></head>
+    <style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647} (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}html,:host{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.right-2{right:0.5rem}.top-1\/2{top:50%}.top-2{top:0.5rem}.z-10{z-index:10}.z-50{z-index:50}.z-\[1\]{z-index:1}.my-1{margin-top:0.25rem;margin-bottom:0.25rem}.mb-4{margin-bottom:1rem}.ml-2{margin-left:0.5rem}.ml-4{margin-left:1rem}.mr-1{margin-right:0.25rem}.mr-2{margin-right:0.5rem}.mt-4{margin-top:1rem}.flex{display:flex}.hidden{display:none}.h-14{height:3.5rem}.h-6{height:1.5rem}.min-h-screen{min-height:100vh}.w-14{width:3.5rem}.w-28{width:7rem}.w-52{width:13rem}.w-6{width:1.5rem}.w-full{width:100%}.min-w-28{min-width:7rem}.max-w-xs{max-width:20rem}.flex-grow{flex-grow:1}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.overflow-hidden{overflow:hidden}.text-ellipsis{text-overflow:ellipsis}.whitespace-nowrap{white-space:nowrap}.rounded-full{border-radius:9999px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.font-bold{font-weight:700}.normal-case{text-transform:none}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow{--tw-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}@media (min-width: 768px){.md\:flex{display:flex}.md\:hidden{display:none}}</style></head>
 <body class="bg-base-100 min-h-screen text-base-content flex flex-col">
 
+<!-- Main Controls (Desktop) -->
 <div id="controls" class="hidden md:flex items-center justify-center gap-2 p-2 bg-base-200 border-b border-base-content/20">
-  
-  <div class="dropdown">
+    <div class="dropdown">
         <label tabindex="0" class="btn btn-sm btn-ghost">File</label>
         <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
             <li><a id="saveBtn">Save</a></li>
             <li><a id="loadBtn">Load</a></li>
             <li><a id="exportBtn">Export</a></li>
             <div class="divider my-1"></div>
-            <li><a id="loadImageBtn">Load Reference 
-Image</a></li>
+            <li><a id="loadImageBtn">Load Reference Image</a></li>
             <li><a id="removeImageBtn" class="hidden">Remove Reference Image</a></li>
             <div class="divider my-1"></div>
             <li><a id="clearBtn" class="text-error">Clear Scene</a></li>
@@ -126,8 +90,7 @@ Image</a></li>
     <span id="current-axis-display" class="font-bold text-accent min-w-28 text-center text-sm">Axis: Y</span>
     <button id="levelDownBtn" class="btn btn-sm btn-ghost">-</button>
     <span id="current-level-display" class="font-bold text-accent text-sm">Lvl: 0</span>
-    <button id="levelUpBtn" 
-class="btn btn-sm btn-ghost">+</button>
+    <button id="levelUpBtn" class="btn btn-sm btn-ghost">+</button>
 
     <label for="grid-size-slider" class="text-sm">Grid:</label>
     <input type="range" id="grid-size-slider" min="5" max="100" value="10" class="range range-xs w-28">
@@ -142,14 +105,12 @@ class="btn btn-sm btn-ghost">+</button>
     
     <div class="dropdown dropdown-end ml-2">
         <label tabindex="0" class="btn btn-sm btn-ghost">Controls</label>
- 
-       <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
             <li><label class="label cursor-pointer"><span class="label-text">Invert Look X</span><input type="checkbox" id="invertLookX" class="toggle toggle-primary"></label></li>
             <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="invertLookY" class="toggle toggle-primary"></label></li>
             <li><label class="label cursor-pointer"><span class="label-text">Invert Zoom</span><input type="checkbox" id="invertZoom" class="toggle toggle-primary"></label></li>
             <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe X</span><input type="checkbox" id="invertStrafeX" class="toggle toggle-primary"></label></li>
- 
-           <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe Y</span><input type="checkbox" id="invertStrafeY" class="toggle toggle-primary"></label></li>
+            <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe Y</span><input type="checkbox" id="invertStrafeY" class="toggle toggle-primary"></label></li>
             <div class="divider my-1"></div>
             <li><a id="resetDefaultsBtn">Reset to Default</a></li>
         </ul>
@@ -159,33 +120,29 @@ class="btn btn-sm btn-ghost">+</button>
 
     <label for="fly-speed-slider" class="text-sm ml-4">Fly Speed:</label>
     <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
-    <span 
-id="fly-speed-display" class="font-bold text-primary text-sm">0.16</span>
+    <span id="fly-speed-display" class="font-bold text-primary text-sm">0.10</span>
 
     <div class="flex-grow"></div>
 
-    <button id="loginLogoutBtn" class="btn btn-sm btn-info">Logout</button>
-    <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"><span>Chris Field</span></span>
-    <button id="uploadToHubBtn" class="btn btn-sm btn-warning">Upload</button>
+    <button id="loginLogoutBtn" class="btn btn-sm btn-info">Login</button>
+    <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
+    <button id="uploadToHubBtn" class="btn btn-sm btn-warning hidden">Upload</button>
     <button id="goToHubBtn" class="btn btn-sm btn-ghost">Hub</button>
 </div>
 
+<!-- Main Canvas Container -->
 <div id="container">
-    <canvas id="voxelCanvas" tabindex="0" width="2794" height="1694" style="width: 1242px;
-height: 753px;"></canvas>
+    <canvas id="voxelCanvas" tabindex="0"></canvas>
     <div id="marquee" class="marquee"></div>
     <input type="file" id="fileInput" accept=".json" class="hidden">
     <input type="file" id="imageFileInput" accept="image/*" class="hidden">
 </div>
 
-<div id="mobile-ui-container">
-    <div class="mobile-bottom-bar flex items-center justify-between p-2 bg-base-200 border-t border-base-content/20">
-        <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-mode-toggle" aria-label="Toggle Mode">
-            <i id="mobile-mode-icon" class="fas fa-plus"></i>
-        </button>
-
+<!-- Mobile Controls -->
+<div id="mobile-ui-container" class="md:hidden">
+    <div class="flex items-center justify-between p-2 bg-base-200 border-t border-base-content/20">
+        <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-mode-toggle" aria-label="Toggle Mode"><i id="mobile-mode-icon" class="fas fa-plus"></i></button>
         <input type="color" id="mobile-color-picker" value="#FFFFFF" class="w-14 h-14 rounded-full p-1 border-2 border-base-content/50">
-
         <div class="dropdown dropdown-top dropdown-end">
             <label tabindex="0" class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-file-menu" aria-label="Open File Menu">📂</label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
@@ -199,45 +156,38 @@ height: 753px;"></canvas>
                 <li><a id="clearBtnMobile" class="text-error">Clear Scene</a></li>
             </ul>
         </div>
-
-        <button class="w-14 h-14 text-xl rounded-full btn btn-warning hidden" id="mobile-upload" aria-label="Upload to Hub">⬆️</button>
-
-        <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-login-logout" aria-label="Login or Logout">🚪</button>
+        <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-login-logout" aria-label="Login or Logout">🔑</button>
     </div>
-
     <div class="flex flex-col gap-2 fixed top-1/2 right-2 -translate-y-1/2 z-10">
         <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-cycle-axis" aria-label="Cycle Axis">Y</button>
         <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-level-up" aria-label="Level Up">▲</button>
         <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-level-down" aria-label="Level Down">▼</button>
         <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-undo" aria-label="Undo">↩️</button>
-   
-     <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-redo" aria-label="Redo">↪️</button>
+        <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-redo" aria-label="Redo">↪️</button>
         <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-reset-camera" aria-label="Reset Camera">📷</button>
         <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-settings" aria-label="Settings">⚙️</button>
     </div>
 </div>
 
+<!-- Modals -->
 <dialog id="exportOptionsModal" class="modal">
     <div class="modal-box">
         <h3 class="font-bold text-lg">Export Options</h3>
         <div class="form-control mb-4">
             <label class="label"><span class="label-text">Scale Unit:</span></label>
-     
-       <div class="flex gap-3">
+            <div class="flex gap-3">
                 <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="mm" class="radio radio-primary" checked=""><span class="ml-2">Millimeters (mm)</span></label>
                 <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="cm" class="radio radio-primary"><span class="ml-2">Centimeters (cm)</span></label>
             </div>
         </div>
         <div class="form-control mb-4">
-          
-  <label class="label"><span class="label-text">Up-Axis for Export:</span></label>
+            <label class="label"><span class="label-text">Up-Axis for Export:</span></label>
             <div class="flex gap-3">
                 <label class="flex items-center"><input type="radio" name="exportUpAxis" value="Y" class="radio radio-primary"><span class="ml-2">Y-Up (Standard)</span></label>
                 <label class="flex items-center"><input type="radio" name="exportUpAxis" value="Z" class="radio radio-primary" checked=""><span class="ml-2">Z-Up (3D Printers)</span></label>
             </div>
         </div>
-        
-<div class="modal-action">
+        <div class="modal-action">
             <button id="confirmExportBtn" class="btn btn-success">Confirm Export</button>
             <form method="dialog"><button class="btn">Cancel</button></form>
         </div>
@@ -248,8 +198,7 @@ height: 753px;"></canvas>
         <h3 class="font-bold text-lg">Control Settings</h3>
         <ul class="menu p-2">
             <li><label class="label cursor-pointer"><span class="label-text">Invert Look X</span><input type="checkbox" id="mobileInvertLookX" class="toggle toggle-primary"></label></li>
-        
-    <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="mobileInvertLookY" class="toggle toggle-primary"></label></li>
+            <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="mobileInvertLookY" class="toggle toggle-primary"></label></li>
             <li><label class="label cursor-pointer"><span class="label-text">Invert Zoom</span><input type="checkbox" id="mobileInvertZoom" class="toggle toggle-primary"></label></li>
         </ul>
         <div class="modal-action">
@@ -260,20 +209,17 @@ height: 753px;"></canvas>
 <dialog id="uploadProjectModal" class="modal">
     <div class="modal-box">
         <h3 class="font-bold text-lg">Upload Project to Hub</h3>
-    
-    <form method="dialog" class="flex flex-col gap-4 py-4">
+        <form method="dialog" class="flex flex-col gap-4 py-4">
             <input type="text" id="uploadTitle" placeholder="Project Title" class="input input-bordered w-full">
             <textarea id="uploadDescription" placeholder="Description" class="textarea textarea-bordered w-full"></textarea>
-            <select id="uploadCategory" class="select select-bordered w-full"><option disabled="" selected="">Select Category</option><option value="Toy">Toy</option><option value="Decoration">Decoration</option><option value="Functional">Functional</option><option value="Art">Art</option><option value="General">General</option><option value="Character">Character</option><option value="Vehicle">Vehicle</option><option value="Nature">Nature</option><option value="Architecture">Architecture</option><option value="Toy">Toy</option><option value="Decoration">Decoration</option><option value="Functional">Functional</option><option value="Art">Art</option><option value="General">General</option><option value="Character">Character</option><option value="Vehicle">Vehicle</option><option value="Nature">Nature</option><option value="Architecture">Architecture</option></select>
+            <select id="uploadCategory" class="select select-bordered w-full"><option disabled="" selected="">Select Category</option><option value="Toy">Toy</option><option value="Decoration">Decoration</option><option value="Functional">Functional</option><option value="Art">Art</option><option value="General">General</option><option value="Character">Character</option><option value="Vehicle">Vehicle</option><option value="Nature">Nature</option><option value="Architecture">Architecture</option></select>
             <div class="flex gap-4">
-    
-            <label><input type="radio" name="uploadVisibility" value="public" checked="" class="radio radio-primary mr-1"> Public</label>
+                <label><input type="radio" name="uploadVisibility" value="public" checked="" class="radio radio-primary mr-1"> Public</label>
                 <label><input type="radio" name="uploadVisibility" value="private" class="radio radio-primary mr-1"> Private</label>
             </div>
             <div class="modal-action">
                 <button id="uploadConfirmBtn" class="btn btn-success">Upload</button>
-             
-   <button class="btn">Cancel</button>
+                <button class="btn">Cancel</button>
             </div>
         </form>
     </div>
@@ -284,19 +230,16 @@ height: 753px;"></canvas>
         <p class="py-4">Choose a login method or use a magic link.</p>
         <div class="py-4 flex flex-col gap-3">
             <button id="signInGoogleBtn" class="btn btn-error text-white">With Google</button>
-     
-       <button id="signInGithubBtn" class="btn bg-neutral text-neutral-content">With GitHub</button>
+            <button id="signInGithubBtn" class="btn bg-neutral text-neutral-content">With GitHub</button>
             <form id="magicLinkForm" class="flex flex-col gap-2 w-full mt-4">
                 <input type="email" id="magicLinkEmail" placeholder="Enter your email" class="input input-bordered w-full">
                 <label class="label cursor-pointer justify-start gap-2">
                     <input type="checkbox" id="agbCheckbox" class="checkbox">
-   
-                 <span class="label-text">Hiermit stimme ich den AGBs und Datenschutzbestimmungen zu.</span>
+                    <span class="label-text">Hiermit stimme ich den AGBs und Datenschutzbestimmungen zu.</span>
                 </label>
                 <label class="label cursor-pointer justify-start gap-2">
                     <input type="checkbox" id="newsletterCheckbox" class="checkbox">
-                
-    <span class="label-text">Ich möchte Neuigkeiten und Angebote per E-Mail erhalten.</span>
+                    <span class="label-text">Ich möchte Neuigkeiten und Angebote per E-Mail erhalten.</span>
                 </label>
                 <button type="submit" class="btn btn-primary">Send Magic Link</button>
             </form>
@@ -306,18 +249,15 @@ height: 753px;"></canvas>
 </dialog>
 <dialog id="magicLinkVerifyModal" class="modal">
     <div class="modal-box text-center">
-   
-     <h3 class="font-bold text-lg">Check your email!</h3>
-        <p class="py-4" id="magicLinkVerifyMessage">We've sent a magic link to your email address.
-Please check your inbox and click the link to log in. You can close this window now.</p>
+        <h3 class="font-bold text-lg">Check your email!</h3>
+        <p class="py-4" id="magicLinkVerifyMessage">We've sent a magic link to your email address. Please check your inbox and click the link to log in. You can close this window now.</p>
         <form method="dialog"><button class="btn">Close</button></form>
     </div>
 </dialog>
 <dialog id="clearConfirmationModal" class="modal">
     <div class="modal-box">
         <h3 class="font-bold text-lg">Clear Scene</h3>
-        <p class="py-4">Are you sure you want to clear the entire project?
-This action cannot be undone.</p>
+        <p class="py-4">Are you sure you want to clear the entire project? This action cannot be undone.</p>
         <div class="modal-action">
             <button id="confirmClearBtn" class="btn btn-error">Clear All</button>
             <form method="dialog"><button class="btn">Cancel</button></form>
@@ -326,8 +266,6 @@ This action cannot be undone.</p>
 </dialog>
 
 <div id="toast-container" class="toast toast-end z-50"></div>
-
-<div id="rotateOverlay" class="orientation-overlay">Bitte ins Hochformat drehen</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
@@ -341,11 +279,10 @@ const VoxelApp = {
     ROTATE_SPEED: 0.003,
     PAN_SPEED: 0.05,
     PINCH_ZOOM_MULT: 50,
-   
- DRAG_THRESHOLD: 5,
+    DRAG_THRESHOLD: 5,
     MAX_HISTORY_SIZE: 50,
     BACKEND_URL: "https://api.voxelshaper.com",
-    HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://test.hub.voxelshaper.com' : 'https://test.hub.voxelshaper.com'),
+    HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://test.hub.voxelshaper.com' : 'https://hub.voxelshaper.com'),
 
     // --- State ---
     scene: null, cam: null, ren: null, gridHelper: null, boxHelper: null,
@@ -359,8 +296,7 @@ const VoxelApp = {
     history: [],
     historyPointer: -1,
     currentStroke: null,
- 
-   templateImageMesh: null,
+    templateImageMesh: null,
     templateImageData: null,
     selectedVoxels: new Set(),
     selectionMeshes: new Map(),
@@ -374,8 +310,7 @@ const VoxelApp = {
     mouseState: {
         isRotating: false, isPanning: false, isModifying: false, isDragging: false, isExtruding: false,
         lastX: 0, lastY: 0, downX: 0, downY: 0,
-     
-   lastActionCoords: null, mouseMovementX: 0, mouseMovementY: 0,
+        lastActionCoords: null, mouseMovementX: 0, mouseMovementY: 0,
         drawingPlane: new THREE.Plane(),
         extrudeNormal: null,
         isMarqueeSelecting: false,
@@ -387,8 +322,7 @@ const VoxelApp = {
 
     controls: {
         invertLookX: false, invertLookY: false, invertZoom: false,
-        invertStrafeX: false, 
-invertStrafeY: false,
+        invertStrafeX: false, invertStrafeY: false,
     },
 
     user: null,
@@ -400,54 +334,9 @@ invertStrafeY: false,
         DRAW: { name: 'Draw', icon: 'fas fa-paint-brush' }
     },
 
-    // PATCH: Mobile detection and UI mode helpers
-    computeMobileMode: function () {
-      // "Touch/Coarse"-basiert statt Breite (kippt nicht bei Landscape)
-      return window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
-    },
-    applyUIMode: function () {
-      const mobile = this.computeMobileMode();
-      this.isMobile = mobile;
-
-      const desktopBar = document.getElementById('controls');
-      const mobileWrap = document.getElementById('mobile-ui-container');
-
-      // Unabhängig von Tailwind-Breakpoints erzwingen
-      if (mobile) {
-        if (desktopBar) desktopBar.style.display = 'none';
-        if (mobileWrap)  mobileWrap.style.display  = 'block';
-      } else {
-        if (desktopBar) desktopBar.style.display = '';
-        if (mobileWrap)  mobileWrap.style.display  = '';
-      }
-      document.body.classList.toggle('has-mobile-bar', this.isMobile);
-    },
-
-    // PATCH: Orientation lock and overlay helpers
-    tryLockOrientation: async function () {
-      if ('orientation' in screen && screen.orientation && screen.orientation.lock) {
-        try { await screen.orientation.lock('portrait'); } catch (e) { /* iOS Safari erlaubt das nicht */ }
-      }
-    },
-    updateOrientationOverlay: function () {
-      const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-      const isTouch = this.computeMobileMode();
-      const overlay = document.getElementById('rotateOverlay');
-
-      // Overlay nur für Touch-Geräte im Landscape
-      const show = isTouch && !isPortrait;
-      overlay.classList.toggle('show', show);
-
-      // Blocke Interaktion mit der Szene, wenn Overlay aktiv
-      this.cvs.style.pointerEvents = show ? 'none' : 'auto';
-    },
-
     init: function() {
         this.setupDOM();
-        this.applyUIMode(); // Patched
-        this.tryLockOrientation(); // Patched
-        this.updateOrientationOverlay(); // Patched
-this.setupThree();
+        this.setupThree();
         this.setupEventListeners();
         this.authCheckAndInit();
         this.handleResize();
@@ -457,77 +346,77 @@ this.setupThree();
     
     request: async function(endpoint, options = {}) {
         const url = `${this.BACKEND_URL}${endpoint}`;
-const mergedOptions = {
+        const mergedOptions = {
             credentials: 'include',
             ...options,
             headers: { ...(options.headers || {}) }
         };
-const method = (mergedOptions.method || 'GET').toUpperCase();
+        const method = (mergedOptions.method || 'GET').toUpperCase();
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
             try {
                 const csrfResponse = await fetch(`${this.BACKEND_URL}/auth/csrf`, { credentials: 'include' });
-if (!csrfResponse.ok) throw new Error(`CSRF token fetch failed with status ${csrfResponse.status}`);
+                if (!csrfResponse.ok) throw new Error(`CSRF token fetch failed with status ${csrfResponse.status}`);
                 const { token } = await csrfResponse.json();
-mergedOptions.headers['X-CSRF-Token'] = token;
+                mergedOptions.headers['X-CSRF-Token'] = token;
             } catch (csrfError) {
                 console.error("CSRF Token fetch error:", csrfError);
-this.showToast('Security Error', 'Could not verify your session. Please refresh and try again.', 'error');
+                this.showToast('Security Error', 'Could not verify your session. Please refresh and try again.', 'error');
                 throw csrfError;
-}
+            }
         }
         const response = await fetch(url, mergedOptions);
-const contentType = response.headers.get('content-type');
+        const contentType = response.headers.get('content-type');
         const isJson = contentType && contentType.includes('application/json');
         let data;
-if (response.status !== 204) {
-            data = isJson ?
-await response.json() : await response.text();
+        if (response.status !== 204) {
+            data = isJson ? await response.json() : await response.text();
         }
         if (!response.ok) {
-            const errorMessage = isJson ?
-(data.error || JSON.stringify(data)) : data;
+            const errorMessage = isJson ? (data.error || JSON.stringify(data)) : data;
             throw new Error(errorMessage || `Request to ${endpoint} failed with status ${response.status}`);
-}
+        }
         return data;
-},
+    },
 
     handleOAuthRedirect: async function() {
         if (window.location.hash.includes('#oauth_success')) {
             try {
                 const user = await this.request('/api/user/me');
-this.user = user;
+                this.user = user;
                 this.updateLoginStateUI();
                 this.showToast('Login Successful', 'You are now logged in via OAuth!', 'info');
-} catch (e) {
+            } catch (e) {
                 console.error("OAuth redirect user fetch failed:", e);
-this.showToast('Login Error', 'Failed to retrieve user data after OAuth.', 'error');
-} finally {
+                this.showToast('Login Error', 'Failed to retrieve user data after OAuth.', 'error');
+            } finally {
                 window.history.replaceState({}, document.title, window.location.pathname);
-}
+            }
         }
     },
 authCheckAndInit: async function() {
   await this.handleOAuthRedirect();
-// Token aus Query ODER Hash holen
+
+  // Token aus Query ODER Hash holen
   const urlParams  = new URLSearchParams(window.location.search || '');
-const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
+  const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
   const magicLinkToken = urlParams.get('token') || hashParams.get('token');
-if (!this.user && magicLinkToken) {
+
+  if (!this.user && magicLinkToken) {
     try {
       const response = await this.request('/auth/verify-magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: magicLinkToken })
       });
-this.user = response.user;
+      this.user = response.user;
       this.updateLoginStateUI();
       this.showToast('Login Successful', 'You are now logged in!', 'info');
-} catch (e) {
+    } catch (e) {
       this.showToast('Login Error', e.message, 'error');
-} finally {
+    } finally {
       // Query & Hash säubern
       const clean = new URL(window.location.href);
-clean.searchParams.delete('token');
+      clean.searchParams.delete('token');
       clean.hash = '';
       window.history.replaceState({}, document.title, clean.toString());
     }
@@ -536,28 +425,28 @@ clean.searchParams.delete('token');
   if (!this.user) {
     try {
       const user = await this.request('/api/user/me');
-this.user = user;
+      this.user = user;
       this.updateLoginStateUI();
     } catch (e) {
       console.log("No active session found.");
-}
+    }
   }
 
   // optional: /?modelId=... laden
   const urlModelId = urlParams.get('modelId');
-if (urlModelId) {
+  if (urlModelId) {
     await this.loadProjectFromModelId(urlModelId);
     const newUrl = new URL(window.location);
     newUrl.searchParams.delete('modelId');
     window.history.replaceState({}, document.title, newUrl.pathname);
-}
+  }
 
   // AGB/Newsletter-Checkboxen aus LocalStorage wiederherstellen
   const agbChecked = localStorage.getItem('agbCheckbox');
   const newsletterChecked = localStorage.getItem('newsletterCheckbox');
-if (agbChecked !== null) {
+  if (agbChecked !== null) {
     document.getElementById('agbCheckbox').checked = agbChecked === 'true';
-}
+  }
   document.getElementById('newsletterCheckbox').checked =
     newsletterChecked ? (newsletterChecked === 'true') : false;
 },
@@ -566,59 +455,62 @@ if (agbChecked !== null) {
   
     setupDOM: function() {
         this.cvs = document.getElementById('voxelCanvas');
-this.containerDiv = document.getElementById('container');
-        // this.isMobile is now set in applyUIMode
+        this.containerDiv = document.getElementById('container');
+        this.isMobile = window.matchMedia('(max-width: 767px)').matches;
         this.marqueeElement = document.getElementById('marquee');
-const categories = ["Toy", "Decoration", "Functional", "Art", "General", "Character", "Vehicle", "Nature", "Architecture"];
+
+        const categories = ["Toy", "Decoration", "Functional", "Art", "General", "Character", "Vehicle", "Nature", "Architecture"];
         const categorySelect = document.getElementById('uploadCategory');
-categories.forEach(cat => {
+        categories.forEach(cat => {
             const opt = document.createElement('option');
             opt.value = cat;
             opt.textContent = cat;
             categorySelect.appendChild(opt);
         });
-this.GRID = parseInt(localStorage.getItem('voxelEditorGridSize') || this.GRID_DEFAULT);
+
+        this.GRID = parseInt(localStorage.getItem('voxelEditorGridSize') || this.GRID_DEFAULT);
         this.currentColor = localStorage.getItem('voxelEditorColor') || '#ffffff';
         this.flySpeed = parseFloat(localStorage.getItem('voxelEditorFlySpeed') || 0.1);
         this.controls.invertLookX = localStorage.getItem('invertLookX') === 'true';
-this.controls.invertLookY = localStorage.getItem('invertLookY') === 'true';
+        this.controls.invertLookY = localStorage.getItem('invertLookY') === 'true';
         this.controls.invertZoom = localStorage.getItem('invertZoom') === 'true';
         this.controls.invertStrafeX = localStorage.getItem('invertStrafeX') === 'true';
         this.controls.invertStrafeY = localStorage.getItem('invertStrafeY') === 'true';
-this.currentDrawingAxis = localStorage.getItem('currentDrawingAxis') || 'y';
+        
+        this.currentDrawingAxis = localStorage.getItem('currentDrawingAxis') || 'y';
         this.activeDrawingLevel = JSON.parse(localStorage.getItem('activeDrawingLevel')) || { x: 0, y: 0, z: 0 };
         
         this.updateAllControlInputs();
-},
+    },
 
     setupThree: function() {
         this.scene = new THREE.Scene();
-this.scene.background = new THREE.Color(0x282c34);
+        this.scene.background = new THREE.Color(0x282c34);
         this.cam = new THREE.PerspectiveCamera(75, this.containerDiv.clientWidth / this.containerDiv.clientHeight, 0.1, 1000);
         
         this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
-this.resetCamera();
+        this.resetCamera();
 
         this.ren = new THREE.WebGLRenderer({ canvas: this.cvs, antialias: true });
         this.ren.shadowMap.enabled = true;
         this.ren.shadowMap.type = THREE.PCFSoftShadowMap;
         this.scene.add(new THREE.AmbientLight(0x606060));
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
         dirLight.position.set(10, 20, 15);
         dirLight.castShadow = true;
         this.scene.add(dirLight);
         this.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
-this.previewVoxel = new THREE.Mesh(
+        this.previewVoxel = new THREE.Mesh(
             new THREE.BoxGeometry(this.VS, this.VS, this.VS),
             new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthTest: false })
         );
-this.previewVoxel.visible = false;
+        this.previewVoxel.visible = false;
         this.scene.add(this.previewVoxel);
 
         const extrudeGizmoGeometry = new THREE.PlaneGeometry(this.VS, this.VS);
-const extrudeGizmoMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+        const extrudeGizmoMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
         this.extrudeGizmoMesh = new THREE.Mesh(extrudeGizmoGeometry, extrudeGizmoMaterial);
-this.extrudeGizmoMesh.visible = false;
+        this.extrudeGizmoMesh.visible = false;
         this.scene.add(this.extrudeGizmoMesh);
 
         this.rebuildHelpers();
@@ -626,376 +518,381 @@ this.extrudeGizmoMesh.visible = false;
     
     setupEventListeners: function() {
         window.addEventListener('resize', () => this.handleResize());
-        // PATCH: Added listeners for orientation overlay
-        window.addEventListener('resize', () => this.updateOrientationOverlay());
-        window.addEventListener('orientationchange', () => this.updateOrientationOverlay());
-
-this.containerDiv.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+        this.containerDiv.addEventListener('pointerdown', (e) => this.onPointerDown(e));
         this.containerDiv.addEventListener('pointermove', (e) => this.onPointerMove(e));
         this.containerDiv.addEventListener('pointerup', (e) => this.onPointerUp(e));
         this.containerDiv.addEventListener('pointerleave', (e) => this.onPointerUp(e));
         this.containerDiv.addEventListener('pointercancel', (e) => this.onPointerUp(e));
-this.containerDiv.addEventListener('wheel', (e) => this.onMouseWheel(e), { passive: false });
+        this.containerDiv.addEventListener('wheel', (e) => this.onMouseWheel(e), { passive: false });
         
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
 
         this.cvs.addEventListener('contextmenu', (e) => e.preventDefault());
-document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
+        
+        document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
 
         // Desktop UI
         document.getElementById('grid-size-slider').addEventListener('input', (e) => this.setGridSize(parseInt(e.target.value)));
-document.getElementById('fly-speed-slider').addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
+        document.getElementById('fly-speed-slider').addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
         document.getElementById('color-picker-input').addEventListener('input', (e) => this.setColor(e.target.value));
         document.getElementById('modeToggle').addEventListener('click', () => this.cycleMode());
         document.getElementById('clearBtn').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
         document.getElementById('saveBtn').addEventListener('click', () => this.saveJSON());
-document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+        document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtn').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
         document.getElementById('fileInput').addEventListener('change', (e) => this.loadJSON(e));
         document.getElementById('loadImageBtn').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtn').addEventListener('click', () => this.removeImageTemplate());
-document.getElementById('imageFileInput').addEventListener('change', (e) => this.handleImageFileSelect(e));
+        document.getElementById('imageFileInput').addEventListener('change', (e) => this.handleImageFileSelect(e));
         
         document.getElementById('cycleAxisBtn').addEventListener('click', () => this.cycleDrawingAxis());
         document.getElementById('levelUpBtn').addEventListener('click', () => this.moveDrawingLevel(1));
         document.getElementById('levelDownBtn').addEventListener('click', () => this.moveDrawingLevel(-1));
-document.getElementById('invertLookX').addEventListener('change', (e) => this.setControl('invertLookX', e.target.checked));
+
+        document.getElementById('invertLookX').addEventListener('change', (e) => this.setControl('invertLookX', e.target.checked));
         document.getElementById('invertLookY').addEventListener('change', (e) => this.setControl('invertLookY', e.target.checked));
         document.getElementById('invertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
         document.getElementById('invertStrafeX').addEventListener('change', (e) => this.setControl('invertStrafeX', e.target.checked));
-document.getElementById('invertStrafeY').addEventListener('change', (e) => this.setControl('invertStrafeY', e.target.checked));
+        document.getElementById('invertStrafeY').addEventListener('change', (e) => this.setControl('invertStrafeY', e.target.checked));
         document.getElementById('resetDefaultsBtn').addEventListener('click', () => this.resetToDefaults());
         
         document.getElementById('resetCameraBtn').addEventListener('click', () => this.resetCamera());
-// Mobile UI
+
+        // Mobile UI
         document.getElementById('mobile-mode-toggle').addEventListener('click', () => this.cycleMode());
         document.getElementById('mobile-color-picker').addEventListener('input', (e) => this.setColor(e.target.value));
-document.getElementById('mobile-undo').addEventListener('click', () => this.undo());
+        document.getElementById('mobile-undo').addEventListener('click', () => this.undo());
         document.getElementById('mobile-redo').addEventListener('click', () => this.redo());
         document.getElementById('mobile-reset-camera').addEventListener('click', () => this.resetCamera());
         document.getElementById('mobile-settings').addEventListener('click', () => document.getElementById('mobileControlsModal').showModal());
         document.getElementById('mobile-cycle-axis').addEventListener('click', () => this.cycleDrawingAxis());
-document.getElementById('mobile-level-up').addEventListener('click', () => this.moveDrawingLevel(1));
+        document.getElementById('mobile-level-up').addEventListener('click', () => this.moveDrawingLevel(1));
         document.getElementById('mobile-level-down').addEventListener('click', () => this.moveDrawingLevel(-1));
-
-        // PATCH: Added listener for mobile upload button
-        document.getElementById('mobile-upload').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
 
         document.getElementById('mobileInvertLookX').addEventListener('change', (e) => this.setControl('invertLookX', e.target.checked));
         document.getElementById('mobileInvertLookY').addEventListener('change', (e) => this.setControl('invertLookY', e.target.checked));
-document.getElementById('mobileInvertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
+        document.getElementById('mobileInvertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
         document.getElementById('mobile-login-logout').addEventListener('click', this.loginLogout.bind(this));
         document.getElementById('saveBtnMobile').addEventListener('click', () => this.saveJSON());
         document.getElementById('loadBtnMobile').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
-document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
+        document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
         document.getElementById('clearBtnMobile').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
-document.addEventListener('keydown', (e) => {
+
+        document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key.toLowerCase()) {
                     case 'z': e.preventDefault(); this.undo(); break;
                     case 'y': e.preventDefault(); this.redo(); break;
-               
-     case 's': e.preventDefault(); this.saveJSON(); break;
+                    case 's': e.preventDefault(); this.saveJSON(); break;
                     case 'o': e.preventDefault(); document.getElementById('fileInput').click(); break;
                 }
             }
         });
-// Modals & Hub
+
+        // Modals & Hub
         document.getElementById('loginLogoutBtn').addEventListener('click', this.loginLogout.bind(this));
         document.getElementById('goToHubBtn').addEventListener('click', () => window.open(this.HUB_URL, '_blank'));
-document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
+        document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
         document.getElementById('uploadConfirmBtn').addEventListener('click', (e) => {
             e.preventDefault();
             this.uploadProjectToHub();
             document.getElementById('uploadProjectModal').close();
         });
-document.getElementById('signInGoogleBtn').addEventListener('click', () => this.signInWithProvider('google'));
+        
+        document.getElementById('signInGoogleBtn').addEventListener('click', () => this.signInWithProvider('google'));
         document.getElementById('signInGithubBtn').addEventListener('click', () => this.signInWithProvider('github'));
         document.getElementById('magicLinkForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.sendMagicLink();
         });
-document.getElementById('agbCheckbox').addEventListener('change', (e) => localStorage.setItem('agbCheckbox', e.target.checked));
+
+        document.getElementById('agbCheckbox').addEventListener('change', (e) => localStorage.setItem('agbCheckbox', e.target.checked));
         document.getElementById('newsletterCheckbox').addEventListener('change', (e) => localStorage.setItem('newsletterCheckbox', e.target.checked));
-document.getElementById('confirmClearBtn').addEventListener('click', () => {
+        document.getElementById('confirmClearBtn').addEventListener('click', () => {
             this.clearAllConfirmed();
             document.getElementById('clearConfirmationModal').close();
         });
-document.getElementById('confirmExportBtn').addEventListener('click', () => {
+        document.getElementById('confirmExportBtn').addEventListener('click', () => {
             const scaleUnit = document.querySelector('input[name="exportScaleUnit"]:checked').value;
             const upAxis = document.querySelector('input[name="exportUpAxis"]:checked').value;
             this.exportSTL(scaleUnit, upAxis);
             document.getElementById('exportOptionsModal').close();
         });
-},
+    },
 
     uploadProjectToHub: async function() {
         if (!this.user) {
             this.showToast('Error', 'You must be logged in to upload.', 'error');
-return;
+            return;
         }
         if (this.voxels.size === 0) {
             this.showToast('Error', 'Cannot upload an empty project.', 'error');
-return;
+            return;
         }
     
         const title = document.getElementById('uploadTitle').value;
-if (!title) {
+        if (!title) {
             this.showToast('Error', 'Title is required.', 'error');
             return;
-}
+        }
     
         this.showToast('Uploading...', 'Please wait...', 'info');
-const projectData = {
+    
+        const projectData = {
             gridSize: this.GRID,
             voxels: Object.fromEntries(
                 Array.from(this.voxels.entries()).map(([k, v]) => {
                     const [x, y, z] = this.parseKey(k);
                     return [`${x},${y},${z}`, v.color];
-     
-           })
+                })
             )
         };
-const hubDocument = {
+    
+        const hubDocument = {
             name: title,
             description: document.getElementById('uploadDescription').value,
             category: document.getElementById('uploadCategory').value,
             visibility: document.querySelector('input[name="uploadVisibility"]:checked').value,
             project_json: projectData
         };
-try {
+    
+        try {
             const response = await this.request('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(hubDocument)
             });
-this.showToast('Upload Successful!', `Project saved. Model ID: ${response.public_id}`, 'info');
+            this.showToast('Upload Successful!', `Project saved. Model ID: ${response.public_id}`, 'info');
         } catch (error) {
             this.showToast('Upload Failed', error.message, 'error');
-}
+        }
     },
 
     loadProjectFromModelId: async function(modelId) {
         this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
-try {
+        try {
             const data = await this.request(`/api/models/${modelId}`);
-this.voxels.forEach(v => {
+    
+            this.voxels.forEach(v => {
                 this.scene.remove(v.mesh);
                 v.mesh.geometry.dispose();
                 v.mesh.material.dispose();
             });
-this.voxels.clear();
+            this.voxels.clear();
     
             const projectData = data.project_json;
     
             if (!projectData || !projectData.voxels || typeof projectData.voxels !== 'object') {
                 throw new Error("Invalid or empty project data received from API.");
-}
+            }
     
-            this.GRID = projectData.gridSize ||
-this.GRID_DEFAULT;
+            this.GRID = projectData.gridSize || this.GRID_DEFAULT;
     
             for (const key in projectData.voxels) {
                 if (Object.prototype.hasOwnProperty.call(projectData.voxels, key)) {
                     const coords = key.split(',').map(Number);
-if (coords.length === 3) {
+                    if (coords.length === 3) {
                         const [x, y, z] = coords;
-const k = this.key(x, y, z);
+                        const k = this.key(x, y, z);
                         this.voxels.set(k, { color: projectData.voxels[key] });
-}
+                    }
                 }
             }
             
             this.rebuildSceneFromVoxels();
-this.rebuildHelpers();
+            this.rebuildHelpers();
             this.resetCamera();
             this.updateAllControlInputs();
             this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
     
         } catch (error) {
             console.error("Failed to load project from Hub:", error);
-this.showToast('Load Error', error.message, 'error');
+            this.showToast('Load Error', error.message, 'error');
         }
     },
 
     onPointerDown: function(e) {
         e.preventDefault();
-if (!this.isMobile) {
+        
+        if (!this.isMobile) {
             const desktopControlsDropdown = document.querySelector('#controls .dropdown > label');
-if (desktopControlsDropdown) {
+            if (desktopControlsDropdown) {
                 desktopControlsDropdown.blur();
-}
+            }
         } else {
             const mobileControlsModal = document.getElementById('mobileControlsModal');
-if (mobileControlsModal.open) {
+            if (mobileControlsModal.open) {
                 mobileControlsModal.close();
-}
+            }
         }
 
         this.currentStroke = new Map();
-if (this.isMobile) {
+
+        if (this.isMobile) {
             this.isPointerDown = true;
-this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
             if (this.activePointers.size === 1) {
                 this.touchState.isTapCandidate = true;
-this.mouseState.downX = e.clientX;
+                this.mouseState.downX = e.clientX;
                 this.mouseState.downY = e.clientY;
             } else {
                 this.touchState.isTapCandidate = false;
-}
+            }
         } else {
             this.mouseState.downX = e.clientX;
-this.mouseState.downY = e.clientY;
+            this.mouseState.downY = e.clientY;
             if (e.button === 0) {
                 if (this.currentMode !== 'SELECT') {
                     this.mouseState.isModifying = true;
-const coords = this.calculateRayTarget(e.clientX, e.clientY);
+                    const coords = this.calculateRayTarget(e.clientX, e.clientY);
                     if (coords) {
                         if (this.currentMode === 'ADD') {
                             this.mouseState.dragFixedLayerCoord = coords[this.currentDrawingAxis];
-}
+                        }
                         this.modifyVoxel(coords.x, coords.y, coords.z);
-this.mouseState.lastActionCoords = coords;
+                        this.mouseState.lastActionCoords = coords;
                     }
                 }
             } else if (e.button === 1) {
                 this.mouseState.isPanning = true;
-} else if (e.button === 2) {
+            } else if (e.button === 2) {
                 this.cvs.requestPointerLock();
-}
+            }
             this.mouseState.lastX = e.clientX;
             this.mouseState.lastY = e.clientY;
-}
+        }
     },
     
     onPointerMove: function(e) {
         e.preventDefault();
-if (document.pointerLockElement === this.cvs) {
+        if (document.pointerLockElement === this.cvs) {
             this.mouseState.mouseMovementX += e.movementX;
-this.mouseState.mouseMovementY += e.movementY;
+            this.mouseState.mouseMovementY += e.movementY;
             return;
         }
 
         if (this.isMobile) {
             if (!this.isPointerDown) return;
-const dist = Math.hypot(e.clientX - this.mouseState.downX, e.clientY - this.mouseState.downY);
+            const dist = Math.hypot(e.clientX - this.mouseState.downX, e.clientY - this.mouseState.downY);
             if (dist > this.DRAG_THRESHOLD) this.touchState.isTapCandidate = false;
 
             const currentPointer = this.activePointers.get(e.pointerId);
-if (!currentPointer) return;
+            if (!currentPointer) return;
             
             if (this.activePointers.size === 1 && !this.touchState.isTapCandidate) { 
                 const deltaX = e.clientX - currentPointer.x;
-const deltaY = e.clientY - currentPointer.y;
+                const deltaY = e.clientY - currentPointer.y;
                 this.euler.y -= (this.controls.invertLookX ? -deltaX : deltaX) * this.ROTATE_SPEED;
-this.euler.x -= (this.controls.invertLookY ? -deltaY : deltaY) * this.ROTATE_SPEED;
+                this.euler.x -= (this.controls.invertLookY ? -deltaY : deltaY) * this.ROTATE_SPEED;
             } else if (this.activePointers.size === 2) {
                 const pointers = Array.from(this.activePointers.values());
-const newDist = Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
+                const newDist = Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
                 if (!this.touchState.lastPinchDist) this.touchState.lastPinchDist = newDist;
-let zoomDelta = (this.touchState.lastPinchDist - newDist) * this.PINCH_ZOOM_MULT * 0.001;
+                let zoomDelta = (this.touchState.lastPinchDist - newDist) * this.PINCH_ZOOM_MULT * 0.001;
                 if (this.controls.invertZoom) zoomDelta *= -1;
                 this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomDelta);
-this.touchState.lastPinchDist = newDist;
+                this.touchState.lastPinchDist = newDist;
             }
             this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-} else {
+
+        } else {
             const deltaX = e.clientX - this.mouseState.lastX;
-const deltaY = e.clientY - this.mouseState.lastY;
+            const deltaY = e.clientY - this.mouseState.lastY;
             
             if (this.mouseState.isPanning) {
                 const pan = new THREE.Vector3(-deltaX * this.PAN_SPEED, deltaY * this.PAN_SPEED, 0);
-pan.applyQuaternion(this.cam.quaternion);
+                pan.applyQuaternion(this.cam.quaternion);
                 this.cam.position.add(pan);
             }
             if (this.mouseState.isModifying) {
                 const dist = Math.hypot(e.clientX - this.mouseState.downX, e.clientY - this.mouseState.downY);
-if (dist > this.DRAG_THRESHOLD) {
+                if (dist > this.DRAG_THRESHOLD) {
                     this.mouseState.isDragging = true;
-let coords = this.calculateRayTarget(e.clientX, e.clientY);
+                    let coords = this.calculateRayTarget(e.clientX, e.clientY);
                     if (coords) {
                         if (this.mouseState.dragFixedLayerCoord !== null) {
                             coords[this.currentDrawingAxis] = this.mouseState.dragFixedLayerCoord;
-}
+                        }
                         if (this.mouseState.lastActionCoords && (coords.x !== this.mouseState.lastActionCoords.x || coords.y !== this.mouseState.lastActionCoords.y || coords.z !== this.mouseState.lastActionCoords.z)) {
                             this.drawVoxelLine(this.mouseState.lastActionCoords, coords);
-this.mouseState.lastActionCoords = coords;
+                            this.mouseState.lastActionCoords = coords;
                         }
                     }
                 }
             }
             this.mouseState.lastX = e.clientX;
-this.mouseState.lastY = e.clientY;
+            this.mouseState.lastY = e.clientY;
         }
         
         if (!this.mouseState.isModifying && !this.mouseState.isPanning && !this.isPointerDown && document.pointerLockElement !== this.cvs) {
              const coords = this.calculateRayTarget(e.clientX, e.clientY);
-this.updatePreviewVoxel(coords);
+             this.updatePreviewVoxel(coords);
         } else {
             this.previewVoxel.visible = false;
-}
+        }
         this.euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.euler.x));
         this.cam.quaternion.setFromEuler(this.euler);
-},
+    },
     
     onPointerUp: function(e) {
         e.preventDefault();
-if (this.mouseState.isModifying && this.currentStroke && this.currentStroke.size > 0) {
+
+        if (this.mouseState.isModifying && this.currentStroke && this.currentStroke.size > 0) {
             this.addHistoryStep(this.currentStroke);
-}
+        }
         this.currentStroke = null;
-if (this.isMobile) {
+
+        if (this.isMobile) {
             if (this.isPointerDown && this.touchState.isTapCandidate) {
                 const coords = this.calculateRayTarget(this.mouseState.downX, this.mouseState.downY);
-if (coords && this.currentMode !== 'SELECT') this.modifyVoxel(coords.x, coords.y, coords.z);
+                if (coords && this.currentMode !== 'SELECT') this.modifyVoxel(coords.x, coords.y, coords.z);
             }
             this.activePointers.delete(e.pointerId);
-if (this.activePointers.size === 0) {
+            if (this.activePointers.size === 0) {
                 this.isPointerDown = false;
-this.touchState.isTapCandidate = false;
+                this.touchState.isTapCandidate = false;
                 this.touchState.lastPinchDist = null;
             }
         } else {
              if (e.button === 2 && document.pointerLockElement === this.cvs) {
                  document.exitPointerLock();
-}
+             }
             this.mouseState.isModifying = false;
             this.mouseState.isPanning = false;
-this.mouseState.isRotating = false;
+            this.mouseState.isRotating = false;
             this.mouseState.isDragging = false;
             this.mouseState.lastActionCoords = null;
             this.mouseState.dragFixedLayerCoord = null;
-}
+        }
     },
 
     onPointerLockChange: function() {
         if (document.pointerLockElement === this.cvs) {
             this.mouseState.isRotating = true;
-this.previewVoxel.visible = false;
+            this.previewVoxel.visible = false;
         } else {
             this.mouseState.isRotating = false;
-}
+        }
     },
 
     onMouseWheel: function(e) {
         e.preventDefault();
-if (e.altKey) {
+        if (e.altKey) {
             const direction = -Math.sign(e.deltaY);
             this.moveDrawingLevel(direction);
             return;
-}
+        }
 
         if (document.pointerLockElement === this.cvs) {
-            const speedChange = e.deltaY > 0 ?
--0.01 : 0.01;
+            const speedChange = e.deltaY > 0 ? -0.01 : 0.01;
             const newSpeed = this.flySpeed + speedChange;
             this.setFlySpeed(newSpeed);
-} else {
+        } else {
             let zoomAmount = e.deltaY * 0.001 * this.PINCH_ZOOM_MULT;
-if (this.controls.invertZoom) zoomAmount *= -1;
+            if (this.controls.invertZoom) zoomAmount *= -1;
             this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomAmount);
         }
     },
@@ -1003,49 +900,47 @@ if (this.controls.invertZoom) zoomAmount *= -1;
     onKeyDown: function(e) {
         if (e.code === 'Space') {
             e.preventDefault();
-if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
                 this.cycleMode();
-}
+            }
             return;
-}
+        }
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-this.keyboard[e.key.toLowerCase()] = true;
+        this.keyboard[e.key.toLowerCase()] = true;
     },
     
-    onKeyUp: function(e) { this.keyboard[e.key.toLowerCase()] = false;
-},
+    onKeyUp: function(e) { this.keyboard[e.key.toLowerCase()] = false; },
     
     handleResize: function() {
-        // this.isMobile is now set in applyUIMode
-this.ren.setSize(this.containerDiv.clientWidth, this.containerDiv.clientHeight);
+        this.isMobile = window.matchMedia('(max-width: 767px)').matches;
+        this.ren.setSize(this.containerDiv.clientWidth, this.containerDiv.clientHeight);
         this.cam.aspect = this.containerDiv.clientWidth / this.containerDiv.clientHeight;
         this.cam.updateProjectionMatrix();
         this.ren.setPixelRatio(this.isMobile ? 1.5 : window.devicePixelRatio);
-        this.applyUIMode(); // Patched
-},
+    },
 
     key: (x, y, z) => (x | (y << 10) | (z << 20)) >>> 0,
     parseKey: (k) => [k & 1023, (k >> 10) & 1023, (k >> 20) & 1023],
 
     setGridSize: function(newSize) {
         let minSize = 5;
-if (this.voxels.size > 0) {
+        if (this.voxels.size > 0) {
             let maxX = 0, maxY = 0, maxZ = 0;
-this.voxels.forEach((v,k) => {
+            this.voxels.forEach((v,k) => {
                 const [x,y,z] = this.parseKey(k);
                 if (x > maxX) maxX = x;
                 if (y > maxY) maxY = y;
                 if (z > maxZ) maxZ = z;
             });
-minSize = Math.max(maxX, maxY, maxZ) + 1;
+            minSize = Math.max(maxX, maxY, maxZ) + 1;
         }
         
         const slider = document.getElementById('grid-size-slider');
-slider.min = minSize;
+        slider.min = minSize;
         
         if (newSize < minSize) {
             this.showToast('Error', `Grid cannot be smaller than the current model (${minSize}³).`, 'error');
-slider.value = minSize;
+            slider.value = minSize;
             return;
         }
 
@@ -1053,247 +948,243 @@ slider.value = minSize;
         this.updateAllControlInputs();
         this.rebuildHelpers(); 
         this.resetCamera();
-},
+    },
     
     setColor: function(newColor) {
         this.currentColor = newColor;
-localStorage.setItem('voxelEditorColor', this.currentColor);
+        localStorage.setItem('voxelEditorColor', this.currentColor);
         this.updateAllControlInputs();
         this.previewVoxel.material.color.set(this.currentColor);
     },
 
     setFlySpeed: function(newSpeed) {
         const minSpeed = 0.01;
-const maxSpeed = 1.0;
+        const maxSpeed = 1.0;
         this.flySpeed = Math.max(minSpeed, Math.min(maxSpeed, newSpeed));
         document.getElementById('fly-speed-display').textContent = this.flySpeed.toFixed(2);
         document.getElementById('fly-speed-slider').value = this.flySpeed;
         localStorage.setItem('voxelEditorFlySpeed', this.flySpeed);
-},
+    },
     
     setControl: function(controlName, value) {
         if (this.controls.hasOwnProperty(controlName)) {
             this.controls[controlName] = value;
-localStorage.setItem(controlName, value);
+            localStorage.setItem(controlName, value);
             this.updateAllControlInputs();
             this.showToast('Setting Changed', `${controlName.replace('invert', 'Invert ')} is now ${value ? 'On' : 'Off'}`, 'info', 1500);
-}
+        }
     },
 
     cycleMode: function() {
         const modeKeys = Object.keys(this.Modes);
-const currentIndex = modeKeys.indexOf(this.currentMode);
+        const currentIndex = modeKeys.indexOf(this.currentMode);
         this.currentMode = modeKeys[(currentIndex + 1) % modeKeys.length];
         this.updateModeUI();
-},
+    },
 
     modifyVoxel: function(x, y, z) {
         x = Math.max(0, Math.min(this.GRID - 1, x));
-y = Math.max(0, Math.min(this.GRID - 1, y));
+        y = Math.max(0, Math.min(this.GRID - 1, y));
         z = Math.max(0, Math.min(this.GRID - 1, z));
 
         const k = this.key(x, y, z);
-const existingVoxel = this.voxels.get(k);
+        const existingVoxel = this.voxels.get(k);
         const oldColor = existingVoxel ? existingVoxel.color : null;
-switch (this.currentMode) {
+
+        switch (this.currentMode) {
             case 'ADD':
                 if (!existingVoxel) {
                     const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: this.currentColor }));
-voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
+                    voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
                     voxelMesh.castShadow = true;
-voxelMesh.receiveShadow = true;
+                    voxelMesh.receiveShadow = true;
                     this.scene.add(voxelMesh);
                     this.voxels.set(k, { color: this.currentColor, mesh: voxelMesh });
-if (this.currentStroke) this.currentStroke.set(k, { before: null, after: { color: this.currentColor } });
-}
+                    if (this.currentStroke) this.currentStroke.set(k, { before: null, after: { color: this.currentColor } });
+                }
                 break;
-case 'DELETE':
+            case 'DELETE':
                 if (existingVoxel) {
                     this.scene.remove(existingVoxel.mesh);
-existingVoxel.mesh.geometry.dispose();
+                    existingVoxel.mesh.geometry.dispose();
                     existingVoxel.mesh.material.dispose();
                     this.voxels.delete(k);
                     if (this.currentStroke) this.currentStroke.set(k, { before: { color: oldColor }, after: null });
-}
+                }
                 break;
-case 'DRAW':
+            case 'DRAW':
                  if (existingVoxel && oldColor !== this.currentColor) {
                     existingVoxel.mesh.material.color.set(this.currentColor);
-this.voxels.get(k).color = this.currentColor;
+                    this.voxels.get(k).color = this.currentColor;
                     if (this.currentStroke) this.currentStroke.set(k, { before: { color: oldColor }, after: { color: this.currentColor } });
-}
+                }
                 break;
-}
+        }
     },
     
     drawVoxelLine: function(start, end) {
         let x0 = start.x, y0 = start.y, z0 = start.z;
-let x1 = end.x, y1 = end.y, z1 = end.z;
-const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-const dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-const dz = Math.abs(z1 - z0), sz = z0 < z1 ? 1 : -1;
-let dm = Math.max(dx, dy, dz), i = dm;
+        let x1 = end.x, y1 = end.y, z1 = end.z;
+        const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        const dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        const dz = Math.abs(z1 - z0), sz = z0 < z1 ? 1 : -1;
+        let dm = Math.max(dx, dy, dz), i = dm;
         x1 = y1 = z1 = dm / 2;
-while(i-- >= 0) {
+        while(i-- >= 0) {
             this.modifyVoxel(x0, y0, z0);
-x1 -= dx; if (x1 < 0) { x1 += dm; x0 += sx;
-}
-            y1 -= dy;
-if (y1 < 0) { y1 += dm; y0 += sy;
-}
-            z1 -= dz;
-if (z1 < 0) { z1 += dm; z0 += sz;
-}
+            x1 -= dx; if (x1 < 0) { x1 += dm; x0 += sx; }
+            y1 -= dy; if (y1 < 0) { y1 += dm; y0 += sy; }
+            z1 -= dz; if (z1 < 0) { z1 += dm; z0 += sz; }
         }
     },
 
     calculateRayTarget: function(clientX, clientY) {
         const rect = this.cvs.getBoundingClientRect();
-const mouse = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
-const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+        const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, this.cam);
 
         const meshes = Array.from(this.voxels.values()).map(v => v.mesh);
         const intersects = raycaster.intersectObjects(meshes);
-if (intersects.length > 0) {
+
+        if (intersects.length > 0) {
             const hit = intersects[0];
-const pos = hit.point.clone();
+            const pos = hit.point.clone();
             
             if (this.currentMode === 'ADD') { 
-                pos.add(hit.face.normal.multiplyScalar(0.5));
-} else { 
-                pos.sub(hit.face.normal.multiplyScalar(0.5));
-}
+                pos.add(hit.face.normal.multiplyScalar(0.5)); 
+            } else { 
+                pos.sub(hit.face.normal.multiplyScalar(0.5)); 
+            }
 
             return { x: Math.floor(pos.x / this.VS), y: Math.floor(pos.y / this.VS), z: Math.floor(pos.z / this.VS) };
-} else if (this.currentMode === 'ADD') {
+
+        } else if (this.currentMode === 'ADD') {
             let planeNormal = new THREE.Vector3();
-let planeConstant = 0;
+            let planeConstant = 0;
 
             if (this.currentDrawingAxis === 'y') {
                 planeNormal.set(0, 1, 0);
-planeConstant = -(this.activeDrawingLevel.y * this.VS);
+                planeConstant = -(this.activeDrawingLevel.y * this.VS);
             } else if (this.currentDrawingAxis === 'x') {
                 planeNormal.set(1, 0, 0);
-planeConstant = -(this.activeDrawingLevel.x * this.VS);
+                planeConstant = -(this.activeDrawingLevel.x * this.VS);
             } else { // 'z'
                 planeNormal.set(0, 0, 1);
-planeConstant = -(this.activeDrawingLevel.z * this.VS);
+                planeConstant = -(this.activeDrawingLevel.z * this.VS);
             }
 
             const drawingPlane = new THREE.Plane(planeNormal, planeConstant);
-const intersectionPoint = new THREE.Vector3();
+            const intersectionPoint = new THREE.Vector3();
 
             if (raycaster.ray.intersectPlane(drawingPlane, intersectionPoint)) {
                 let x = Math.floor(intersectionPoint.x / this.VS);
-let y = Math.floor(intersectionPoint.y / this.VS);
+                let y = Math.floor(intersectionPoint.y / this.VS);
                 let z = Math.floor(intersectionPoint.z / this.VS);
 
                 if (this.currentDrawingAxis === 'y') y = this.activeDrawingLevel.y;
-else if (this.currentDrawingAxis === 'x') x = this.activeDrawingLevel.x;
+                else if (this.currentDrawingAxis === 'x') x = this.activeDrawingLevel.x;
                 else if (this.currentDrawingAxis === 'z') z = this.activeDrawingLevel.z;
-return { x, y, z };
+                
+                return { x, y, z };
             }
         }
         return null;
-},
+    },
     
     updatePreviewVoxel: function(coords) {
         if (this.currentMode === 'SELECT') {
             this.previewVoxel.visible = false;
-return;
+            return;
         }
         if (coords && coords.x >= 0 && coords.x < this.GRID && coords.y >= 0 && coords.y < this.GRID && coords.z >= 0 && coords.z < this.GRID) {
             this.previewVoxel.position.set(coords.x * this.VS + 0.5, coords.y * this.VS + 0.5, coords.z * this.VS + 0.5);
-this.previewVoxel.material.opacity = this.currentMode === 'DELETE' ? 0.2 : 0.5;
+            this.previewVoxel.material.opacity = this.currentMode === 'DELETE' ? 0.2 : 0.5;
             this.previewVoxel.visible = true;
-} else {
+        } else {
             this.previewVoxel.visible = false;
-}
+        }
     },
 
     clearAllConfirmed: function() {
         const oldVoxels = new Map(this.voxels);
-if (oldVoxels.size > 0) {
+        if (oldVoxels.size > 0) {
             const changes = new Map();
-oldVoxels.forEach((voxel, key) => {
+            oldVoxels.forEach((voxel, key) => {
                 changes.set(key, { before: { color: voxel.color }, after: null });
             });
-this.addHistoryStep(changes);
+            this.addHistoryStep(changes);
         }
         this.voxels.forEach(v => {
             this.scene.remove(v.mesh);
             v.mesh.geometry.dispose();
             v.mesh.material.dispose();
         });
-this.voxels.clear();
+        this.voxels.clear();
         this.showToast('Project Cleared', '', 'info');
     },
 
     rebuildHelpers: function() {
         if (this.gridHelper) this.scene.remove(this.gridHelper);
-if (this.boxHelper) this.scene.remove(this.boxHelper);
+        if (this.boxHelper) this.scene.remove(this.boxHelper);
         const size = this.GRID * this.VS;
 
         this.gridHelper = new THREE.GridHelper(size, this.GRID);
-if (this.currentDrawingAxis === 'y') {
+        
+        if (this.currentDrawingAxis === 'y') {
             this.gridHelper.position.set(size / 2, this.activeDrawingLevel.y * this.VS, size / 2);
-this.gridHelper.rotation.set(0, 0, 0);
+            this.gridHelper.rotation.set(0, 0, 0);
         } else if (this.currentDrawingAxis === 'x') {
             this.gridHelper.position.set(this.activeDrawingLevel.x * this.VS, size / 2, size / 2);
-this.gridHelper.rotation.set(0, 0, Math.PI / 2);
+            this.gridHelper.rotation.set(0, 0, Math.PI / 2);
         } else { // 'z'
             this.gridHelper.position.set(size / 2, size / 2, this.activeDrawingLevel.z * this.VS);
-this.gridHelper.rotation.set(Math.PI / 2, 0, 0);
+            this.gridHelper.rotation.set(Math.PI / 2, 0, 0);
         }
         this.scene.add(this.gridHelper);
-const boxGeom = new THREE.BoxGeometry(size, size, size);
+
+        const boxGeom = new THREE.BoxGeometry(size, size, size);
         const edges = new THREE.EdgesGeometry(boxGeom);
-this.boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffff }));
+        this.boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffff }));
         this.boxHelper.position.set(size / 2, size / 2, size / 2);
         this.scene.add(this.boxHelper);
-},
+    },
 
     resetCamera: function() {
         const size = this.GRID * this.VS;
-this.cam.position.set(size, size * 1.2, size * 1.5);
+        this.cam.position.set(size, size * 1.2, size * 1.5);
         this.cam.lookAt(size / 2, size / 2, size / 2);
         if (this.euler) this.euler.setFromQuaternion(this.cam.quaternion, 'YXZ');
-},
+    },
     
     updateModeUI: function() {
         const modeInfo = this.Modes[this.currentMode];
-document.getElementById('current-mode').textContent = `Mode: ${modeInfo.name}`;
+        document.getElementById('current-mode').textContent = `Mode: ${modeInfo.name}`;
         if(this.isMobile) document.getElementById('mobile-mode-icon').className = modeInfo.icon;
     },
 
     updateLoginStateUI: function() {
         const isLoggedIn = !!this.user;
-document.getElementById('loginLogoutBtn').textContent = isLoggedIn ? 'Logout' : 'Login';
+        document.getElementById('loginLogoutBtn').textContent = isLoggedIn ? 'Logout' : 'Login';
         document.getElementById('uploadToHubBtn').classList.toggle('hidden', !isLoggedIn);
         document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
         
         let userDisplay = '';
-if (isLoggedIn && this.user) {
-            userDisplay += `<span>${this.user.name ||
-this.user.email}</span>`;
+        if (isLoggedIn && this.user) {
+            userDisplay += `<span>${this.user.name || this.user.email}</span>`;
             if (this.user.photoURL) {
                 userDisplay = `<img src="${this.user.photoURL}" alt="User" class="w-6 h-6 rounded-full">` + userDisplay;
-}
+            }
         }
         document.getElementById('userIdDisplay').innerHTML = userDisplay;
-        
-        // PATCH: Toggle mobile upload button visibility
-        const mobileUpload = document.getElementById('mobile-upload');
-        if (mobileUpload) mobileUpload.classList.toggle('hidden', !isLoggedIn);
-},
+    },
     
     showToast: function(title, message, type = 'info', duration = 2000) {
         const container = document.getElementById('toast-container');
-const toast = document.createElement('div');
+        const toast = document.createElement('div');
         const alertClass = type === 'success' ? 'alert-info' : `alert-${type}`;
         toast.className = `alert ${alertClass} shadow-lg`;
-toast.innerHTML = `<div><strong>${title}</strong><br><span>${message}</span></div>`;
+        toast.innerHTML = `<div><strong>${title}</strong><br><span>${message}</span></div>`;
         container.appendChild(toast);
         setTimeout(() => toast.remove(), duration);
     },
@@ -1302,35 +1193,35 @@ toast.innerHTML = `<div><strong>${title}</strong><br><span>${message}</span></di
         if (this.user) {
             try {
                 await this.request('/auth/logout', { method: 'POST' });
-this.user = null;
+                this.user = null;
                 this.token = null;
                 this.updateLoginStateUI();
                 this.showToast('Logged Out', '', 'info');
-} catch (e) {
+            } catch (e) {
                 this.showToast('Logout Error', e.message, 'error');
-}
+            }
         } else {
             document.getElementById('authModal').showModal();
-}
+        }
     },
     
     signInWithProvider: function(providerName) {
         window.location.href = `${this.BACKEND_URL}/auth/${providerName}?state=${encodeURIComponent(window.location.href)}`;
-},
+    },
 
     sendMagicLink: async function() {
         const email = document.getElementById('magicLinkEmail').value;
-const acceptsAgb = document.getElementById('agbCheckbox').checked;
+        const acceptsAgb = document.getElementById('agbCheckbox').checked;
         const receivesMarketingEmails = document.getElementById('newsletterCheckbox').checked;
 
         if (!email) {
             this.showToast('Error', 'Please enter your email.', 'error');
-return;
+            return;
         }
 
         if (!acceptsAgb) {
             this.showToast('Error', 'Bitte AGBs akzeptieren.', 'error');
-return;
+            return;
         }
 
         try {
@@ -1339,17 +1230,16 @@ return;
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     email, 
-
                     receivesMarketingEmails, 
                     acceptsAgb,
                     redirect: window.location.origin + window.location.pathname
                 })
             });
-document.getElementById('authModal').close();
+            document.getElementById('authModal').close();
             document.getElementById('magicLinkVerifyModal').showModal();
         } catch (e) {
             this.showToast('Error', e.message, 'error');
-}
+        }
     },
 
     saveJSON: function() {
@@ -1359,125 +1249,122 @@ document.getElementById('authModal').close();
             activeDrawingLevel: this.activeDrawingLevel,
             voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
                 const [x, y, z] = this.parseKey(k);
- 
-               return { x, y, z, color: v.color };
+                return { x, y, z, color: v.color };
             }),
             templateImageData: this.templateImageData
         };
-const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-a.href = url; a.download = 'voxel-project.json'; a.click();
+        a.href = url; a.download = 'voxel-project.json'; a.click();
         URL.revokeObjectURL(url);
         this.showToast('Project Saved', 'File downloaded as voxel-project.json', 'info');
-},
+    },
 
     loadJSON: function(event) {
-        const file = event.target.files[0];
-if (!file) return;
+        const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const data = JSON.parse(e.target.result);
-this.voxels.forEach(v => {
+                
+                this.voxels.forEach(v => {
                     this.scene.remove(v.mesh);
                     v.mesh.geometry.dispose();
                     v.mesh.material.dispose();
                 });
-this.voxels.clear();
+                this.voxels.clear();
 
                 this.GRID = data.gridSize || this.GRID_DEFAULT;
                 this.currentDrawingAxis = data.currentDrawingAxis || 'y';
-                this.activeDrawingLevel = data.activeDrawingLevel ||
-{ x: 0, y: 0, z: 0 };
+                this.activeDrawingLevel = data.activeDrawingLevel || { x: 0, y: 0, z: 0 };
                 
                 if (Array.isArray(data.voxels)) {
                     data.voxels.forEach(v => {
                         const k = this.key(v.x, v.y, v.z);
                         this.voxels.set(k, { color: v.color });
-           
-         });
-}
+                    });
+                }
 
                 if (data.templateImageData) {
                     this.loadImageFromData(data.templateImageData);
-} else {
+                } else {
                     this.removeImageTemplate();
-}
+                }
 
                 this.rebuildSceneFromVoxels();
                 this.rebuildHelpers(); 
                 this.updateAllControlInputs();
                 this.resetCamera();
-this.history = []; this.historyPointer = -1;
+                this.history = []; this.historyPointer = -1;
                 this.showToast('Project Loaded', 'Successfully loaded from file.', 'info');
-} catch (err) { this.showToast('Load Error', `Invalid project file. ${err.message}`, 'error'); }
+            } catch (err) { this.showToast('Load Error', `Invalid project file. ${err.message}`, 'error'); }
         };
-reader.readAsText(file);
+        reader.readAsText(file);
     },
     
     exportSTL: function(scaleUnit = 'mm', upAxis = 'Z') {
-        if (this.voxels.size === 0) { this.showToast('Export Error', 'Scene is empty.', 'warning');
-return; }
+        if (this.voxels.size === 0) { this.showToast('Export Error', 'Scene is empty.', 'warning'); return; }
         this.showToast('Exporting...', 'Generating STL file...', 'info');
         const exporter = new THREE.STLExporter();
-const geometries = [];
+        const geometries = [];
         const scale = scaleUnit === 'cm' ? 10 : 1;
-this.voxels.forEach((v,k) => {
+
+        this.voxels.forEach((v,k) => {
             const [x,y,z] = this.parseKey(k);
             const geom = new THREE.BoxGeometry(this.VS * scale, this.VS * scale, this.VS * scale);
             geom.translate(x * this.VS * scale + (0.5 * scale), y * this.VS * scale + (0.5 * scale), z * this.VS * scale + (0.5 * scale));
             geometries.push(geom);
         });
-const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+
+        const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
         
         if (upAxis === 'Z') {
             mergedGeometry.rotateX(-Math.PI / 2);
-}
+        }
 
         const mesh = new THREE.Mesh(mergedGeometry);
-const stlString = exporter.parse(mesh, { binary: false });
+        const stlString = exporter.parse(mesh, { binary: false });
         const blob = new Blob([stlString], { type: 'text/plain' });
-const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = 'voxel-model.stl'; a.click();
         URL.revokeObjectURL(url);
         mergedGeometry.dispose(); geometries.forEach(g => g.dispose());
-this.showToast('Export Complete', 'Downloaded voxel-model.stl', 'info');
+        this.showToast('Export Complete', 'Downloaded voxel-model.stl', 'info');
     },
 
     animate: function() {
         requestAnimationFrame(() => this.animate());
-if (document.pointerLockElement === this.cvs) {
-            const rotX = this.controls.invertLookX ?
-this.mouseState.mouseMovementX : -this.mouseState.mouseMovementX;
+
+        if (document.pointerLockElement === this.cvs) {
+            const rotX = this.controls.invertLookX ? this.mouseState.mouseMovementX : -this.mouseState.mouseMovementX;
             const rotY = this.controls.invertLookY ? this.mouseState.mouseMovementY : -this.mouseState.mouseMovementY;
             
             this.euler.y += rotX * this.ROTATE_SPEED;
-this.euler.x += rotY * this.ROTATE_SPEED;
+            this.euler.x += rotY * this.ROTATE_SPEED;
             this.euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.euler.x));
             this.cam.quaternion.setFromEuler(this.euler);
             this.mouseState.mouseMovementX = 0;
-this.mouseState.mouseMovementY = 0;
+            this.mouseState.mouseMovementY = 0;
 
             const forward = new THREE.Vector3();
             this.cam.getWorldDirection(forward);
             const right = new THREE.Vector3().crossVectors(forward, this.cam.up).normalize();
             
-            const strafeXSpeed = this.controls.invertStrafeX ?
--this.flySpeed : this.flySpeed;
+            const strafeXSpeed = this.controls.invertStrafeX ? -this.flySpeed : this.flySpeed;
             const strafeYSpeed = this.controls.invertStrafeY ? -this.flySpeed : this.flySpeed;
 
             if (this.keyboard['w']) this.cam.position.addScaledVector(forward, this.flySpeed);
             if (this.keyboard['s']) this.cam.position.addScaledVector(forward, -this.flySpeed);
-if (this.keyboard['a']) this.cam.position.addScaledVector(right, -strafeXSpeed);
+            if (this.keyboard['a']) this.cam.position.addScaledVector(right, -strafeXSpeed);
             if (this.keyboard['d']) this.cam.position.addScaledVector(right, strafeXSpeed);
             if (this.keyboard['e']) this.cam.position.y += strafeYSpeed;
             if (this.keyboard['q']) this.cam.position.y -= strafeYSpeed;
-}
+        }
 
         this.ren.render(this.scene, this.cam);
-},
+    },
 
     rebuildSceneFromVoxels: function() {
         this.scene.children.filter(c => c.isMesh && c !== this.previewVoxel && c !== this.templateImageMesh && c !== this.extrudeGizmoMesh).forEach(c => {
@@ -1485,143 +1372,135 @@ if (this.keyboard['a']) this.cam.position.addScaledVector(right, -strafeXSpeed);
             if(c.geometry) c.geometry.dispose();
             if(c.material) c.material.dispose();
         });
-this.voxels.forEach((voxelData, key) => {
+
+        this.voxels.forEach((voxelData, key) => {
             const [x, y, z] = this.parseKey(key);
             const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: voxelData.color }));
             voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
             voxelMesh.castShadow = true;
             voxelMesh.receiveShadow = true;
-  
-          this.scene.add(voxelMesh);
+            this.scene.add(voxelMesh);
             voxelData.mesh = voxelMesh;
         });
-},
+    },
 
     addHistoryStep: function(changes) {
         if (this.historyPointer < this.history.length - 1) {
             this.history.splice(this.historyPointer + 1);
-}
+        }
         this.history.push(changes);
         if (this.history.length > this.MAX_HISTORY_SIZE) {
             this.history.shift();
-}
+        }
         this.historyPointer = this.history.length - 1;
-},
+    },
 
     undo: function() {
         if (this.historyPointer < 0) return;
-const changes = this.history[this.historyPointer];
+        const changes = this.history[this.historyPointer];
         changes.forEach((change, key) => {
             const [x, y, z] = this.parseKey(key);
             if (change.before === null) { // Voxel was added, so we remove it
                 const existingVoxel = this.voxels.get(key);
                 if (existingVoxel) {
-               
-     this.scene.remove(existingVoxel.mesh);
+                    this.scene.remove(existingVoxel.mesh);
                     existingVoxel.mesh.geometry.dispose();
                     existingVoxel.mesh.material.dispose();
                     this.voxels.delete(key);
                 }
-            } else { // Voxel was deleted 
-or recolored, so we restore it
+            } else { // Voxel was deleted or recolored, so we restore it
                 const existingVoxel = this.voxels.get(key);
                 if(existingVoxel) { // It was recolored
                     existingVoxel.mesh.material.color.set(change.before.color);
                     existingVoxel.color = change.before.color;
-             
-   } else { // It was deleted
+                } else { // It was deleted
                      const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: change.before.color }));
-voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
+                    voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
                     voxelMesh.castShadow = true;
-voxelMesh.receiveShadow = true;
+                    voxelMesh.receiveShadow = true;
                     this.scene.add(voxelMesh);
                     this.voxels.set(key, { color: change.before.color, mesh: voxelMesh });
-}
+                }
             }
         });
-this.historyPointer--;
+        this.historyPointer--;
     },
 
     redo: function() {
         if (this.historyPointer >= this.history.length - 1) return;
-this.historyPointer++;
+        this.historyPointer++;
         const changes = this.history[this.historyPointer];
         changes.forEach((change, key) => {
              const [x, y, z] = this.parseKey(key);
             if (change.after === null) { // Voxel was deleted
                 const existingVoxel = this.voxels.get(key);
                 if (existingVoxel) {
-                 
-   this.scene.remove(existingVoxel.mesh);
+                    this.scene.remove(existingVoxel.mesh);
                     existingVoxel.mesh.geometry.dispose();
                     existingVoxel.mesh.material.dispose();
                     this.voxels.delete(key);
                 }
             } else { // Voxel was added or recolored
- 
-                const existingVoxel = this.voxels.get(key);
+                 const existingVoxel = this.voxels.get(key);
                  if (existingVoxel) { // It was recolored
                     existingVoxel.mesh.material.color.set(change.after.color);
                     existingVoxel.color = change.after.color;
-                
- } else { // It was added
+                 } else { // It was added
                     const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: change.after.color }));
-voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
+                    voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
                     voxelMesh.castShadow = true;
-voxelMesh.receiveShadow = true;
+                    voxelMesh.receiveShadow = true;
                     this.scene.add(voxelMesh);
                     this.voxels.set(key, { color: change.after.color, mesh: voxelMesh });
-}
+                 }
             }
         });
-},
+    },
     
     cycleDrawingAxis: function() {
         const axes = ['y', 'z', 'x'];
-const currentIndex = axes.indexOf(this.currentDrawingAxis);
+        const currentIndex = axes.indexOf(this.currentDrawingAxis);
         this.currentDrawingAxis = axes[(currentIndex + 1) % axes.length];
         this.updateAxisAndLevelUI();
         this.rebuildHelpers();
-        this.updateTemplateImagePosition();
-// Update image position on axis cycle
+        this.updateTemplateImagePosition(); // Update image position on axis cycle
         localStorage.setItem('currentDrawingAxis', this.currentDrawingAxis);
-},
+    },
 
     moveDrawingLevel: function(direction) {
         let level = this.activeDrawingLevel[this.currentDrawingAxis];
-level += direction;
+        level += direction;
         this.activeDrawingLevel[this.currentDrawingAxis] = Math.max(0, Math.min(this.GRID - 1, level));
         this.updateAxisAndLevelUI();
         this.rebuildHelpers();
-        this.updateTemplateImagePosition();
-// Update image position on level change
+        this.updateTemplateImagePosition(); // Update image position on level change
         localStorage.setItem('activeDrawingLevel', JSON.stringify(this.activeDrawingLevel));
-},
+    },
 
     updateAxisAndLevelUI: function() {
         const axisText = `Axis: ${this.currentDrawingAxis.toUpperCase()}`;
-document.getElementById('current-axis-display').textContent = axisText;
+        document.getElementById('current-axis-display').textContent = axisText;
         const level = this.activeDrawingLevel[this.currentDrawingAxis];
         document.getElementById('current-level-display').textContent = `Lvl: ${level}`;
         document.getElementById('mobile-cycle-axis').textContent = this.currentDrawingAxis.toUpperCase();
-},
+    },
 
     resetToDefaults: function() {
         this.controls.invertLookX = false;
         this.controls.invertLookY = false;
-this.controls.invertZoom = false;
+        this.controls.invertZoom = false;
         this.controls.invertStrafeX = false;
         this.controls.invertStrafeY = false;
         
         this.GRID = this.GRID_DEFAULT;
         this.currentColor = '#ffffff';
         this.flySpeed = 0.1;
-this.currentDrawingAxis = 'y';
+        this.currentDrawingAxis = 'y';
         this.activeDrawingLevel = { x: 0, y: 0, z: 0 };
 
         Object.keys(this.controls).forEach(key => localStorage.setItem(key, this.controls[key]));
         localStorage.setItem('voxelEditorGridSize', this.GRID);
-localStorage.setItem('voxelEditorColor', this.currentColor);
+        localStorage.setItem('voxelEditorColor', this.currentColor);
         localStorage.setItem('voxelEditorFlySpeed', this.flySpeed);
         localStorage.setItem('currentDrawingAxis', this.currentDrawingAxis);
         localStorage.setItem('activeDrawingLevel', JSON.stringify(this.activeDrawingLevel));
@@ -1631,13 +1510,13 @@ localStorage.setItem('voxelEditorColor', this.currentColor);
         this.clearAllConfirmed();
         this.rebuildHelpers();
         this.resetCamera();
-this.showToast('Settings Reset', 'All settings have been reset to their default values.', 'info');
-},
+        this.showToast('Settings Reset', 'All settings have been reset to their default values.', 'info');
+    },
 
     updateAllControlInputs: function() {
         document.getElementById('grid-size-slider').value = this.GRID;
         document.getElementById('grid-size-display').textContent = `${this.GRID}³`;
-document.getElementById('color-picker-input').value = this.currentColor;
+        document.getElementById('color-picker-input').value = this.currentColor;
         if (this.isMobile) document.getElementById('mobile-color-picker').value = this.currentColor;
 
         this.setFlySpeed(this.flySpeed);
@@ -1645,102 +1524,99 @@ document.getElementById('color-picker-input').value = this.currentColor;
         document.getElementById('invertLookX').checked = this.controls.invertLookX;
         document.getElementById('invertLookY').checked = this.controls.invertLookY;
         document.getElementById('invertZoom').checked = this.controls.invertZoom;
-document.getElementById('invertStrafeX').checked = this.controls.invertStrafeX;
+        document.getElementById('invertStrafeX').checked = this.controls.invertStrafeX;
         document.getElementById('invertStrafeY').checked = this.controls.invertStrafeY;
 
         if(this.isMobile) {
             document.getElementById('mobileInvertLookX').checked = this.controls.invertLookX;
-document.getElementById('mobileInvertLookY').checked = this.controls.invertLookY;
+            document.getElementById('mobileInvertLookY').checked = this.controls.invertLookY;
             document.getElementById('mobileInvertZoom').checked = this.controls.invertZoom;
         }
         
         this.updateAxisAndLevelUI();
-},
+    },
     
     loadImageTemplate: function() {
         document.getElementById('imageFileInput').click();
-},
+    },
     handleImageFileSelect: function(event) {
         const file = event.target.files[0];
-if (!file) return;
+        if (!file) return;
 
         const reader = new FileReader();
         reader.onload = (e) => {
             this.templateImageData = e.target.result;
-this.loadImageFromData(this.templateImageData);
+            this.loadImageFromData(this.templateImageData);
         };
         reader.readAsDataURL(file);
         event.target.value = ''; // Reset input to allow reloading the same file
     },
     loadImageFromData: function(imageData) {
-        this.removeImageTemplate();
-// Clear any existing image first
+        this.removeImageTemplate(); // Clear any existing image first
 
         const loader = new THREE.TextureLoader();
-loader.load(imageData, (texture) => {
+        loader.load(imageData, (texture) => {
             const img = texture.image;
             const aspect = img.width / img.height;
             const size = this.GRID * this.VS;
             
             let planeWidth, planeHeight;
             if (aspect >= 1) {
-      
-          planeWidth = size;
+                planeWidth = size;
                 planeHeight = size / aspect;
             } else {
                 planeHeight = size;
                 planeWidth = size * aspect;
             }
 
-    
-        const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+            const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
             const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthTest: false });
             
             this.templateImageMesh = new THREE.Mesh(geometry, material);
             this.updateTemplateImagePosition();
             this.scene.add(this.templateImageMesh);
 
-          
-  // Update UI
+            // Update UI
             document.getElementById('removeImageBtn').classList.remove('hidden');
             document.getElementById('removeImageBtnMobile').classList.remove('hidden');
-document.getElementById('loadImageBtn').classList.add('hidden');
+            document.getElementById('loadImageBtn').classList.add('hidden');
             document.getElementById('loadImageBtnMobile').classList.add('hidden');
         });
     },
     removeImageTemplate: function() {
         if (this.templateImageMesh) {
             this.scene.remove(this.templateImageMesh);
-this.templateImageMesh.geometry.dispose();
+            this.templateImageMesh.geometry.dispose();
             this.templateImageMesh.material.map.dispose();
             this.templateImageMesh.material.dispose();
             this.templateImageMesh = null;
         }
         this.templateImageData = null;
-// Update UI
+
+        // Update UI
         document.getElementById('removeImageBtn').classList.add('hidden');
         document.getElementById('removeImageBtnMobile').classList.add('hidden');
         document.getElementById('loadImageBtn').classList.remove('hidden');
         document.getElementById('loadImageBtnMobile').classList.remove('hidden');
-},
+    },
     updateTemplateImagePosition: function() {
         if (!this.templateImageMesh) return;
-const size = this.GRID * this.VS;
-        const offset = 0.01;
-// Slight offset to prevent z-fighting with the grid helper
+        
+        const size = this.GRID * this.VS;
+        const offset = 0.01; // Slight offset to prevent z-fighting with the grid helper
 
         switch (this.currentDrawingAxis) {
             case 'y':
                 this.templateImageMesh.position.set(size / 2, this.activeDrawingLevel.y * this.VS + offset, size / 2);
-this.templateImageMesh.rotation.set(-Math.PI / 2, 0, 0);
+                this.templateImageMesh.rotation.set(-Math.PI / 2, 0, 0);
                 break;
             case 'x':
                 this.templateImageMesh.position.set(this.activeDrawingLevel.x * this.VS + offset, size / 2, size / 2);
-this.templateImageMesh.rotation.set(0, -Math.PI / 2, 0);
+                this.templateImageMesh.rotation.set(0, -Math.PI / 2, 0);
                 break;
             case 'z':
                 this.templateImageMesh.position.set(size / 2, size / 2, this.activeDrawingLevel.z * this.VS + offset);
-this.templateImageMesh.rotation.set(0, 0, 0);
+                this.templateImageMesh.rotation.set(0, 0, 0);
                 break;
         }
     }
@@ -1749,7 +1625,5 @@ this.templateImageMesh.rotation.set(0, 0, 0);
 VoxelApp.init();
 </script>
 
-
-
-
-</body></html>
+</body>
+</html>
