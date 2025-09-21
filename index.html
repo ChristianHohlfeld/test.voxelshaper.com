@@ -218,36 +218,52 @@
 
 <!-- Mobile Controls -->
 <div id="mobile-ui-container">
-    <div class="mobile-bottom-bar flex items-center justify-between p-2 bg-base-200 border-t border-base-content/20">
+    <div class="mobile-bottom-bar flex items-center justify-around p-2 bg-base-200 border-t border-base-content/20">
+        
         <div class="dropdown dropdown-top">
-            <label tabindex="0" class="btn btn-ghost rounded-full" id="mobile-file-menu" aria-label="Open File Menu">📂</label>
+            <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="File Menu"><i class="fas fa-folder-open"></i></label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
                 <li><a id="saveBtnMobile">Save</a></li>
                 <li><a id="loadBtnMobile">Load</a></li>
                 <li><a id="exportBtnMobile">Export</a></li>
-                <li><a id="goToHubBtnMobile">Go to Hub</a></li>
                 <div class="divider my-1"></div>
                 <li><a id="loadImageBtnMobile">Load Reference Image</a></li>
                 <li><a id="removeImageBtnMobile" class="hidden">Remove Reference Image</a></li>
+                 <div class="divider my-1"></div>
+                <li><a id="goToHubBtnMobile">Go to Hub</a></li>
+                 <div class="divider my-1"></div>
+                 <li id="mobile-upload-li" class="hidden"><a><button id="mobile-upload" class="w-full text-left">Upload to Hub</button></a></li>
+                 <li id="mobile-login-li"><a id="mobile-login-logout">Login</a></li>
+                 <li id="mobile-logout-li" class="hidden"><a><button class="w-full text-left text-error">Logout</button></a></li>
+            </ul>
+        </div>
+
+        <div class="dropdown dropdown-top">
+            <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="Edit Menu"><i class="fas fa-edit"></i></label>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+                <li><a id="mobile-undo"><i class="fas fa-undo mr-2"></i>Undo</a></li>
+                <li><a id="mobile-redo"><i class="fas fa-redo mr-2"></i>Redo</a></li>
                 <div class="divider my-1"></div>
                 <li><a id="clearBtnMobile" class="text-error">Clear Scene</a></li>
             </ul>
         </div>
-        <button class="btn btn-ghost rounded-full" id="mobile-login-logout" aria-label="Login or Logout">🔑</button>
-        <button class="btn btn-warning rounded-full hidden" id="mobile-upload" aria-label="Upload to Hub">⬆️</button>
+        
+        <div class="dropdown dropdown-top">
+            <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="Tools Menu"><i class="fas fa-tools"></i></label>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+                <li><a id="mobile-cycle-axis">Cycle Axis</a></li>
+                <li><a id="mobile-level-up">Level Up</a></li>
+                <li><a id="mobile-level-down">Level Down</a></li>
+                <div class="divider my-1"></div>
+                <li><a id="mobile-reset-camera">Reset Camera</a></li>
+                <li><a id="mobile-settings">Settings</a></li>
+            </ul>
+        </div>
+
         <input type="color" id="mobile-color-picker" value="#FFFFFF" class="rounded-full p-1 border-2 border-base-content/50 bg-clip-content">
         <button class="btn btn-ghost rounded-full" id="mobile-mode-toggle" aria-label="Toggle Mode">
             <i id="mobile-mode-icon" class="fas fa-plus"></i>
         </button>
-    </div>
-    <div class="flex flex-col gap-2 fixed top-1/2 right-2 -translate-y-1/2 z-10">
-        <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-cycle-axis" aria-label="Cycle Axis">Y</button>
-        <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-level-up" aria-label="Level Up">▲</button>
-        <button class="w-14 h-14 text-xl rounded-full btn btn-ghost" id="mobile-level-down" aria-label="Level Down">▼</button>
-        <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-undo" aria-label="Undo">↩️</button>
-        <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-redo" aria-label="Redo">↪️</button>
-        <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-reset-camera" aria-label="Reset Camera">📷</button>
-        <button class="w-14 h-14 text-2xl rounded-full btn btn-ghost" id="mobile-settings" aria-label="Settings">⚙️</button>
     </div>
 </div>
 
@@ -380,6 +396,7 @@ const VoxelApp = {
     currentStroke: null,
     templateImageMesh: null,
     templateImageData: null,
+    templateImagePinnedY: null,
     selectedVoxels: new Set(),
     selectionMeshes: new Map(),
     extrudeGizmoMesh: null,
@@ -828,17 +845,7 @@ const VoxelApp = {
 
     onPointerDown: function(e) {
         e.preventDefault();
-        if (!this.isMobile) {
-            const desktopControlsDropdown = document.querySelector('#controls .dropdown > label');
-            if (desktopControlsDropdown) {
-                desktopControlsDropdown.blur();
-            }
-        } else {
-            const mobileControlsModal = document.getElementById('mobileControlsModal');
-            if (mobileControlsModal.open) {
-                mobileControlsModal.close();
-            }
-        }
+        document.querySelectorAll('#controls .dropdown > label').forEach(label => label.blur());
         this.currentStroke = new Map();
         if (this.isMobile) {
             this.isPointerDown = true;
@@ -1723,6 +1730,7 @@ const VoxelApp = {
                 depthWrite: false
             });
             this.templateImageMesh = new THREE.Mesh(geometry, material);
+            this.templateImagePinnedY = (this.activeDrawingLevel?.y ?? 0);
             this.templateImageMesh.renderOrder = -1;
             this.updateTemplateImagePosition();
             this.scene.add(this.templateImageMesh);
@@ -1748,11 +1756,11 @@ const VoxelApp = {
     },
     updateTemplateImagePosition: function() {
         if (!this.templateImageMesh) return;
-        const size = this.GRID * this.VS;
-        const levelZ = this.activeDrawingLevel.z;
-        const offset = -0.01;
-        this.templateImageMesh.position.set(size / 2, size / 2, levelZ * this.VS + offset);
-        this.templateImageMesh.rotation.set(0, 0, 0);
+        const sizeAll = this.GRID * this.VS;
+        const offsetY = -0.01;
+        const y = (this.templateImagePinnedY ?? 0) * this.VS + offsetY;
+        this.templateImageMesh.position.set(sizeAll / 2, y, sizeAll / 2);
+        this.templateImageMesh.rotation.set(-Math.PI / 2, 0, 0);
     },
     
     autosaveScene: function() {
@@ -1798,3 +1806,4 @@ document.addEventListener('DOMContentLoaded', () => VoxelApp.init());
 
 </body>
 </html>
+
