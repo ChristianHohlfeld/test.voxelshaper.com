@@ -7,6 +7,7 @@
     <meta property="og:url" content="https://test.voxelshaper.com/">
     <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no, email=no, address=no">
     <title>[TEST] VoxelShaper – Simplified Voxel Editor</title>
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css">
@@ -29,11 +30,10 @@
             display: flex;
             flex-direction: column;
         }
-        /* PATCH: Canvas container now dynamically fills available space */
         #container {
-            flex-grow: 1; /* Fills remaining vertical space */
+            flex-grow: 1;
             position: relative;
-            overflow: hidden; /* Prevents potential scrollbars */
+            overflow: hidden;
         }
         #voxelCanvas {
             position: absolute;
@@ -46,22 +46,21 @@
         #voxelCanvas:focus { 
             outline: none; 
         }
-        /* PATCH: Fully responsive desktop toolbar without scrollbars or overlap */
         #controls {
             flex-wrap: nowrap;
         }
         .controls-group {
             display: flex;
             align-items: center;
-            gap: 0.5rem; /* Equivalent to gap-2 */
+            gap: 0.5rem;
             flex-shrink: 1;
-            min-width: 0; /* Allows shrinking below content size */
+            min-width: 0;
         }
         .controls-group > * {
-            flex-shrink: 0; /* Prevent individual items from shrinking too early */
+            flex-shrink: 0;
         }
         .controls-group .range {
-            flex-shrink: 1; /* Allow range sliders to shrink */
+            flex-shrink: 1;
         }
         input[type="color"] {
             -webkit-appearance: none;
@@ -138,7 +137,6 @@
 
 <!-- Main Controls (Desktop) -->
 <div id="controls" class="hidden md:flex items-center justify-between gap-4 p-2 bg-base-200 border-b border-base-content/20">
-    <!-- Left Group -->
     <div class="controls-group">
         <div class="dropdown">
             <label tabindex="0" class="btn btn-sm btn-ghost">File</label>
@@ -168,7 +166,8 @@
         <span id="current-mode" class="font-bold text-success text-center text-sm whitespace-nowrap">Mode: Add</span>
     </div>
 
-    <!-- Right Group -->
+    <div class="flex-grow"></div>
+
     <div class="controls-group justify-end">
         <label for="fly-speed-slider" class="text-sm whitespace-nowrap">Fly Speed:</label>
         <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
@@ -436,6 +435,12 @@ const VoxelApp = {
         this.updateOrientationOverlay();
         this.setupThree();
         this.setupEventListeners();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('modelId') && !window.location.hash.includes('#oauth_success')) {
+            this.loadAutosavedScene(); 
+        }
+
         const oneTimeLock = () => {
             this.tryLockOrientation();
             window.removeEventListener('pointerdown', oneTimeLock);
@@ -666,7 +671,10 @@ const VoxelApp = {
         document.getElementById('saveBtnMobile').addEventListener('click', () => this.saveJSON());
         document.getElementById('loadBtnMobile').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
-        document.getElementById('goToHubBtnMobile').addEventListener('click', () => window.open(this.HUB_URL, '_blank'));
+        document.getElementById('goToHubBtnMobile').addEventListener('click', () => {
+            const w = window.open(this.HUB_URL, '_blank', 'noopener,noreferrer');
+            if (w) w.opener = null;
+        });
         document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
         document.getElementById('clearBtnMobile').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
@@ -681,7 +689,10 @@ const VoxelApp = {
             }
         });
         document.getElementById('loginLogoutBtn').addEventListener('click', this.loginLogout.bind(this));
-        document.getElementById('goToHubBtn').addEventListener('click', () => window.open(this.HUB_URL, '_blank'));
+        document.getElementById('goToHubBtn').addEventListener('click', () => {
+            const w = window.open(this.HUB_URL, '_blank', 'noopener,noreferrer');
+            if (w) w.opener = null;
+        });
         document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
         document.getElementById('uploadConfirmBtn').addEventListener('click', (e) => {
             e.preventDefault();
@@ -769,32 +780,37 @@ const VoxelApp = {
         this.showToast('Loading Project...', `Fetching model ${modelId}`, 'info');
         try {
             const data = await this.request(`/api/models/${modelId}`);
-            this.voxels.forEach(v => {
-                this.scene.remove(v.mesh);
-                v.mesh.geometry.dispose();
-                v.mesh.material.dispose();
-            });
-            this.voxels.clear();
+            
+            this.clearAllConfirmed(); 
+
             const projectData = data.project_json;
             if (!projectData || !projectData.voxels || typeof projectData.voxels !== 'object') {
                 throw new Error("Invalid or empty project data received from API.");
             }
-            this.GRID = projectData.gridSize || this.GRID_DEFAULT;
+            
+            let maxX = 0, maxY = 0, maxZ = 0;
             for (const key in projectData.voxels) {
                 if (Object.prototype.hasOwnProperty.call(projectData.voxels, key)) {
                     const coords = key.split(',').map(Number);
                     if (coords.length === 3) {
                         const [x, y, z] = coords;
+                        if (x > maxX) maxX = x;
+                        if (y > maxY) maxY = y;
+                        if (z > maxZ) maxZ = z;
                         const k = this.key(x, y, z);
                         this.voxels.set(k, { color: projectData.voxels[key] });
                     }
                 }
             }
+
+            const requiredGridSize = Math.max(maxX, maxY, maxZ) + 1;
+            const finalGridSize = Math.max(requiredGridSize, projectData.gridSize || this.GRID_DEFAULT);
+            this.setGridSize(finalGridSize);
+            
             this.rebuildSceneFromVoxels();
-            this.rebuildHelpers();
             this.resetCamera();
-            this.updateAllControlInputs();
             this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
+
         } catch (error) {
             console.error("Failed to load project from Hub:", error);
             this.showToast('Load Error', error.message, 'error');
@@ -1204,6 +1220,7 @@ const VoxelApp = {
             v.mesh.material.dispose();
         });
         this.voxels.clear();
+        localStorage.removeItem('voxelshaper_autosave');
         this.showToast('Project Cleared', '', 'info');
     },
 
@@ -1249,14 +1266,21 @@ const VoxelApp = {
         document.getElementById('uploadToHubBtn').classList.toggle('hidden', !isLoggedIn);
         document.getElementById('mobile-upload').classList.toggle('hidden', !isLoggedIn);
         document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
-        let userDisplay = '';
+        
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        userIdDisplay.innerHTML = '';
         if (isLoggedIn && this.user) {
-            userDisplay += `<span>${this.user.name || this.user.email}</span>`;
             if (this.user.photoURL) {
-                userDisplay = `<img src="${this.user.photoURL}" alt="User" class="w-6 h-6 rounded-full">` + userDisplay;
+                const img = document.createElement('img');
+                img.src = this.user.photoURL;
+                img.alt = "User";
+                img.className = "w-6 h-6 rounded-full";
+                userIdDisplay.appendChild(img);
             }
+            const span = document.createElement('span');
+            span.textContent = this.user.name || this.user.email;
+            userIdDisplay.appendChild(span);
         }
-        document.getElementById('userIdDisplay').innerHTML = userDisplay;
     },
     
     showToast: function(title, message, type = 'info', duration = 1500) {
@@ -1497,6 +1521,7 @@ const VoxelApp = {
             this.history.shift();
         }
         this.historyPointer = this.history.length - 1;
+        this.autosaveScene();
     },
 
     undo: function() {
@@ -1528,6 +1553,7 @@ const VoxelApp = {
             }
         });
         this.historyPointer--;
+        this.autosaveScene();
     },
 
     redo: function() {
@@ -1559,6 +1585,7 @@ const VoxelApp = {
                  }
             }
         });
+        this.autosaveScene();
     },
     
     cycleDrawingAxis: function() {
@@ -1699,6 +1726,43 @@ const VoxelApp = {
         const offset = -0.01;
         this.templateImageMesh.position.set(size / 2, size / 2, levelZ * this.VS + offset);
         this.templateImageMesh.rotation.set(0, 0, 0);
+    },
+    
+    autosaveScene: function() {
+        if (this.voxels.size === 0 && !this.templateImageData) {
+            localStorage.removeItem('voxelshaper_autosave');
+            return;
+        }
+        try {
+            const data = { 
+                gridSize: this.GRID, 
+                currentDrawingAxis: this.currentDrawingAxis,
+                activeDrawingLevel: this.activeDrawingLevel,
+                voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
+                    const [x, y, z] = this.parseKey(k);
+                    return { x, y, z, color: v.color };
+                }),
+                templateImageData: this.templateImageData
+            };
+            localStorage.setItem('voxelshaper_autosave', JSON.stringify(data));
+        } catch (e) {
+            console.error("Autosave failed:", e);
+        }
+    },
+
+    loadAutosavedScene: function() {
+        const savedData = localStorage.getItem('voxelshaper_autosave');
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                if (this.loadFromData(data)) {
+                    this.showToast('Scene Restored', 'Your last session was loaded.', 'info');
+                }
+            } catch (e) {
+                console.error("Failed to load autosaved scene:", e);
+                localStorage.removeItem('voxelshaper_autosave');
+            }
+        }
     }
 };
 
