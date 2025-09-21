@@ -15,25 +15,24 @@
 
     <style>
         :root { --toast-z-index: 9999; }
-        /* PATCH: Scoped touch-action */
         html, body {
             overflow: hidden;
             height: 100%;
             margin: 0;
             padding: 0;
-            touch-action: auto; /* Standard-Gesten erlauben */
+            touch-action: auto;
         }
         #container, #voxelCanvas { 
-            touch-action: none;  /* App-Steuerung bleibt roh */
+            touch-action: none;
         }
         body {
             display: flex;
             flex-direction: column;
         }
         #container {
-            height: 100svh;
             flex-grow: 1;
             position: relative;
+            overflow: hidden;
         }
         #voxelCanvas {
             position: absolute;
@@ -46,8 +45,23 @@
         #voxelCanvas:focus { 
             outline: none; 
         }
+        /* PATCH: Fully responsive desktop toolbar without scrollbars */
         #controls {
-            flex-wrap: nowrap !important;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+        }
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem; /* Equivalent to gap-2 */
+            flex-shrink: 1;
+            min-width: 0; /* Allows shrinking below content size */
+        }
+        .controls-group > * {
+            flex-shrink: 0; /* Prevent individual items from shrinking too early */
+        }
+        .controls-group .range {
+            flex-shrink: 1; /* Allow range sliders to shrink */
         }
         input[type="color"] {
             -webkit-appearance: none;
@@ -76,9 +90,9 @@
         #mobile-ui-container .mobile-bottom-bar .btn,
         #mobile-ui-container .mobile-bottom-bar input[type="color"],
         #mobile-ui-container .mobile-bottom-bar .dropdown > label {
-            width: 3.5rem; /* w-14 */
-            height: 3.5rem; /* h-14 */
-            font-size: 1.5rem; /* text-2xl */
+            width: 3.5rem;
+            height: 3.5rem;
+            font-size: 1.5rem;
         }
     </style>
     
@@ -104,7 +118,6 @@
         padding-bottom: calc(64px + var(--safe-bottom));
       }
     </style>
-    <!-- PATCH: Disable text selection and iOS callouts -->
     <style>
         :where(html, body, #container, #voxelCanvas, #controls, #mobile-ui-container,
                .mobile-bottom-bar, .btn, .dropdown, .menu, .modal, label, span, div) {
@@ -119,59 +132,69 @@
           -webkit-touch-callout: default;
         }
     </style>
-    <style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647} (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style>
+    <style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647} @media (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style>
 </head>
 <body class="bg-base-100 min-h-screen text-base-content flex flex-col">
 
 <!-- Main Controls (Desktop) -->
-<div id="controls" class="hidden md:flex items-center justify-center gap-2 p-2 bg-base-200 border-b border-base-content/20">
-    <div class="dropdown">
-        <label tabindex="0" class="btn btn-sm btn-ghost">File</label>
-        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-            <li><a id="saveBtn">Save</a></li>
-            <li><a id="loadBtn">Load</a></li>
-            <li><a id="exportBtn">Export</a></li>
-            <div class="divider my-1"></div>
-            <li><a id="loadImageBtn">Load Reference Image</a></li>
-            <li><a id="removeImageBtn" class="hidden">Remove Reference Image</a></li>
-            <div class="divider my-1"></div>
-            <li><a id="clearBtn" class="text-error">Clear Scene</a></li>
-        </ul>
+<div id="controls" class="hidden md:flex items-center gap-2 p-2 bg-base-200 border-b border-base-content/20">
+    <!-- PATCH: Controls grouped for responsive layout -->
+    <div class="controls-group">
+        <div class="dropdown">
+            <label tabindex="0" class="btn btn-sm btn-ghost">File</label>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+                <li><a id="saveBtn">Save</a></li>
+                <li><a id="loadBtn">Load</a></li>
+                <li><a id="exportBtn">Export</a></li>
+                <div class="divider my-1"></div>
+                <li><a id="loadImageBtn">Load Reference Image</a></li>
+                <li><a id="removeImageBtn" class="hidden">Remove Reference Image</a></li>
+                <div class="divider my-1"></div>
+                <li><a id="clearBtn" class="text-error">Clear Scene</a></li>
+            </ul>
+        </div>
+        <div class="divider divider-horizontal"></div>
+        <button id="cycleAxisBtn" class="btn btn-sm btn-neutral">Cycle Axis</button>
+        <span id="current-axis-display" class="font-bold text-accent text-center text-sm whitespace-nowrap">Axis: Y</span>
+        <button id="levelDownBtn" class="btn btn-sm btn-ghost">-</button>
+        <span id="current-level-display" class="font-bold text-accent text-sm">0</span>
+        <button id="levelUpBtn" class="btn btn-sm btn-ghost">+</button>
+        <div class="divider divider-horizontal"></div>
+        <label for="grid-size-slider" class="text-sm whitespace-nowrap">Grid:</label>
+        <input type="range" id="grid-size-slider" min="5" max="100" value="10" class="range range-xs w-28">
+        <span id="grid-size-display" class="font-bold text-primary text-sm">10³</span>
+        <div class="divider divider-horizontal"></div>
+        <label for="color-picker-input" class="btn btn-sm btn-ghost normal-case gap-2">Color
+            <input type="color" id="color-picker-input" value="#FFFFFF" class="h-6 w-6 cursor-pointer rounded-full">
+        </label>
+        <button id="modeToggle" class="btn btn-sm btn-neutral">Mode</button>
+        <span id="current-mode" class="font-bold text-success text-center text-sm whitespace-nowrap">Mode: Add</span>
     </div>
-    <button id="cycleAxisBtn" class="btn btn-sm btn-neutral">Cycle Axis</button>
-    <span id="current-axis-display" class="font-bold text-accent min-w-28 text-center text-sm">Axis: Y</span>
-    <button id="levelDownBtn" class="btn btn-sm btn-ghost">-</button>
-    <span id="current-level-display" class="font-bold text-accent text-sm">0</span>
-    <button id="levelUpBtn" class="btn btn-sm btn-ghost">+</button>
-    <label for="grid-size-slider" class="text-sm">Grid:</label>
-    <input type="range" id="grid-size-slider" min="5" max="100" value="10" class="range range-xs w-28">
-    <span id="grid-size-display" class="font-bold text-primary text-sm">10³</span>
-    <label for="color-picker-input" class="btn btn-sm btn-ghost normal-case gap-2">Color
-        <input type="color" id="color-picker-input" value="#FFFFFF" class="h-6 w-6 cursor-pointer rounded-full">
-    </label>
-    <button id="modeToggle" class="btn btn-sm btn-neutral">Mode</button>
-    <span id="current-mode" class="font-bold text-success min-w-28 text-center text-sm">Mode: Add</span>
-    <div class="dropdown dropdown-end ml-2">
-        <label tabindex="0" class="btn btn-sm btn-ghost">Controls</label>
-        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-            <li><label class="label cursor-pointer"><span class="label-text">Invert Look X</span><input type="checkbox" id="invertLookX" class="toggle toggle-primary"></label></li>
-            <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="invertLookY" class="toggle toggle-primary"></label></li>
-            <li><label class="label cursor-pointer"><span class="label-text">Invert Zoom</span><input type="checkbox" id="invertZoom" class="toggle toggle-primary"></label></li>
-            <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe X</span><input type="checkbox" id="invertStrafeX" class="toggle toggle-primary"></label></li>
-            <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe Y</span><input type="checkbox" id="invertStrafeY" class="toggle toggle-primary"></label></li>
-            <div class="divider my-1"></div>
-            <li><a id="resetDefaultsBtn">Reset to Default</a></li>
-        </ul>
+
+    <div class="controls-group">
+        <div class="divider divider-horizontal"></div>
+        <label for="fly-speed-slider" class="text-sm ml-4 whitespace-nowrap">Fly Speed:</label>
+        <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
+        <span id="fly-speed-display" class="font-bold text-primary text-sm">0.10</span>
+        <button id="resetCameraBtn" class="btn btn-sm btn-neutral ml-2">Reset View</button>
+        <div class="dropdown dropdown-end ml-2">
+            <label tabindex="0" class="btn btn-sm btn-ghost">Controls</label>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
+                <li><label class="label cursor-pointer"><span class="label-text">Invert Look X</span><input type="checkbox" id="invertLookX" class="toggle toggle-primary"></label></li>
+                <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="invertLookY" class="toggle toggle-primary"></label></li>
+                <li><label class="label cursor-pointer"><span class="label-text">Invert Zoom</span><input type="checkbox" id="invertZoom" class="toggle toggle-primary"></label></li>
+                <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe X</span><input type="checkbox" id="invertStrafeX" class="toggle toggle-primary"></label></li>
+                <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe Y</span><input type="checkbox" id="invertStrafeY" class="toggle toggle-primary"></label></li>
+                <div class="divider my-1"></div>
+                <li><a id="resetDefaultsBtn">Reset to Default</a></li>
+            </ul>
+        </div>
+        <div class="divider divider-horizontal"></div>
+        <button id="loginLogoutBtn" class="btn btn-sm btn-info">Login</button>
+        <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
+        <button id="uploadToHubBtn" class="btn btn-sm btn-warning hidden">Upload</button>
+        <button id="goToHubBtn" class="btn btn-sm btn-ghost">Hub</button>
     </div>
-    <button id="resetCameraBtn" class="btn btn-sm btn-neutral">Reset View</button>
-    <label for="fly-speed-slider" class="text-sm ml-4">Fly Speed:</label>
-    <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
-    <span id="fly-speed-display" class="font-bold text-primary text-sm">0.10</span>
-    <div class="flex-grow"></div>
-    <button id="loginLogoutBtn" class="btn btn-sm btn-info">Login</button>
-    <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
-    <button id="uploadToHubBtn" class="btn btn-sm btn-warning hidden">Upload</button>
-    <button id="goToHubBtn" class="btn btn-sm btn-ghost">Hub</button>
 </div>
 
 <!-- Main Canvas Container -->
@@ -687,7 +710,6 @@ const VoxelApp = {
             document.getElementById('exportOptionsModal').close();
         });
         
-        // PATCH: Block double-tap zoom and other unwanted touch behaviors
         let lastTouchEnd = 0;
         this.containerDiv.addEventListener('touchend', (e) => {
           const now = Date.now();
@@ -699,7 +721,7 @@ const VoxelApp = {
         this.containerDiv.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
         document.addEventListener('selectstart', (e) => {
           if (!e.target.closest('input, textarea, select, [contenteditable]')) e.preventDefault();
-        });
+        }, { passive: false });
         window.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
     },
 
@@ -1206,7 +1228,7 @@ const VoxelApp = {
         this.scene.add(this.gridHelper);
         const boxGeom = new THREE.BoxGeometry(size, size, size);
         const edges = new THREE.EdgesGeometry(boxGeom);
-        this.boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffff }));
+        this.boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x4a5568 })); // PATCH: Dezentere Farbe
         this.boxHelper.position.set(size / 2, size / 2, size / 2);
         this.scene.add(this.boxHelper);
     },
@@ -1242,7 +1264,6 @@ const VoxelApp = {
     
     showToast: function(title, message, type = 'info', duration = 1500) {
         const container = document.getElementById('toast-container');
-        // PATCH: Corrected toast class logic
         const alertClass = {
           success: 'alert-success',
           info: 'alert-info',
@@ -1292,7 +1313,12 @@ const VoxelApp = {
             console.error("Could not save work to session storage:", e);
             this.showToast('Warning', 'Could not save your current work before login.', 'warning');
         }
-        window.location.href = `${this.BACKEND_URL}/auth/${providerName}?state=${encodeURIComponent(window.location.href)}`;
+        const authUrl = new URL(`${this.BACKEND_URL}/auth/${providerName}`);
+        authUrl.searchParams.append('state', window.location.href);
+        if (providerName === 'google') {
+            authUrl.searchParams.append('prompt', 'select_account');
+        }
+        window.location.href = authUrl.toString();
     },
 
     sendMagicLink: async function() {
@@ -1684,4 +1710,3 @@ document.addEventListener('DOMContentLoaded', () => VoxelApp.init());
 
 </body>
 </html>
-
