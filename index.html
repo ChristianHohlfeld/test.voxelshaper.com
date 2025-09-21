@@ -77,7 +77,6 @@
         }
     </style>
     
-    <!-- PATCH: CSS for Landscape Overlay & Mobile Safe Area -->
     <style>
       /* Rotations-Overlay */
       .orientation-overlay {
@@ -92,15 +91,11 @@
     </style>
     <style>
       :root { --safe-bottom: env(safe-area-inset-bottom); --safe-top: env(safe-area-inset-top); }
-
-      /* Untere Mobile-Bar fixieren & Safe-Area beachten */
       #mobile-ui-container .mobile-bottom-bar {
         position: fixed; left: 0; right: 0; bottom: 0;
         padding-bottom: calc(var(--safe-bottom) + 8px);
-        z-index: 40; /* über Canvas */
+        z-index: 40;
       }
-
-      /* Platz unten, damit nichts verdeckt wirkt, obwohl Bar fixed ist */
       body.has-mobile-bar {
         padding-bottom: calc(64px + var(--safe-bottom));
       }
@@ -124,24 +119,20 @@
             <li><a id="clearBtn" class="text-error">Clear Scene</a></li>
         </ul>
     </div>
-
     <button id="cycleAxisBtn" class="btn btn-sm btn-neutral">Cycle Axis</button>
     <span id="current-axis-display" class="font-bold text-accent min-w-28 text-center text-sm">Axis: Y</span>
     <button id="levelDownBtn" class="btn btn-sm btn-ghost">-</button>
-    <span id="current-level-display" class="font-bold text-accent text-sm">Lvl: 0</span>
+    <!-- PATCH: Removed "Lvl:" prefix from initial HTML -->
+    <span id="current-level-display" class="font-bold text-accent text-sm">0</span>
     <button id="levelUpBtn" class="btn btn-sm btn-ghost">+</button>
-
     <label for="grid-size-slider" class="text-sm">Grid:</label>
     <input type="range" id="grid-size-slider" min="5" max="100" value="10" class="range range-xs w-28">
     <span id="grid-size-display" class="font-bold text-primary text-sm">10³</span>
-
     <label for="color-picker-input" class="btn btn-sm btn-ghost normal-case gap-2">Color
         <input type="color" id="color-picker-input" value="#FFFFFF" class="h-6 w-6 cursor-pointer rounded-full">
     </label>
-
     <button id="modeToggle" class="btn btn-sm btn-neutral">Mode</button>
     <span id="current-mode" class="font-bold text-success min-w-28 text-center text-sm">Mode: Add</span>
-    
     <div class="dropdown dropdown-end ml-2">
         <label tabindex="0" class="btn btn-sm btn-ghost">Controls</label>
         <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
@@ -154,15 +145,11 @@
             <li><a id="resetDefaultsBtn">Reset to Default</a></li>
         </ul>
     </div>
-    
     <button id="resetCameraBtn" class="btn btn-sm btn-neutral">Reset View</button>
-
     <label for="fly-speed-slider" class="text-sm ml-4">Fly Speed:</label>
     <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
     <span id="fly-speed-display" class="font-bold text-primary text-sm">0.10</span>
-
     <div class="flex-grow"></div>
-
     <button id="loginLogoutBtn" class="btn btn-sm btn-info">Login</button>
     <span id="userIdDisplay" class="font-bold text-info ml-2 mr-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
     <button id="uploadToHubBtn" class="btn btn-sm btn-warning hidden">Upload</button>
@@ -190,6 +177,8 @@
                 <li><a id="saveBtnMobile">Save</a></li>
                 <li><a id="loadBtnMobile">Load</a></li>
                 <li><a id="exportBtnMobile">Export</a></li>
+                <!-- PATCH: Added Hub button -->
+                <li><a id="goToHubBtnMobile">Go to Hub</a></li>
                 <div class="divider my-1"></div>
                 <li><a id="loadImageBtnMobile">Load Reference Image</a></li>
                 <li><a id="removeImageBtnMobile" class="hidden">Remove Reference Image</a></li>
@@ -308,7 +297,6 @@
 </dialog>
 
 <div id="toast-container" class="toast toast-end z-50"></div>
-
 <div id="rotateOverlay" class="orientation-overlay">Bitte ins Hochformat drehen</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -327,7 +315,6 @@ const VoxelApp = {
     MAX_HISTORY_SIZE: 50,
     BACKEND_URL: "https://api.voxelshaper.com",
     HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://test.hub.voxelshaper.com' : 'https://hub.voxelshaper.com'),
-
     // --- State ---
     scene: null, cam: null, ren: null, gridHelper: null, boxHelper: null,
     euler: null, voxels: new Map(), keyboard: {},
@@ -345,10 +332,8 @@ const VoxelApp = {
     selectedVoxels: new Set(),
     selectionMeshes: new Map(),
     extrudeGizmoMesh: null,
-    
     currentDrawingAxis: 'y',
     activeDrawingLevel: { x: 0, y: 0, z: 0 },
-
     activePointers: new Map(),
     isPointerDown: false,
     mouseState: {
@@ -363,15 +348,12 @@ const VoxelApp = {
     touchState: {
         isTapCandidate: false, lastPinchDist: null,
     },
-
     controls: {
         invertLookX: false, invertLookY: false, invertZoom: false,
         invertStrafeX: false, invertStrafeY: false,
     },
-
     user: null,
     token: null,
-
     Modes: {
         ADD: { name: 'Add', icon: 'fas fa-plus' },
         DELETE: { name: 'Delete', icon: 'fas fa-trash' },
@@ -379,7 +361,6 @@ const VoxelApp = {
     },
 
     computeMobileMode: function () {
-      // "Touch/Coarse"-basiert statt Breite (kippt nicht bei Landscape)
       return window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
     },
     applyUIMode: function () {
@@ -398,7 +379,7 @@ const VoxelApp = {
     },
     tryLockOrientation: async function () {
       if ('orientation' in screen && screen.orientation && screen.orientation.lock) {
-        try { await screen.orientation.lock('portrait'); } catch (e) { /* iOS Safari erlaubt das nicht */ }
+        try { await screen.orientation.lock('portrait'); } catch (e) { /* Not allowed by browser */ }
       }
     },
     updateOrientationOverlay: function () {
@@ -407,7 +388,6 @@ const VoxelApp = {
       const overlay = document.getElementById('rotateOverlay');
       const show = isTouch && !isPortrait;
       overlay.classList.toggle('show', show);
-      // PATCH: Block Interaktion und Scroll
       this.cvs.style.pointerEvents = show ? 'none' : 'auto';
       document.body.style.overflow = show ? 'hidden' : '';
     },
@@ -419,8 +399,6 @@ const VoxelApp = {
         this.updateOrientationOverlay();
         this.setupThree();
         this.setupEventListeners();
-
-        // PATCH: einmaliger Fallback nach User-Geste
         const oneTimeLock = () => {
             this.tryLockOrientation();
             window.removeEventListener('pointerdown', oneTimeLock);
@@ -428,7 +406,6 @@ const VoxelApp = {
         };
         window.addEventListener('pointerdown', oneTimeLock, { once: true });
         window.addEventListener('click', oneTimeLock, { once: true });
-
         this.authCheckAndInit();
         this.handleResize();
         this.animate();
@@ -485,6 +462,19 @@ const VoxelApp = {
         }
     },
     authCheckAndInit: async function() {
+        const unsavedData = sessionStorage.getItem('unsavedVoxelData');
+        if (unsavedData) {
+            try {
+                const data = JSON.parse(unsavedData);
+                this.loadFromData(data);
+                this.showToast('Progress Restored', 'Your work has been successfully restored.', 'info');
+            } catch (e) {
+                console.error("Failed to restore work from session storage:", e);
+                this.showToast('Error', 'Could not restore your previous work.', 'error');
+            } finally {
+                sessionStorage.removeItem('unsavedVoxelData');
+            }
+        }
         await this.handleOAuthRedirect();
         const urlParams  = new URLSearchParams(window.location.search || '');
         const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
@@ -639,6 +629,7 @@ const VoxelApp = {
         document.getElementById('saveBtnMobile').addEventListener('click', () => this.saveJSON());
         document.getElementById('loadBtnMobile').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
+        document.getElementById('goToHubBtnMobile').addEventListener('click', () => window.open(this.HUB_URL, '_blank'));
         document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
         document.getElementById('clearBtnMobile').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
@@ -1221,6 +1212,25 @@ const VoxelApp = {
     },
     
     signInWithProvider: function(providerName) {
+        try {
+            if (this.voxels.size > 0) {
+                const data = { 
+                    gridSize: this.GRID, 
+                    currentDrawingAxis: this.currentDrawingAxis,
+                    activeDrawingLevel: this.activeDrawingLevel,
+                    voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
+                        const [x, y, z] = this.parseKey(k);
+                        return { x, y, z, color: v.color };
+                    }),
+                    templateImageData: this.templateImageData
+                };
+                sessionStorage.setItem('unsavedVoxelData', JSON.stringify(data));
+                this.showToast('Progress Saved', 'Your work will be restored after login.', 'info', 2500);
+            }
+        } catch (e) {
+            console.error("Could not save work to session storage:", e);
+            this.showToast('Warning', 'Could not save your current work before login.', 'warning');
+        }
         window.location.href = `${this.BACKEND_URL}/auth/${providerName}?state=${encodeURIComponent(window.location.href)}`;
     },
 
@@ -1273,41 +1283,55 @@ const VoxelApp = {
         this.showToast('Project Saved', 'File downloaded as voxel-project.json', 'info');
     },
 
+    loadFromData: function(data) {
+        try {
+            this.voxels.forEach(v => {
+                this.scene.remove(v.mesh);
+                v.mesh.geometry.dispose();
+                v.mesh.material.dispose();
+            });
+            this.voxels.clear();
+            this.GRID = data.gridSize || this.GRID_DEFAULT;
+            this.currentDrawingAxis = data.currentDrawingAxis || 'y';
+            this.activeDrawingLevel = data.activeDrawingLevel || { x: 0, y: 0, z: 0 };
+            if (Array.isArray(data.voxels)) {
+                data.voxels.forEach(v => {
+                    const k = this.key(v.x, v.y, v.z);
+                    this.voxels.set(k, { color: v.color });
+                });
+            }
+            if (data.templateImageData) {
+                this.loadImageFromData(data.templateImageData);
+            } else {
+                this.removeImageTemplate();
+            }
+            this.rebuildSceneFromVoxels();
+            this.rebuildHelpers(); 
+            this.updateAllControlInputs();
+            this.resetCamera();
+            this.history = []; this.historyPointer = -1;
+            return true;
+        } catch (err) {
+            this.showToast('Load Error', `Invalid project data. ${err.message}`, 'error');
+            return false;
+        }
+    },
+
     loadJSON: function(event) {
         const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const data = JSON.parse(e.target.result);
-                this.voxels.forEach(v => {
-                    this.scene.remove(v.mesh);
-                    v.mesh.geometry.dispose();
-                    v.mesh.material.dispose();
-                });
-                this.voxels.clear();
-                this.GRID = data.gridSize || this.GRID_DEFAULT;
-                this.currentDrawingAxis = data.currentDrawingAxis || 'y';
-                this.activeDrawingLevel = data.activeDrawingLevel || { x: 0, y: 0, z: 0 };
-                if (Array.isArray(data.voxels)) {
-                    data.voxels.forEach(v => {
-                        const k = this.key(v.x, v.y, v.z);
-                        this.voxels.set(k, { color: v.color });
-                    });
+                if (this.loadFromData(data)) {
+                    this.showToast('Project Loaded', 'Successfully loaded from file.', 'info');
                 }
-                if (data.templateImageData) {
-                    this.loadImageFromData(data.templateImageData);
-                } else {
-                    this.removeImageTemplate();
-                }
-                this.rebuildSceneFromVoxels();
-                this.rebuildHelpers(); 
-                this.updateAllControlInputs();
-                this.resetCamera();
-                this.history = []; this.historyPointer = -1;
-                this.showToast('Project Loaded', 'Successfully loaded from file.', 'info');
-            } catch (err) { this.showToast('Load Error', `Invalid project file. ${err.message}`, 'error'); }
+            } catch (err) {
+                this.showToast('Load Error', `Could not read the file. ${err.message}`, 'error');
+            }
         };
         reader.readAsText(file);
+        event.target.value = '';
     },
     
     exportSTL: function(scaleUnit = 'mm', upAxis = 'Z') {
@@ -1459,7 +1483,6 @@ const VoxelApp = {
         this.currentDrawingAxis = axes[(currentIndex + 1) % axes.length];
         this.updateAxisAndLevelUI();
         this.rebuildHelpers();
-        this.updateTemplateImagePosition();
         localStorage.setItem('currentDrawingAxis', this.currentDrawingAxis);
     },
 
@@ -1477,7 +1500,7 @@ const VoxelApp = {
         const axisText = `Axis: ${this.currentDrawingAxis.toUpperCase()}`;
         document.getElementById('current-axis-display').textContent = axisText;
         const level = this.activeDrawingLevel[this.currentDrawingAxis];
-        document.getElementById('current-level-display').textContent = `Lvl: ${level}`;
+        document.getElementById('current-level-display').textContent = level;
         document.getElementById('mobile-cycle-axis').textContent = this.currentDrawingAxis.toUpperCase();
     },
 
@@ -1556,6 +1579,7 @@ const VoxelApp = {
             const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
             const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthTest: false });
             this.templateImageMesh = new THREE.Mesh(geometry, material);
+            this.templateImageMesh.renderOrder = -1; 
             this.updateTemplateImagePosition();
             this.scene.add(this.templateImageMesh);
             document.getElementById('removeImageBtn').classList.remove('hidden');
@@ -1581,21 +1605,10 @@ const VoxelApp = {
     updateTemplateImagePosition: function() {
         if (!this.templateImageMesh) return;
         const size = this.GRID * this.VS;
-        const offset = 0.01;
-        switch (this.currentDrawingAxis) {
-            case 'y':
-                this.templateImageMesh.position.set(size / 2, this.activeDrawingLevel.y * this.VS + offset, size / 2);
-                this.templateImageMesh.rotation.set(-Math.PI / 2, 0, 0);
-                break;
-            case 'x':
-                this.templateImageMesh.position.set(this.activeDrawingLevel.x * this.VS + offset, size / 2, size / 2);
-                this.templateImageMesh.rotation.set(0, -Math.PI / 2, 0);
-                break;
-            case 'z':
-                this.templateImageMesh.position.set(size / 2, size / 2, this.activeDrawingLevel.z * this.VS + offset);
-                this.templateImageMesh.rotation.set(0, 0, 0);
-                break;
-        }
+        const levelZ = this.activeDrawingLevel.z;
+        const offset = -0.01;
+        this.templateImageMesh.position.set(size / 2, size / 2, levelZ * this.VS + offset);
+        this.templateImageMesh.rotation.set(0, 0, 0);
     }
 };
 
