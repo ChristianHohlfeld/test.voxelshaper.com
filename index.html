@@ -7,6 +7,7 @@
     <meta property="og:url" content="https://test.voxelshaper.com/">
     <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <!-- PATCH: iOS Auto-Linking Deaktivieren -->
     <meta name="format-detection" content="telephone=no, email=no, address=no">
     <title>[TEST] VoxelShaper – Simplified Voxel Editor</title>
 
@@ -378,6 +379,7 @@ const VoxelApp = {
         lastActionCoords: null, mouseMovementX: 0, mouseMovementY: 0,
         drawingPlane: new THREE.Plane(),
         extrudeNormal: null,
+        dragFixedLayerCoord: null,
         isMarqueeSelecting: false,
         marqueeStart: {x: 0, y: 0},
     },
