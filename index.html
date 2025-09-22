@@ -156,7 +156,7 @@
                 <li><a id="redoBtn"><i class="fas fa-redo mr-2"></i>Redo (Ctrl+Y)</a></li>
             </ul>
         </div>
-        <div class="dropdown">
+        <div class="dropdown dropdown-bottom">
             <label tabindex="0" class="btn btn-sm btn-ghost">View</label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
                     <li><a id="resetCameraBtn">Reset View</a></li>
@@ -561,7 +561,47 @@ const VoxelApp = {
         }
         return data;
     },
+    // --- NEW: Function to generate a model name using the AI route ---
+    generateAiModelName: async function() {
+        if (this.voxels.size === 0) return ''; // No voxels, no name
 
+        // 1. Analyze the scene for a prompt
+        const colorCounts = {};
+        this.voxels.forEach(voxel => {
+            colorCounts[voxel.color] = (colorCounts[voxel.color] || 0) + 1;
+        });
+
+        const sortedColors = Object.entries(colorCounts).sort(([,a],[,b]) => b-a);
+        const topColors = sortedColors.slice(0, 2).map(([color]) => color.replace('#', '')); // Get hex without #
+
+        // 2. Formulate a very short, generic prompt to stay under the 20-character limit
+        let prompt = `${this.voxels.size} blocks`;
+        if (topColors.length > 0) {
+            prompt += ` ${topColors[0]}`; // Add the most prominent color
+        }
+        prompt = prompt.slice(0, 20); // Enforce API limit
+
+        try {
+            this.showToast('AI Naming...', 'Generating a smart title...', 'info', 2000);
+            const response = await this.request('/api/ai/short-prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            });
+
+            if (response && response.response) {
+                // Clean up the AI's response, removing any quotes it might have added
+                let cleanName = response.response.replace(/^"|"$/g, '').trim();
+                return cleanName;
+            }
+            return ''; // Return empty if AI gives a blank response
+        } catch (error) {
+            console.error("AI name generation failed:", error);
+            // Fail silently without showing an error toast to the user. They can still type a name.
+            return '';
+        }
+    },
+    // --- END NEW FUNCTION ---
     handleOAuthRedirect: async function() {
         if (window.location.hash.includes('#oauth_success')) {
             try {
@@ -716,8 +756,10 @@ const VoxelApp = {
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
         this.cvs.addEventListener('contextmenu', (e) => e.preventDefault());
         document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
-        document.getElementById('grid-size-slider').addEventListener('input', (e) => this.setGridSize(parseInt(e.target.value)));
-        document.getElementById('fly-speed-slider').addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
+        const gridSizeSlider = document.getElementById('grid-size-slider');
+        if (gridSizeSlider) gridSizeSlider.addEventListener('input', (e) => this.setGridSize(parseInt(e.target.value)));
+        const flySpeedSlider = document.getElementById('fly-speed-slider');
+        if (flySpeedSlider) flySpeedSlider.addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
         document.getElementById('color-picker-input').addEventListener('input', (e) => this.setColor(e.target.value));
         document.getElementById('modeToggle').addEventListener('click', () => this.cycleMode());
         document.getElementById('clearBtn').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
@@ -742,7 +784,8 @@ const VoxelApp = {
         document.getElementById('redoBtn').addEventListener('click', () => this.redo());
         document.getElementById('mobile-mode-toggle').addEventListener('click', () => this.cycleMode());
         document.getElementById('mobile-color-picker').addEventListener('input', (e) => this.setColor(e.target.value));
-        document.getElementById('mobile-upload').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
+        const mobileUploadBtn = document.getElementById('mobile-upload');
+        if (mobileUploadBtn) mobileUploadBtn.addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
         document.getElementById('mobile-undo').addEventListener('click', () => this.undo());
         document.getElementById('mobile-redo').addEventListener('click', () => this.redo());
         document.getElementById('mobile-go-to-hub').addEventListener('click', () => window.open(this.HUB_URL, '_blank', 'noopener,noreferrer'));
@@ -753,7 +796,8 @@ const VoxelApp = {
         document.getElementById('mobileInvertStrafeX').addEventListener('change', (e) => this.setControl('invertStrafeX', e.target.checked));
         document.getElementById('mobileInvertStrafeY').addEventListener('change', (e) => this.setControl('invertStrafeY', e.target.checked));
         document.getElementById('mobile-reset-defaults').addEventListener('click', () => this.resetToDefaults());
-        document.getElementById('mobile-fly-speed-slider').addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
+        const mobileFlySpeedSlider = document.getElementById('mobile-fly-speed-slider');
+        if (mobileFlySpeedSlider) mobileFlySpeedSlider.addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
 
         document.getElementById('mobile-cycle-axis').addEventListener('click', () => this.cycleDrawingAxis());
         document.getElementById('mobile-level-up').addEventListener('click', () => this.moveDrawingLevel(1));
@@ -773,7 +817,17 @@ const VoxelApp = {
             const w = window.open(this.HUB_URL, '_blank', 'noopener,noreferrer');
             if (w) w.opener = null;
         });
-        document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
+        const handleUploadClick = async () => {
+            document.getElementById('uploadTitle').value = '';
+            document.getElementById('uploadProjectModal').showModal();
+            const aiName = await this.generateAiModelName();
+            if (aiName) {
+                document.getElementById('uploadTitle').value = aiName;
+            }
+        };
+        document.getElementById('uploadToHubBtn').addEventListener('click', handleUploadClick.bind(this));
+        const mobileUploadBtn2 = document.getElementById('mobile-upload');
+        if (mobileUploadBtn2) mobileUploadBtn2.addEventListener('click', handleUploadClick.bind(this));
         document.getElementById('uploadConfirmBtn').addEventListener('click', (e) => {
             e.preventDefault();
             this.uploadProjectToHub();
