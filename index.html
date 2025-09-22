@@ -200,7 +200,7 @@
         <span id="fly-speed-display" class="font-bold text-primary text-sm">0.08</span>
         <div class="divider divider-horizontal hidden lg:block"></div>
         <button id="loginLogoutBtn" class="btn btn-sm btn-info">Logout</button>
-        <span id="userIdDisplay" class="font-bold text-info whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"><span>Chris Field</span></span>
+        <span id="userIdDisplay" class="font-bold text-info whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"><span>Christian Hohlfeld</span></span>
         <button id="uploadToHubBtn" class="btn btn-sm btn-warning">Upload</button>
         <button id="goToHubBtn" class="btn btn-sm btn-ghost">Hub</button>
     </div>
@@ -368,6 +368,16 @@
         <p class="py-4">Are you sure you want to clear the entire project? This action cannot be undone.</p>
         <div class="modal-action">
             <button id="confirmClearBtn" class="btn btn-error">Clear All</button>
+            <form method="dialog"><button class="btn">Cancel</button></form>
+        </div>
+    </div>
+</dialog>
+<dialog id="loadConfirmationModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Load New Project</h3>
+        <p class="py-4">Your current project has unsaved changes. Do you want to overwrite your work with the new project from the Hub?</p>
+        <div class="modal-action">
+            <button id="confirmLoadBtn" class="btn btn-warning">Overwrite</button>
             <form method="dialog"><button class="btn">Cancel</button></form>
         </div>
     </div>
@@ -595,7 +605,17 @@ const VoxelApp = {
         }
         const urlModelId = urlParams.get('modelId');
         if (urlModelId) {
-            await this.loadProjectFromModelId(urlModelId);
+            if (this.voxels.size > 0) {
+                // Scene is not empty, prompt for confirmation
+                document.getElementById('loadConfirmationModal').showModal();
+                document.getElementById('confirmLoadBtn').onclick = () => {
+                    this.loadProjectFromModelId(urlModelId);
+                    document.getElementById('loadConfirmationModal').close();
+                };
+            } else {
+                // Scene is empty, load directly
+                this.loadProjectFromModelId(urlModelId);
+            }
             const newUrl = new URL(window.location);
             newUrl.searchParams.delete('modelId');
             window.history.replaceState({}, document.title, newUrl.pathname);
@@ -842,13 +862,18 @@ const VoxelApp = {
         try {
             const data = await this.request(`/api/models/${modelId}`);
             
-            this.clearAllConfirmed(); 
-
             const projectData = data.project_json;
             if (!projectData || !projectData.voxels || typeof projectData.voxels !== 'object') {
                 throw new Error("Invalid or empty project data received from API.");
             }
-            
+
+            this.voxels.forEach(v => {
+                this.scene.remove(v.mesh);
+                v.mesh.geometry.dispose();
+                v.mesh.material.dispose();
+            });
+            this.voxels.clear();
+
             let maxX = 0, maxY = 0, maxZ = 0;
             for (const key in projectData.voxels) {
                 if (Object.prototype.hasOwnProperty.call(projectData.voxels, key)) {
@@ -870,6 +895,8 @@ const VoxelApp = {
             
             this.rebuildSceneFromVoxels();
             this.resetCamera();
+            this.history = []; this.historyPointer = -1;
+            this.autosaveScene();
             this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
 
         } catch (error) {
@@ -882,6 +909,20 @@ const VoxelApp = {
         e.preventDefault();
         document.querySelectorAll('.dropdown > label').forEach(label => label.blur());
         this.currentStroke = new Map();
+        
+        // Mobile drag-to-delete logic
+        if (this.isMobile && e.button === 0 && this.currentMode === 'DELETE') {
+            this.mouseState.isModifying = true;
+            this.mouseState.downX = e.clientX;
+            this.mouseState.downY = e.clientY;
+            const coords = this.calculateRayTarget(e.clientX, e.clientY);
+            if (coords) {
+                this.modifyVoxel(coords.x, coords.y, coords.z);
+                this.mouseState.lastActionCoords = coords;
+            }
+            return;
+        }
+
         if (this.isMobile) {
             this.isPointerDown = true;
             this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -921,34 +962,47 @@ const VoxelApp = {
     onPointerMove: function(e) {
         e.preventDefault();
         if (document.pointerLockElement === this.cvs) {
-            this.mouseState.mouseMovementX += e.movementX;
-            this.mouseState.mouseMovementY += e.movementY;
+            const rotX = this.controls.invertLookX ? e.movementX : -e.movementX;
+            const rotY = this.controls.invertLookY ? e.movementY : -e.movementY;
+            this.euler.y += rotX * this.ROTATE_SPEED;
+            this.euler.x += rotY * this.ROTATE_SPEED;
+            this.euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.euler.x));
+            this.cam.quaternion.setFromEuler(this.euler);
             return;
         }
+
+        const deltaX = e.clientX - this.mouseState.lastX;
+        const deltaY = e.clientY - this.mouseState.lastY;
+
         if (this.isMobile) {
             if (!this.isPointerDown) return;
             const dist = Math.hypot(e.clientX - this.mouseState.downX, e.clientY - this.mouseState.downY);
             if (dist > this.DRAG_THRESHOLD) this.touchState.isTapCandidate = false;
-            const currentPointer = this.activePointers.get(e.pointerId);
-            if (!currentPointer) return;
-            if (this.activePointers.size === 1 && !this.touchState.isTapCandidate) {
-                const deltaX = e.clientX - currentPointer.x;
-                const deltaY = e.clientY - currentPointer.y;
-                this.euler.y -= (this.controls.invertLookX ? -deltaX : deltaX) * this.ROTATE_SPEED;
-                this.euler.x -= (this.controls.invertLookY ? -deltaY : deltaY) * this.ROTATE_SPEED;
-            } else if (this.activePointers.size === 2) {
-                const pointers = Array.from(this.activePointers.values());
-                const newDist = Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
-                if (!this.touchState.lastPinchDist) this.touchState.lastPinchDist = newDist;
-                let zoomDelta = (this.touchState.lastPinchDist - newDist) * this.PINCH_ZOOM_MULT * 0.001;
-                if (this.controls.invertZoom) zoomDelta *= -1;
-                this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomDelta);
-                this.touchState.lastPinchDist = newDist;
+
+            if (this.mouseState.isModifying) { // Mobile Drag-to-delete
+                let coords = this.calculateRayTarget(e.clientX, e.clientY);
+                if (coords && this.mouseState.lastActionCoords) {
+                    this.drawVoxelLine(this.mouseState.lastActionCoords, coords);
+                    this.mouseState.lastActionCoords = coords;
+                }
+            } else {
+                const currentPointer = this.activePointers.get(e.pointerId);
+                if (!currentPointer) return;
+                if (this.activePointers.size === 1 && !this.touchState.isTapCandidate) {
+                    this.euler.y -= (this.controls.invertLookX ? -deltaX : deltaX) * this.ROTATE_SPEED;
+                    this.euler.x -= (this.controls.invertLookY ? -deltaY : deltaY) * this.ROTATE_SPEED;
+                } else if (this.activePointers.size === 2) {
+                    const pointers = Array.from(this.activePointers.values());
+                    const newDist = Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
+                    if (!this.touchState.lastPinchDist) this.touchState.lastPinchDist = newDist;
+                    let zoomDelta = (this.touchState.lastPinchDist - newDist) * this.PINCH_ZOOM_MULT * 0.001;
+                    if (this.controls.invertZoom) zoomDelta *= -1;
+                    this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomDelta);
+                    this.touchState.lastPinchDist = newDist;
+                }
             }
             this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         } else {
-            const deltaX = e.clientX - this.mouseState.lastX;
-            const deltaY = e.clientY - this.mouseState.lastY;
             if (this.mouseState.isPanning) {
                 const pan = new THREE.Vector3(-deltaX * this.PAN_SPEED, deltaY * this.PAN_SPEED, 0);
                 pan.applyQuaternion(this.cam.quaternion);
@@ -960,7 +1014,7 @@ const VoxelApp = {
                     this.mouseState.isDragging = true;
                     let coords = this.calculateRayTarget(e.clientX, e.clientY);
                     if (coords) {
-                        if (this.mouseState.dragFixedLayerCoord !== null) {
+                        if (this.currentMode === 'ADD') {
                             coords[this.currentDrawingAxis] = this.mouseState.dragFixedLayerCoord;
                         }
                         if (this.mouseState.lastActionCoords && (coords.x !== this.mouseState.lastActionCoords.x || coords.y !== this.mouseState.lastActionCoords.y || coords.z !== this.mouseState.lastActionCoords.z)) {
@@ -1000,9 +1054,9 @@ const VoxelApp = {
         }
         this.currentStroke = null;
         if (this.isMobile) {
-            if (this.isPointerDown && this.touchState.isTapCandidate) {
+            if (this.isPointerDown && this.touchState.isTapCandidate && this.currentMode !== 'DELETE') { // tap-to-add for mobile
                 const coords = this.calculateRayTarget(this.mouseState.downX, this.mouseState.downY);
-                if (coords && this.currentMode !== 'SELECT') this.modifyVoxel(coords.x, coords.y, coords.z);
+                if (coords) this.modifyVoxel(coords.x, coords.y, coords.z);
             }
             this.activePointers.delete(e.pointerId);
             if (this.activePointers.size === 0) {
@@ -1014,13 +1068,13 @@ const VoxelApp = {
             if (e.button === 2 && document.pointerLockElement === this.cvs) {
                 document.exitPointerLock();
             }
-            this.mouseState.isModifying = false;
-            this.mouseState.isPanning = false;
-            this.mouseState.isRotating = false;
-            this.mouseState.isDragging = false;
-            this.mouseState.lastActionCoords = null;
-            this.mouseState.dragFixedLayerCoord = null;
         }
+        this.mouseState.isModifying = false;
+        this.mouseState.isPanning = false;
+        this.mouseState.isRotating = false;
+        this.mouseState.isDragging = false;
+        this.mouseState.lastActionCoords = null;
+        this.mouseState.dragFixedLayerCoord = null;
     },
 
     onPointerLockChange: function() {
@@ -1604,15 +1658,18 @@ const VoxelApp = {
     },
 
     addHistoryStep: function(changes) {
-        if (this.historyPointer < this.history.length - 1) {
-            this.history.splice(this.historyPointer + 1);
+        // Only add if there are actual changes
+        if (changes.size > 0) {
+            if (this.historyPointer < this.history.length - 1) {
+                this.history.splice(this.historyPointer + 1);
+            }
+            this.history.push(changes);
+            if (this.history.length > this.MAX_HISTORY_SIZE) {
+                this.history.shift();
+            }
+            this.historyPointer = this.history.length - 1;
+            this.autosaveScene();
         }
-        this.history.push(changes);
-        if (this.history.length > this.MAX_HISTORY_SIZE) {
-            this.history.shift();
-        }
-        this.historyPointer = this.history.length - 1;
-        this.autosaveScene();
     },
 
     undo: function() {
