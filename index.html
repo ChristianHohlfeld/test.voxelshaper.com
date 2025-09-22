@@ -323,7 +323,7 @@
             <select id="uploadCategory" class="select select-bordered w-full"><option disabled="" selected="">Select Category</option><option value="Toy">Toy</option><option value="Decoration">Decoration</option><option value="Functional">Functional</option><option value="Art">Art</option><option value="General">General</option><option value="Character">Character</option><option value="Vehicle">Vehicle</option><option value="Nature">Nature</option><option value="Architecture">Architecture</option></select>
             <div class="flex gap-4">
                 <label><input type="radio" name="uploadVisibility" value="public" checked="" class="radio radio-primary mr-1"> Public</label>
-                <label><input type="radio" name="uploadVisibility" value="private" class="radio radio-primary mr-1"> Private</label>
+                <label class="flex items-center"><input type="radio" name="uploadVisibility" value="private" class="radio radio-primary mr-1"> Private</label>
             </div>
             <div class="modal-action">
                 <button id="uploadConfirmBtn" class="btn btn-success">Upload</button>
@@ -494,6 +494,7 @@ const VoxelApp = {
         this.authCheckAndInit();
         this.handleResize();
         this.animate();
+        setInterval(() => this.autosaveScene(), 60000); // Autosave every 60 seconds
         console.log("VoxelShaper Initialized");
     },
     
@@ -778,6 +779,19 @@ const VoxelApp = {
                 document.querySelectorAll('.dropdown > label').forEach(label => label.blur());
             }
         });
+
+        // Add event listeners to each dropdown label for closing on second click
+        document.querySelectorAll('.dropdown > label').forEach(label => {
+            label.addEventListener('click', (e) => {
+                const parentDropdown = e.target.closest('.dropdown');
+                if (parentDropdown.classList.contains('dropdown-open')) {
+                    // Clicks outside already handled, this closes it on a second click to the same label
+                    parentDropdown.classList.remove('dropdown-open');
+                    e.target.blur();
+                }
+            });
+        });
+
     },
 
     uploadProjectToHub: async function() {
