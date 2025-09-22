@@ -51,8 +51,8 @@ jobs:
 
       - name: 🔧 Inject subtle TEST badge (no overlay)
         run: |
-          echo "🔧 Injecting subtle TEST badge..."
-          perl -i -pe 's~</head>~<style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647}@media (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style></head>~' out/index.html
+          echo "🔧 Injecting subtle TEST badge (+1cm higher)..."
+          perl -i -pe 's~</head>~<style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:calc(1cm + 12px);right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647}@media (max-width:480px){body::after{font-size:11px;bottom:calc(1cm + 8px);right:8px;padding:5px 8px}}</style></head>~' out/index.html
 
       - name: 🔖 Prefix title with [TEST]
         run: |
