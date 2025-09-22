@@ -134,7 +134,7 @@
 <body class="bg-base-100 min-h-screen text-base-content flex flex-col" style="">
 
 <!-- Main Controls (Desktop) -->
-<div id="controls" class="hidden md:flex items-center justify-between gap-4 p-2 bg-base-200 border-b border-base-content/20" style="display: flex;">
+<div id="controls" class="hidden md:flex flex-wrap items-center justify-between gap-4 p-2 bg-base-200 border-b border-base-content/20 lg:flex-nowrap" style="display: flex;">
     <div class="controls-group">
         <div class="dropdown">
             <label tabindex="0" class="btn btn-sm btn-ghost">File</label>
@@ -176,7 +176,7 @@
                     </li>
             </ul>
         </div>
-        <div class="divider divider-horizontal"></div>
+        <div class="divider divider-horizontal hidden lg:block"></div>
         <button id="cycleAxisBtn" class="btn btn-sm btn-neutral">Cycle Axis</button>
         <span id="current-axis-display" class="font-bold text-accent text-center text-sm whitespace-nowrap">Axis: Y</span>
         <button id="levelDownBtn" class="btn btn-sm btn-ghost">-</button>
@@ -194,11 +194,11 @@
 
     <div class="flex-grow"></div>
 
-    <div class="controls-group justify-end">
+    <div class="controls-group">
         <label for="fly-speed-slider" class="text-sm whitespace-nowrap">Fly Speed:</label>
         <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
         <span id="fly-speed-display" class="font-bold text-primary text-sm">0.08</span>
-        <div class="divider divider-horizontal"></div>
+        <div class="divider divider-horizontal hidden lg:block"></div>
         <button id="loginLogoutBtn" class="btn btn-sm btn-info">Logout</button>
         <span id="userIdDisplay" class="font-bold text-info whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"><span>Chris Field</span></span>
         <button id="uploadToHubBtn" class="btn btn-sm btn-warning">Upload</button>
