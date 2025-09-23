@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="de" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -7,7 +8,7 @@
     <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
     <meta name="format-detection" content="telephone=no, email=no, address=no">
-    <title>[TEST] [TEST] VoxelShaper – Simplified Voxel Editor</title>
+    <title>[TEST] VoxelShaper – Simplified Voxel Editor</title>
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,8 +21,9 @@
             height: 100%;
             margin: 0;
             padding: 0;
+            touch-action: auto;
         }
-        #container, #voxelCanvas {
+        #container, #voxelCanvas { 
             touch-action: none;
         }
         body {
@@ -41,8 +43,8 @@
             height: 100%;
             cursor: crosshair;
         }
-        #voxelCanvas:focus {
-            outline: none;
+        #voxelCanvas:focus { 
+            outline: none; 
         }
         #controls {
             flex-wrap: nowrap;
@@ -78,8 +80,8 @@
             pointer-events: none;
             display: none;
         }
-        #mobile-ui-container {
-            display: none;
+        #mobile-ui-container { 
+            display: none; 
         }
         #mobile-ui-container .mobile-bottom-bar > * {
             flex-shrink: 0;
@@ -92,7 +94,7 @@
             font-size: 1.5rem;
         }
     </style>
-
+    
     <style>
       .orientation-overlay {
         position: fixed; inset: 0;
@@ -117,7 +119,7 @@
     </style>
     <style>
         :where(html, body, #container, #voxelCanvas, #controls, #mobile-ui-container,
-                .mobile-bottom-bar, .btn, .dropdown, .menu, .modal, label, span, div) {
+               .mobile-bottom-bar, .btn, .dropdown, .menu, .modal, label, span, div) {
           -webkit-user-select: none;
           user-select: none;
           -webkit-touch-callout: none;
@@ -129,12 +131,12 @@
           -webkit-touch-callout: default;
         }
     </style>
-    <style>*, ::before, ::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.absolute{position:absolute}.right-2{right:0.5rem}.top-2{top:0.5rem}.z-50{z-index:50}.z-\[1\]{z-index:1}.my-1{margin-top:0.25rem;margin-bottom:0.25rem}.mb-4{margin-bottom:1rem}.ml-2{margin-left:0.5rem}.mr-1{margin-right:0.25rem}.mr-2{margin-right:0.5rem}.mt-4{margin-top:1rem}.flex{display:flex}.hidden{display:none}.h-6{height:1.5rem}.min-h-screen{min-height:100vh}.w-28{width:7rem}.w-52{width:13rem}.w-6{width:1.5rem}.w-full{width:100%}.max-w-xs{max-w-20rem}.flex-grow{flex-grow:1}.cursor-pointer{cursor:pointer}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-end{justify-content:flex-end}.justify-between{justify-content:space-between}.justify-around{justify-content:space-around}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.overflow-hidden{overflow:hidden}.text-ellipsis{text-overflow:ellipsis}.whitespace-nowrap{white-space:nowrap}.rounded-full{border-radius:9999px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.bg-clip-content{background-clip:content-box}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.text-left{text-align:left}.text-center{text-align:center}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.font-bold{font-weight:700}.normal-case{text-transform:none}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow{--tw-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}@media (min-width: 768px){.md\:flex{display:flex}}</style>
+    <style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647} @media (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style>
 </head>
-<body class="bg-base-100 min-h-screen text-base-content flex flex-col" style="">
+<body class="bg-base-100 min-h-screen text-base-content flex flex-col">
 
 <!-- Main Controls (Desktop) -->
-<div id="controls" class="hidden md:flex flex-wrap items-center justify-between gap-4 p-2 bg-base-200 border-b border-base-content/20 lg:flex-nowrap" style="display: flex;">
+<div id="controls" class="hidden md:flex items-center justify-between gap-4 p-2 bg-base-200 border-b border-base-content/20">
     <div class="controls-group">
         <div class="dropdown">
             <label tabindex="0" class="btn btn-sm btn-ghost">File</label>
@@ -156,88 +158,68 @@
                 <li><a id="redoBtn"><i class="fas fa-redo mr-2"></i>Redo (Ctrl+Y)</a></li>
             </ul>
         </div>
-        <div class="dropdown dropdown-bottom">
+        <div class="dropdown">
             <label tabindex="0" class="btn btn-sm btn-ghost">View</label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-                    <li><a id="resetCameraBtn">Reset View</a></li>
-                    <div class="divider my-1"></div>
-                    <li><label class="label cursor-pointer"><span class="label-text">Grid:</span></label></li>
-                    <li>
-                        <input type="range" id="grid-size-slider" min="5" max="100" value="10" class="range range-xs w-28">
-                    </li>
-                    <li>
-                        <span id="grid-size-display" class="font-bold text-primary text-sm">17³</span>
-                    </li>
-                    <div class="divider my-1"></div>
-                    <li><label class="label cursor-pointer"><span class="label-text">Fly Speed:</span></label></li>
-                    <li>
-                        <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
-                    </li>
-                    <li>
-                        <span id="fly-speed-display" class="font-bold text-primary text-sm">0.08</span>
-                    </li>
-                    <div class="divider my-1"></div>
-                    <li>
-                      <details>
-                        <summary>Controls</summary>
-                        <ul>
-                          <li><label class="label cursor-pointer"><span class="label-text">Invert Look X</span><input type="checkbox" id="invertLookX" class="toggle toggle-primary"></label></li>
-                          <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="invertLookY" class="toggle toggle-primary"></label></li>
-                          <li><label class="label cursor-pointer"><span class="label-text">Invert Zoom</span><input type="checkbox" id="invertZoom" class="toggle toggle-primary"></label></li>
-                          <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe X</span><input type="checkbox" id="invertStrafeX" class="toggle toggle-primary"></label></li>
-                          <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe Y</span><input type="checkbox" id="invertStrafeY" class="toggle toggle-primary"></label></li>
-                          <div class="divider my-1"></div>
-                          <li><a id="resetDefaultsBtn">Reset to Default</a></li>
-                        </ul>
-                      </details>
-                    </li>
-            </ul>
-        </div>
-        <div class="divider divider-horizontal hidden lg:block"></div>
-        <div class="dropdown dropdown-bottom">
-            <label tabindex="0" class="btn btn-sm btn-ghost">Tools</label>
-            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-                <li><a id="cycleAxisBtn">Cycle Axis</a></li>
-                <li class="pl-4">
-                    <span id="current-axis-display" class="font-bold text-accent text-sm whitespace-nowrap">Axis: Y</span>
+                 <li><a id="resetCameraBtn">Reset View</a></li>
+                 <li>
+                    <details>
+                      <summary>Controls</summary>
+                      <ul>
+                        <li><label class="label cursor-pointer"><span class="label-text">Invert Look X</span><input type="checkbox" id="invertLookX" class="toggle toggle-primary"></label></li>
+                        <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="invertLookY" class="toggle toggle-primary"></label></li>
+                        <li><label class="label cursor-pointer"><span class="label-text">Invert Zoom</span><input type="checkbox" id="invertZoom" class="toggle toggle-primary"></label></li>
+                        <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe X</span><input type="checkbox" id="invertStrafeX" class="toggle toggle-primary"></label></li>
+                        <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe Y</span><input type="checkbox" id="invertStrafeY" class="toggle toggle-primary"></label></li>
+                        <div class="divider my-1"></div>
+                        <li><a id="resetDefaultsBtn">Reset to Default</a></li>
+                      </ul>
+                    </details>
                 </li>
-                <div class="divider my-1"></div>
-                <div class="flex items-center gap-2">
-                    <button id="levelDownBtn" class="btn btn-sm btn-ghost">-</button>
-                    <span id="current-level-display" class="font-bold text-accent text-sm">0</span>
-                    <button id="levelUpBtn" class="btn btn-sm btn-ghost">+</button>
-                </div>
             </ul>
         </div>
-        <button id="modeToggle" class="btn btn-sm btn-neutral">Add</button>
+        <div class="divider divider-horizontal"></div>
+        <button id="cycleAxisBtn" class="btn btn-sm btn-neutral">Cycle Axis</button>
+        <span id="current-axis-display" class="font-bold text-accent text-center text-sm whitespace-nowrap">Axis: Y</span>
+        <button id="levelDownBtn" class="btn btn-sm btn-ghost">-</button>
+        <span id="current-level-display" class="font-bold text-accent text-sm">0</span>
+        <button id="levelUpBtn" class="btn btn-sm btn-ghost">+</button>
+        <label for="grid-size-slider" class="text-sm whitespace-nowrap">Grid:</label>
+        <input type="range" id="grid-size-slider" min="5" max="100" value="10" class="range range-xs w-28">
+        <span id="grid-size-display" class="font-bold text-primary text-sm">10³</span>
         <label for="color-picker-input" class="btn btn-sm btn-ghost normal-case gap-2">Color
             <input type="color" id="color-picker-input" value="#FFFFFF" class="h-6 w-6 cursor-pointer rounded-full">
         </label>
+        <button id="modeToggle" class="btn btn-sm btn-neutral">Mode</button>
+        <span id="current-mode" class="font-bold text-success text-center text-sm whitespace-nowrap">Mode: Add</span>
     </div>
 
     <div class="flex-grow"></div>
 
-    <div class="controls-group flex-wrap sm:flex-nowrap">
-        <div class="divider divider-horizontal hidden lg:block"></div>
-        <button id="loginLogoutBtn" class="btn btn-sm btn-info">Logout</button>
-        <span id="userIdDisplay" class="font-bold text-info whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"><span>Christian Hohlfeld</span></span>
-        <button id="uploadToHubBtn" class="btn btn-sm btn-warning">Upload</button>
+    <div class="controls-group justify-end">
+        <label for="fly-speed-slider" class="text-sm whitespace-nowrap">Fly Speed:</label>
+        <input type="range" id="fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-28">
+        <span id="fly-speed-display" class="font-bold text-primary text-sm">0.10</span>
+        <div class="divider divider-horizontal"></div>
+        <button id="loginLogoutBtn" class="btn btn-sm btn-info">Login</button>
+        <span id="userIdDisplay" class="font-bold text-info whitespace-nowrap overflow-hidden text-ellipsis max-w-xs flex items-center gap-1"></span>
+        <button id="uploadToHubBtn" class="btn btn-sm btn-warning hidden">Upload</button>
         <button id="goToHubBtn" class="btn btn-sm btn-ghost">Hub</button>
     </div>
 </div>
 
 <!-- Main Canvas Container -->
 <div id="container">
-    <canvas id="voxelCanvas" tabindex="0" width="1714" height="1712" style="pointer-events: auto; width: 762px; height: 761px;"></canvas>
+    <canvas id="voxelCanvas" tabindex="0"></canvas>
     <div id="marquee" class="marquee"></div>
     <input type="file" id="fileInput" accept=".json" class="hidden">
     <input type="file" id="imageFileInput" accept="image/*" class="hidden">
 </div>
 
 <!-- Mobile Controls -->
-<div id="mobile-ui-container" style="display: none;">
+<div id="mobile-ui-container">
     <div class="mobile-bottom-bar flex items-center justify-around p-2 bg-base-200 border-t border-base-content/20">
-
+        
         <div class="dropdown dropdown-top">
             <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="File Menu"><i class="fas fa-folder-open"></i></label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
@@ -247,8 +229,12 @@
                 <div class="divider my-1"></div>
                 <li><a id="loadImageBtnMobile">Load Reference Image</a></li>
                 <li><a id="removeImageBtnMobile" class="hidden">Remove Reference Image</a></li>
-                <div class="divider my-1"></div>
-                <li><a id="clearBtnMobile" class="text-error">Clear Scene</a></li>
+                 <div class="divider my-1"></div>
+                <li><a id="goToHubBtnMobile">Go to Hub</a></li>
+                 <div class="divider my-1"></div>
+                 <li id="mobile-upload-li" class="hidden"><a><button id="mobile-upload" class="w-full text-left">Upload to Hub</button></a></li>
+                 <li id="mobile-login-li"><a id="mobile-login-logout">Login</a></li>
+                 <li id="mobile-logout-li" class="hidden"><a><button id="mobile-logout" class="w-full text-left text-error">Logout</button></a></li>
             </ul>
         </div>
 
@@ -257,28 +243,20 @@
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
                 <li><a id="mobile-undo"><i class="fas fa-undo mr-2"></i>Undo</a></li>
                 <li><a id="mobile-redo"><i class="fas fa-redo mr-2"></i>Redo</a></li>
+                <div class="divider my-1"></div>
+                <li><a id="clearBtnMobile" class="text-error">Clear Scene</a></li>
             </ul>
         </div>
         
         <div class="dropdown dropdown-top">
             <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="Tools Menu"><i class="fas fa-tools"></i></label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-                <li><a id="mobile-cycle-axis">Y</a></li>
+                <li><a id="mobile-cycle-axis">Cycle Axis</a></li>
                 <li><a id="mobile-level-up">Level Up</a></li>
                 <li><a id="mobile-level-down">Level Down</a></li>
                 <div class="divider my-1"></div>
-                <li><a id="mobile-go-to-hub">Go to Hub</a></li>
-                <li id="mobile-upload-li"><button id="mobile-upload" class="w-full text-left">Upload to Hub</button></li>
-                <div class="divider my-1"></div>
-                <li id="mobile-auth-li"><button id="mobile-login-logout" class="w-full text-left">Login</button></li>
-            </ul>
-        </div>
-
-        <div class="dropdown dropdown-top">
-            <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="View Menu"><i class="fas fa-eye"></i></label>
-            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-              <li><a id="mobile-reset-camera">Reset Camera</a></li>
-              <li><a id="mobile-settings" onclick="document.getElementById('mobileControlsModal').showModal();">Settings</a></li>
+                <li><a id="mobile-reset-camera">Reset Camera</a></li>
+                <li><a id="mobile-settings">Settings</a></li>
             </ul>
         </div>
 
@@ -320,16 +298,8 @@
             <li><label class="label cursor-pointer"><span class="label-text">Invert Look X</span><input type="checkbox" id="mobileInvertLookX" class="toggle toggle-primary"></label></li>
             <li><label class="label cursor-pointer"><span class="label-text">Invert Look Y</span><input type="checkbox" id="mobileInvertLookY" class="toggle toggle-primary"></label></li>
             <li><label class="label cursor-pointer"><span class="label-text">Invert Zoom</span><input type="checkbox" id="mobileInvertZoom" class="toggle toggle-primary"></label></li>
-            <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe X</span><input type="checkbox" id="mobileInvertStrafeX" class="toggle toggle-primary"></label></li>
-            <li><label class="label cursor-pointer"><span class="label-text">Invert Strafe Y</span><input type="checkbox" id="mobileInvertStrafeY" class="toggle toggle-primary"></label></li>
         </ul>
-        <label for="mobile-fly-speed-slider" class="text-sm whitespace-nowrap mt-4 block">Fly Speed:</label>
-        <div class="flex items-center gap-2">
-            <input type="range" id="mobile-fly-speed-slider" min="0.01" max="1" value="0.1" step="0.01" class="range range-xs w-full">
-            <span id="mobile-fly-speed-display" class="font-bold text-primary text-sm">0.10</span>
-        </div>
         <div class="modal-action">
-            <button id="mobile-reset-defaults" class="btn btn-warning">Reset to Default</button>
             <form method="dialog"><button class="btn">Close</button></form>
         </div>
     </div>
@@ -340,10 +310,10 @@
         <form method="dialog" class="flex flex-col gap-4 py-4">
             <input type="text" id="uploadTitle" placeholder="Project Title" class="input input-bordered w-full">
             <textarea id="uploadDescription" placeholder="Description" class="textarea textarea-bordered w-full"></textarea>
-            <select id="uploadCategory" class="select select-bordered w-full"><option disabled="" selected="">Select Category</option><option value="Toy">Toy</option><option value="Decoration">Decoration</option><option value="Functional">Functional</option><option value="Art">Art</option><option value="General">General</option><option value="Character">Character</option><option value="Vehicle">Vehicle</option><option value="Nature">Nature</option><option value="Architecture">Architecture</option></select>
+            <select id="uploadCategory" class="select select-bordered w-full"><option disabled="" selected="">Select Category</option></select>
             <div class="flex gap-4">
                 <label><input type="radio" name="uploadVisibility" value="public" checked="" class="radio radio-primary mr-1"> Public</label>
-                <label class="flex items-center"><input type="radio" name="uploadVisibility" value="private" class="radio radio-primary mr-1"> Private</label>
+                <label><input type="radio" name="uploadVisibility" value="private" class="radio radio-primary mr-1"> Private</label>
             </div>
             <div class="modal-action">
                 <button id="uploadConfirmBtn" class="btn btn-success">Upload</button>
@@ -392,16 +362,6 @@
         </div>
     </div>
 </dialog>
-<dialog id="loadConfirmationModal" class="modal">
-    <div class="modal-box">
-        <h3 class="font-bold text-lg">Load New Project</h3>
-        <p class="py-4">Your current project has unsaved changes. Do you want to overwrite your work with the new project from the Hub?</p>
-        <div class="modal-action">
-            <button id="confirmLoadBtn" class="btn btn-warning">Overwrite</button>
-            <form method="dialog"><button class="btn">Cancel</button></form>
-        </div>
-    </div>
-</dialog>
 
 <div id="toast-container" class="toast toast-top toast-center z-50"></div>
 <div id="rotateOverlay" class="orientation-overlay">Bitte ins Hochformat drehen</div>
@@ -421,14 +381,14 @@ const VoxelApp = {
     DRAG_THRESHOLD: 5,
     MAX_HISTORY_SIZE: 50,
     BACKEND_URL: "https://api.voxelshaper.com",
-    HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://test.hub.voxelshaper.com' : 'https://test.hub.voxelshaper.com'),
+    HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://test.hub.voxelshaper.com' : 'https://hub.voxelshaper.com'),
     // --- State ---
     scene: null, cam: null, ren: null, gridHelper: null, boxHelper: null,
     euler: null, voxels: new Map(), keyboard: {},
     cvs: null, containerDiv: null,
     currentColor: '#ffffff',
     GRID: 10,
-    flySpeed: 0.1,
+    flySpeed: 0.1, 
     currentMode: 'ADD',
     isMobile: false,
     history: [],
@@ -511,7 +471,7 @@ const VoxelApp = {
         
         const urlParams = new URLSearchParams(window.location.search);
         if (!urlParams.has('modelId') && !window.location.hash.includes('#oauth_success')) {
-            this.loadAutosavedScene();
+            this.loadAutosavedScene(); 
         }
 
         const oneTimeLock = () => {
@@ -524,7 +484,6 @@ const VoxelApp = {
         this.authCheckAndInit();
         this.handleResize();
         this.animate();
-        setInterval(() => this.autosaveScene(), 60000); // Autosave every 60 seconds
         console.log("VoxelShaper Initialized");
     },
     
@@ -561,47 +520,7 @@ const VoxelApp = {
         }
         return data;
     },
-    // --- NEW: Function to generate a model name using the AI route ---
-    generateAiModelName: async function() {
-        if (this.voxels.size === 0) return ''; // No voxels, no name
 
-        // 1. Analyze the scene for a prompt
-        const colorCounts = {};
-        this.voxels.forEach(voxel => {
-            colorCounts[voxel.color] = (colorCounts[voxel.color] || 0) + 1;
-        });
-
-        const sortedColors = Object.entries(colorCounts).sort(([,a],[,b]) => b-a);
-        const topColors = sortedColors.slice(0, 2).map(([color]) => color.replace('#', '')); // Get hex without #
-
-        // 2. Formulate a very short, generic prompt to stay under the 20-character limit
-        let prompt = `${this.voxels.size} blocks`;
-        if (topColors.length > 0) {
-            prompt += ` ${topColors[0]}`; // Add the most prominent color
-        }
-        prompt = prompt.slice(0, 20); // Enforce API limit
-
-        try {
-            this.showToast('AI Naming...', 'Generating a smart title...', 'info', 2000);
-            const response = await this.request('/api/ai/short-prompt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt })
-            });
-
-            if (response && response.response) {
-                // Clean up the AI's response, removing any quotes it might have added
-                let cleanName = response.response.replace(/^"|"$/g, '').trim();
-                return cleanName;
-            }
-            return ''; // Return empty if AI gives a blank response
-        } catch (error) {
-            console.error("AI name generation failed:", error);
-            // Fail silently without showing an error toast to the user. They can still type a name.
-            return '';
-        }
-    },
-    // --- END NEW FUNCTION ---
     handleOAuthRedirect: async function() {
         if (window.location.hash.includes('#oauth_success')) {
             try {
@@ -665,17 +584,7 @@ const VoxelApp = {
         }
         const urlModelId = urlParams.get('modelId');
         if (urlModelId) {
-            if (this.voxels.size > 0) {
-                // Scene is not empty, prompt for confirmation
-                document.getElementById('loadConfirmationModal').showModal();
-                document.getElementById('confirmLoadBtn').onclick = () => {
-                    this.loadProjectFromModelId(urlModelId);
-                    document.getElementById('loadConfirmationModal').close();
-                };
-            } else {
-                // Scene is empty, load directly
-                this.loadProjectFromModelId(urlModelId);
-            }
+            await this.loadProjectFromModelId(urlModelId);
             const newUrl = new URL(window.location);
             newUrl.searchParams.delete('modelId');
             window.history.replaceState({}, document.title, newUrl.pathname);
@@ -756,10 +665,8 @@ const VoxelApp = {
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
         this.cvs.addEventListener('contextmenu', (e) => e.preventDefault());
         document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
-        const gridSizeSlider = document.getElementById('grid-size-slider');
-        if (gridSizeSlider) gridSizeSlider.addEventListener('input', (e) => this.setGridSize(parseInt(e.target.value)));
-        const flySpeedSlider = document.getElementById('fly-speed-slider');
-        if (flySpeedSlider) flySpeedSlider.addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
+        document.getElementById('grid-size-slider').addEventListener('input', (e) => this.setGridSize(parseInt(e.target.value)));
+        document.getElementById('fly-speed-slider').addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
         document.getElementById('color-picker-input').addEventListener('input', (e) => this.setColor(e.target.value));
         document.getElementById('modeToggle').addEventListener('click', () => this.cycleMode());
         document.getElementById('clearBtn').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
@@ -784,30 +691,27 @@ const VoxelApp = {
         document.getElementById('redoBtn').addEventListener('click', () => this.redo());
         document.getElementById('mobile-mode-toggle').addEventListener('click', () => this.cycleMode());
         document.getElementById('mobile-color-picker').addEventListener('input', (e) => this.setColor(e.target.value));
-        const mobileUploadBtn = document.getElementById('mobile-upload');
-        if (mobileUploadBtn) mobileUploadBtn.addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
+        document.getElementById('mobile-upload').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
         document.getElementById('mobile-undo').addEventListener('click', () => this.undo());
         document.getElementById('mobile-redo').addEventListener('click', () => this.redo());
-        document.getElementById('mobile-go-to-hub').addEventListener('click', () => window.open(this.HUB_URL, '_blank', 'noopener,noreferrer'));
         document.getElementById('mobile-reset-camera').addEventListener('click', () => this.resetCamera());
-        document.getElementById('mobileInvertLookX').addEventListener('change', (e) => this.setControl('invertLookX', e.target.checked));
-        document.getElementById('mobileInvertLookY').addEventListener('change', (e) => this.setControl('invertLookY', e.target.checked));
-        document.getElementById('mobileInvertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
-        document.getElementById('mobileInvertStrafeX').addEventListener('change', (e) => this.setControl('invertStrafeX', e.target.checked));
-        document.getElementById('mobileInvertStrafeY').addEventListener('change', (e) => this.setControl('invertStrafeY', e.target.checked));
-        document.getElementById('mobile-reset-defaults').addEventListener('click', () => this.resetToDefaults());
-        const mobileFlySpeedSlider = document.getElementById('mobile-fly-speed-slider');
-        if (mobileFlySpeedSlider) mobileFlySpeedSlider.addEventListener('input', (e) => this.setFlySpeed(parseFloat(e.target.value)));
-
+        document.getElementById('mobile-settings').addEventListener('click', () => document.getElementById('mobileControlsModal').showModal());
         document.getElementById('mobile-cycle-axis').addEventListener('click', () => this.cycleDrawingAxis());
         document.getElementById('mobile-level-up').addEventListener('click', () => this.moveDrawingLevel(1));
         document.getElementById('mobile-level-down').addEventListener('click', () => this.moveDrawingLevel(-1));
-        const mobileLoginLogoutBtn = document.getElementById('mobile-login-logout');
-        if (mobileLoginLogoutBtn) mobileLoginLogoutBtn.addEventListener('click', this.loginLogout.bind(this));
-
+        document.getElementById('mobileInvertLookX').addEventListener('change', (e) => this.setControl('invertLookX', e.target.checked));
+        document.getElementById('mobileInvertLookY').addEventListener('change', (e) => this.setControl('invertLookY', e.target.checked));
+        document.getElementById('mobileInvertZoom').addEventListener('change', (e) => this.setControl('invertZoom', e.target.checked));
+        document.getElementById('mobile-login-logout').addEventListener('click', this.loginLogout.bind(this));
+        const mobileLogoutBtn = document.getElementById('mobile-logout');
+        if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', this.loginLogout.bind(this));
         document.getElementById('saveBtnMobile').addEventListener('click', () => this.saveJSON());
         document.getElementById('loadBtnMobile').addEventListener('click', () => document.getElementById('fileInput').click());
         document.getElementById('exportBtnMobile').addEventListener('click', () => document.getElementById('exportOptionsModal').showModal());
+        document.getElementById('goToHubBtnMobile').addEventListener('click', () => {
+            const w = window.open(this.HUB_URL, '_blank', 'noopener,noreferrer');
+            if (w) w.opener = null;
+        });
         document.getElementById('loadImageBtnMobile').addEventListener('click', () => this.loadImageTemplate());
         document.getElementById('removeImageBtnMobile').addEventListener('click', () => this.removeImageTemplate());
         document.getElementById('clearBtnMobile').addEventListener('click', () => document.getElementById('clearConfirmationModal').showModal());
@@ -817,17 +721,7 @@ const VoxelApp = {
             const w = window.open(this.HUB_URL, '_blank', 'noopener,noreferrer');
             if (w) w.opener = null;
         });
-        const handleUploadClick = async () => {
-            document.getElementById('uploadTitle').value = '';
-            document.getElementById('uploadProjectModal').showModal();
-            const aiName = await this.generateAiModelName();
-            if (aiName) {
-                document.getElementById('uploadTitle').value = aiName;
-            }
-        };
-        document.getElementById('uploadToHubBtn').addEventListener('click', handleUploadClick.bind(this));
-        const mobileUploadBtn2 = document.getElementById('mobile-upload');
-        if (mobileUploadBtn2) mobileUploadBtn2.addEventListener('click', handleUploadClick.bind(this));
+        document.getElementById('uploadToHubBtn').addEventListener('click', () => document.getElementById('uploadProjectModal').showModal());
         document.getElementById('uploadConfirmBtn').addEventListener('click', (e) => {
             e.preventDefault();
             this.uploadProjectToHub();
@@ -855,7 +749,7 @@ const VoxelApp = {
         let lastTouchEnd = 0;
         this.containerDiv.addEventListener('touchend', (e) => {
           const now = Date.now();
-          if (now - lastTouchEnd <= 300) {
+          if (now - lastTouchEnd < 300) {
             e.preventDefault();
           }
           lastTouchEnd = now;
@@ -865,33 +759,6 @@ const VoxelApp = {
           if (!e.target.closest('input, textarea, select, [contenteditable]')) e.preventDefault();
         }, { passive: false });
         window.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
-
-        document.addEventListener('click', (e) => {
-            const isDropdown = e.target.closest('.dropdown');
-            const dropdowns = document.querySelectorAll('.dropdown');
-            if (isDropdown) {
-                const wasOpen = isDropdown.classList.contains('dropdown-open');
-                dropdowns.forEach(d => {
-                    d.classList.remove('dropdown-open');
-                    const label = d.querySelector('label');
-                    if (label) {
-                        label.blur();
-                    }
-                });
-                if (!wasOpen) {
-                    isDropdown.classList.add('dropdown-open');
-                }
-            } else {
-                dropdowns.forEach(d => {
-                    d.classList.remove('dropdown-open');
-                    const label = d.querySelector('label');
-                    if (label) {
-                        label.blur();
-                    }
-                });
-            }
-        });
-
     },
 
     uploadProjectToHub: async function() {
@@ -942,18 +809,13 @@ const VoxelApp = {
         try {
             const data = await this.request(`/api/models/${modelId}`);
             
+            this.clearAllConfirmed(); 
+
             const projectData = data.project_json;
             if (!projectData || !projectData.voxels || typeof projectData.voxels !== 'object') {
                 throw new Error("Invalid or empty project data received from API.");
             }
-
-            this.voxels.forEach(v => {
-                this.scene.remove(v.mesh);
-                v.mesh.geometry.dispose();
-                v.mesh.material.dispose();
-            });
-            this.voxels.clear();
-
+            
             let maxX = 0, maxY = 0, maxZ = 0;
             for (const key in projectData.voxels) {
                 if (Object.prototype.hasOwnProperty.call(projectData.voxels, key)) {
@@ -975,8 +837,6 @@ const VoxelApp = {
             
             this.rebuildSceneFromVoxels();
             this.resetCamera();
-            this.history = []; this.historyPointer = -1;
-            this.autosaveScene();
             this.showToast('Project Loaded', `Loaded "${data.name}"`, 'info');
 
         } catch (error) {
@@ -987,19 +847,8 @@ const VoxelApp = {
 
     onPointerDown: function(e) {
         e.preventDefault();
-        
-        if (this.isMobile && e.button === 0 && this.currentMode === 'DELETE') {
-            this.mouseState.isModifying = true;
-            this.mouseState.downX = e.clientX;
-            this.mouseState.downY = e.clientY;
-            const coords = this.calculateRayTarget(e.clientX, e.clientY);
-            if (coords) {
-                this.modifyVoxel(coords.x, coords.y, coords.z);
-                this.mouseState.lastActionCoords = coords;
-            }
-            return;
-        }
-
+        document.querySelectorAll('#controls .dropdown > label').forEach(label => label.blur());
+        this.currentStroke = new Map();
         if (this.isMobile) {
             this.isPointerDown = true;
             this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1039,47 +888,34 @@ const VoxelApp = {
     onPointerMove: function(e) {
         e.preventDefault();
         if (document.pointerLockElement === this.cvs) {
-            const rotX = this.controls.invertLookX ? e.movementX : -e.movementX;
-            const rotY = this.controls.invertLookY ? e.movementY : -e.movementY;
-            this.euler.y += rotX * this.ROTATE_SPEED;
-            this.euler.x += rotY * this.ROTATE_SPEED;
-            this.euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.euler.x));
-            this.cam.quaternion.setFromEuler(this.euler);
+            this.mouseState.mouseMovementX += e.movementX;
+            this.mouseState.mouseMovementY += e.movementY;
             return;
         }
-
-        const deltaX = e.clientX - this.mouseState.lastX;
-        const deltaY = e.clientY - this.mouseState.lastY;
-
         if (this.isMobile) {
             if (!this.isPointerDown) return;
             const dist = Math.hypot(e.clientX - this.mouseState.downX, e.clientY - this.mouseState.downY);
             if (dist > this.DRAG_THRESHOLD) this.touchState.isTapCandidate = false;
-
-            if (this.mouseState.isModifying) { 
-                let coords = this.calculateRayTarget(e.clientX, e.clientY);
-                if (coords && this.mouseState.lastActionCoords) {
-                    this.drawVoxelLine(this.mouseState.lastActionCoords, coords);
-                    this.mouseState.lastActionCoords = coords;
-                }
-            } else {
-                const currentPointer = this.activePointers.get(e.pointerId);
-                if (!currentPointer) return;
-                if (this.activePointers.size === 1 && !this.touchState.isTapCandidate) {
-                    this.euler.y -= (this.controls.invertLookX ? -deltaX : deltaX) * this.ROTATE_SPEED;
-                    this.euler.x -= (this.controls.invertLookY ? -deltaY : deltaY) * this.ROTATE_SPEED;
-                } else if (this.activePointers.size === 2) {
-                    const pointers = Array.from(this.activePointers.values());
-                    const newDist = Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
-                    if (!this.touchState.lastPinchDist) this.touchState.lastPinchDist = newDist;
-                    let zoomDelta = (this.touchState.lastPinchDist - newDist) * this.PINCH_ZOOM_MULT * 0.001;
-                    if (this.controls.invertZoom) zoomDelta *= -1;
-                    this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomDelta);
-                    this.touchState.lastPinchDist = newDist;
-                }
+            const currentPointer = this.activePointers.get(e.pointerId);
+            if (!currentPointer) return;
+            if (this.activePointers.size === 1 && !this.touchState.isTapCandidate) { 
+                const deltaX = e.clientX - currentPointer.x;
+                const deltaY = e.clientY - currentPointer.y;
+                this.euler.y -= (this.controls.invertLookX ? -deltaX : deltaX) * this.ROTATE_SPEED;
+                this.euler.x -= (this.controls.invertLookY ? -deltaY : deltaY) * this.ROTATE_SPEED;
+            } else if (this.activePointers.size === 2) {
+                const pointers = Array.from(this.activePointers.values());
+                const newDist = Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
+                if (!this.touchState.lastPinchDist) this.touchState.lastPinchDist = newDist;
+                let zoomDelta = (this.touchState.lastPinchDist - newDist) * this.PINCH_ZOOM_MULT * 0.001;
+                if (this.controls.invertZoom) zoomDelta *= -1;
+                this.cam.position.addScaledVector(this.cam.getWorldDirection(new THREE.Vector3()), zoomDelta);
+                this.touchState.lastPinchDist = newDist;
             }
             this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         } else {
+            const deltaX = e.clientX - this.mouseState.lastX;
+            const deltaY = e.clientY - this.mouseState.lastY;
             if (this.mouseState.isPanning) {
                 const pan = new THREE.Vector3(-deltaX * this.PAN_SPEED, deltaY * this.PAN_SPEED, 0);
                 pan.applyQuaternion(this.cam.quaternion);
@@ -1091,7 +927,7 @@ const VoxelApp = {
                     this.mouseState.isDragging = true;
                     let coords = this.calculateRayTarget(e.clientX, e.clientY);
                     if (coords) {
-                        if (this.currentMode === 'ADD') {
+                        if (this.mouseState.dragFixedLayerCoord !== null) {
                             coords[this.currentDrawingAxis] = this.mouseState.dragFixedLayerCoord;
                         }
                         if (this.mouseState.lastActionCoords && (coords.x !== this.mouseState.lastActionCoords.x || coords.y !== this.mouseState.lastActionCoords.y || coords.z !== this.mouseState.lastActionCoords.z)) {
@@ -1105,8 +941,8 @@ const VoxelApp = {
             this.mouseState.lastY = e.clientY;
         }
         if (!this.mouseState.isModifying && !this.mouseState.isPanning && !this.isPointerDown && document.pointerLockElement !== this.cvs) {
-              const coords = this.calculateRayTarget(e.clientX, e.clientY);
-              this.updatePreviewVoxel(coords);
+             const coords = this.calculateRayTarget(e.clientX, e.clientY);
+             this.updatePreviewVoxel(coords);
         } else {
             this.previewVoxel.visible = false;
         }
@@ -1122,7 +958,7 @@ const VoxelApp = {
                 const beforeColor = value.before ? value.before.color : null;
                 const afterColor = value.after ? value.after.color : null;
                 if (beforeColor !== afterColor) {
-                    actualChanges.set(key, value);
+                     actualChanges.set(key, value);
                 }
             }
             if (actualChanges.size > 0) {
@@ -1131,9 +967,9 @@ const VoxelApp = {
         }
         this.currentStroke = null;
         if (this.isMobile) {
-            if (this.isPointerDown && this.touchState.isTapCandidate && this.currentMode !== 'DELETE') { 
+            if (this.isPointerDown && this.touchState.isTapCandidate) {
                 const coords = this.calculateRayTarget(this.mouseState.downX, this.mouseState.downY);
-                if (coords) this.modifyVoxel(coords.x, coords.y, coords.z);
+                if (coords && this.currentMode !== 'SELECT') this.modifyVoxel(coords.x, coords.y, coords.z);
             }
             this.activePointers.delete(e.pointerId);
             if (this.activePointers.size === 0) {
@@ -1145,13 +981,13 @@ const VoxelApp = {
             if (e.button === 2 && document.pointerLockElement === this.cvs) {
                 document.exitPointerLock();
             }
+            this.mouseState.isModifying = false;
+            this.mouseState.isPanning = false;
+            this.mouseState.isRotating = false;
+            this.mouseState.isDragging = false;
+            this.mouseState.lastActionCoords = null;
+            this.mouseState.dragFixedLayerCoord = null;
         }
-        this.mouseState.isModifying = false;
-        this.mouseState.isPanning = false;
-        this.mouseState.isRotating = false;
-        this.mouseState.isDragging = false;
-        this.mouseState.lastActionCoords = null;
-        this.mouseState.dragFixedLayerCoord = null;
     },
 
     onPointerLockChange: function() {
@@ -1224,13 +1060,16 @@ const VoxelApp = {
             minSize = Math.max(maxX, maxY, maxZ) + 1;
         }
         const slider = document.getElementById('grid-size-slider');
-        if (slider) slider.value = newSize;
-        const gridSizeDisplay = document.getElementById('grid-size-display');
-        if (gridSizeDisplay) gridSizeDisplay.textContent = `${newSize}³`;
+        slider.min = minSize;
+        if (newSize < minSize) {
+            this.showToast('Error', `Grid cannot be smaller than the current model (${minSize}³).`, 'error');
+            slider.value = minSize;
+            return;
+        }
         this.GRID = newSize;
         localStorage.setItem('voxelEditorGridSize', this.GRID);
         this.updateAllControlInputs();
-        this.rebuildHelpers();
+        this.rebuildHelpers(); 
         this.resetCamera();
         this.updateTemplateImagePosition();
     },
@@ -1246,14 +1085,8 @@ const VoxelApp = {
         const minSpeed = 0.01;
         const maxSpeed = 1.0;
         this.flySpeed = Math.max(minSpeed, Math.min(maxSpeed, newSpeed));
-        const flySpeedDisplay = document.getElementById('fly-speed-display');
-        if (flySpeedDisplay) flySpeedDisplay.textContent = this.flySpeed.toFixed(2);
-        const flySpeedSlider = document.getElementById('fly-speed-slider');
-        if (flySpeedSlider) flySpeedSlider.value = this.flySpeed;
-        const mobileFlySpeedSlider = document.getElementById('mobile-fly-speed-slider');
-        if (mobileFlySpeedSlider) mobileFlySpeedSlider.value = this.flySpeed;
-        const mobileFlySpeedDisplay = document.getElementById('mobile-fly-speed-display');
-        if (mobileFlySpeedDisplay) mobileFlySpeedDisplay.textContent = this.flySpeed.toFixed(2);
+        document.getElementById('fly-speed-display').textContent = this.flySpeed.toFixed(2);
+        document.getElementById('fly-speed-slider').value = this.flySpeed;
         localStorage.setItem('voxelEditorFlySpeed', this.flySpeed);
     },
     
@@ -1280,8 +1113,8 @@ const VoxelApp = {
         const k = this.key(x, y, z);
         if (this.currentStroke && !this.currentStroke.has(k)) {
             const originalVoxel = this.voxels.get(k);
-            this.currentStroke.set(k, {
-                before: originalVoxel ? { color: originalVoxel.color } : null
+            this.currentStroke.set(k, { 
+                before: originalVoxel ? { color: originalVoxel.color } : null 
             });
         }
         const existingVoxel = this.voxels.get(k);
@@ -1308,7 +1141,7 @@ const VoxelApp = {
                 }
                 break;
             case 'DRAW':
-                if (existingVoxel && existingVoxel.color !== this.currentColor) {
+                 if (existingVoxel && existingVoxel.color !== this.currentColor) {
                     existingVoxel.mesh.material.color.set(this.currentColor);
                     this.voxels.get(k).color = this.currentColor;
                     modified = true;
@@ -1348,10 +1181,10 @@ const VoxelApp = {
         if (intersects.length > 0) {
             const hit = intersects[0];
             const pos = hit.point.clone();
-            if (this.currentMode === 'ADD') {
-                pos.add(hit.face.normal.multiplyScalar(0.5));
-            } else {
-                pos.sub(hit.face.normal.multiplyScalar(0.5));
+            if (this.currentMode === 'ADD') { 
+                pos.add(hit.face.normal.multiplyScalar(0.5)); 
+            } else { 
+                pos.sub(hit.face.normal.multiplyScalar(0.5)); 
             }
             return { x: Math.floor(pos.x / this.VS), y: Math.floor(pos.y / this.VS), z: Math.floor(pos.z / this.VS) };
         } else if (this.currentMode === 'ADD') {
@@ -1434,7 +1267,7 @@ const VoxelApp = {
         this.scene.add(this.gridHelper);
         const boxGeom = new THREE.BoxGeometry(size, size, size);
         const edges = new THREE.EdgesGeometry(boxGeom);
-        this.boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x4a5568 }));
+        this.boxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x4a5568 })); 
         this.boxHelper.position.set(size / 2, size / 2, size / 2);
         this.scene.add(this.boxHelper);
     },
@@ -1453,8 +1286,7 @@ const VoxelApp = {
     
     updateModeUI: function() {
         const modeInfo = this.Modes[this.currentMode];
-        const modeToggleBtn = document.getElementById('modeToggle');
-        if (modeToggleBtn) modeToggleBtn.textContent = modeInfo.name;
+        document.getElementById('current-mode').textContent = `Mode: ${modeInfo.name}`;
         if(this.isMobile) document.getElementById('mobile-mode-icon').className = modeInfo.icon;
     },
 
@@ -1466,13 +1298,11 @@ const VoxelApp = {
         const uploadLi = document.getElementById('mobile-upload-li');
         if (uploadLi) uploadLi.classList.toggle('hidden', !isLoggedIn);
 
-        const authLi = document.getElementById('mobile-auth-li');
-        if (authLi) {
-            const loginLogoutBtn = authLi.querySelector('button');
-            if (loginLogoutBtn) {
-                loginLogoutBtn.textContent = isLoggedIn ? 'Logout' : 'Login';
-            }
-        }
+        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
+        const loginLi  = document.getElementById('mobile-login-li');
+        const logoutLi = document.getElementById('mobile-logout-li');
+        if (loginLi)  loginLi.classList.toggle('hidden',  isLoggedIn);
+        if (logoutLi) logoutLi.classList.toggle('hidden', !isLoggedIn);
 
         const userIdDisplay = document.getElementById('userIdDisplay');
         userIdDisplay.replaceChildren();
@@ -1496,7 +1326,7 @@ const VoxelApp = {
     showToast: function(title, message, type = 'info', duration = 1500) {
       const container = document.getElementById('toast-container');
       const alertClass = { success: 'alert-success', info: 'alert-info',
-                            warning: 'alert-warning', error: 'alert-error' }[type] || 'alert-info';
+                           warning: 'alert-warning', error: 'alert-error' }[type] || 'alert-info';
 
       const toast = document.createElement('div');
       toast.className = `alert ${alertClass} shadow-lg`;
@@ -1536,8 +1366,8 @@ const VoxelApp = {
     signInWithProvider: function(providerName) {
         try {
             if (this.voxels.size > 0) {
-                const data = {
-                    gridSize: this.GRID,
+                const data = { 
+                    gridSize: this.GRID, 
                     currentDrawingAxis: this.currentDrawingAxis,
                     activeDrawingLevel: this.activeDrawingLevel,
                     voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
@@ -1578,9 +1408,9 @@ const VoxelApp = {
             await this.request('/auth/magic-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email,
-                    receivesMarketingEmails,
+                body: JSON.stringify({ 
+                    email, 
+                    receivesMarketingEmails, 
                     acceptsAgb,
                     redirect: window.location.origin + window.location.pathname
                 })
@@ -1593,8 +1423,8 @@ const VoxelApp = {
     },
 
     saveJSON: function() {
-        const data = {
-            gridSize: this.GRID,
+        const data = { 
+            gridSize: this.GRID, 
             currentDrawingAxis: this.currentDrawingAxis,
             activeDrawingLevel: this.activeDrawingLevel,
             voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
@@ -1636,7 +1466,7 @@ const VoxelApp = {
                 this.removeImageTemplate();
             }
             this.rebuildSceneFromVoxels();
-            this.rebuildHelpers();
+            this.rebuildHelpers(); 
             this.updateAllControlInputs();
             this.resetCamera();
             this.history = []; this.historyPointer = -1;
@@ -1735,18 +1565,15 @@ const VoxelApp = {
     },
 
     addHistoryStep: function(changes) {
-        // Only add if there are actual changes
-        if (changes.size > 0) {
-            if (this.historyPointer < this.history.length - 1) {
-                this.history.splice(this.historyPointer + 1);
-            }
-            this.history.push(changes);
-            if (this.history.length > this.MAX_HISTORY_SIZE) {
-                this.history.shift();
-            }
-            this.historyPointer = this.history.length - 1;
-            this.autosaveScene();
+        if (this.historyPointer < this.history.length - 1) {
+            this.history.splice(this.historyPointer + 1);
         }
+        this.history.push(changes);
+        if (this.history.length > this.MAX_HISTORY_SIZE) {
+            this.history.shift();
+        }
+        this.historyPointer = this.history.length - 1;
+        this.autosaveScene();
     },
 
     undo: function() {
@@ -1778,7 +1605,6 @@ const VoxelApp = {
             }
         });
         this.historyPointer--;
-        this.rebuildSceneFromVoxels(); // Add this line
         this.autosaveScene();
     },
 
@@ -1787,7 +1613,7 @@ const VoxelApp = {
         this.historyPointer++;
         const changes = this.history[this.historyPointer];
         changes.forEach((change, key) => {
-              const [x, y, z] = this.parseKey(key);
+             const [x, y, z] = this.parseKey(key);
             if (change.after === null) {
                 const existingVoxel = this.voxels.get(key);
                 if (existingVoxel) {
@@ -1797,21 +1623,20 @@ const VoxelApp = {
                     this.voxels.delete(key);
                 }
             } else {
-                const existingVoxel = this.voxels.get(key);
-                if (existingVoxel) {
+                 const existingVoxel = this.voxels.get(key);
+                 if (existingVoxel) {
                     existingVoxel.mesh.material.color.set(change.after.color);
                     existingVoxel.color = change.after.color;
-                  } else {
+                 } else {
                     const voxelMesh = new THREE.Mesh(new THREE.BoxGeometry(this.VS, this.VS, this.VS), new THREE.MeshLambertMaterial({ color: change.after.color }));
                     voxelMesh.position.set(x * this.VS + 0.5, y * this.VS + 0.5, z * this.VS + 0.5);
                     voxelMesh.castShadow = true;
                     voxelMesh.receiveShadow = true;
                     this.scene.add(voxelMesh);
                     this.voxels.set(key, { color: change.after.color, mesh: voxelMesh });
-                  }
+                 }
             }
         });
-        this.rebuildSceneFromVoxels(); // Add this line
         this.autosaveScene();
     },
     
@@ -1838,8 +1663,7 @@ const VoxelApp = {
         document.getElementById('current-axis-display').textContent = axisText;
         const level = this.activeDrawingLevel[this.currentDrawingAxis];
         document.getElementById('current-level-display').textContent = level;
-        const mobileCycleAxis = document.getElementById('mobile-cycle-axis');
-        if (mobileCycleAxis) mobileCycleAxis.textContent = this.currentDrawingAxis.toUpperCase();
+        document.getElementById('mobile-cycle-axis').textContent = this.currentDrawingAxis.toUpperCase();
     },
 
     resetToDefaults: function() {
@@ -1867,46 +1691,22 @@ const VoxelApp = {
     },
 
     updateAllControlInputs: function() {
-        const gridSizeSlider = document.getElementById('grid-size-slider');
-        if (gridSizeSlider) gridSizeSlider.value = this.GRID;
-        const gridSizeDisplay = document.getElementById('grid-size-display');
-        if (gridSizeDisplay) gridSizeDisplay.textContent = `${this.GRID}³`;
-        const colorPickerInput = document.getElementById('color-picker-input');
-        if (colorPickerInput) colorPickerInput.value = this.currentColor;
-        const mobileColorPicker = document.getElementById('mobile-color-picker');
-        if (mobileColorPicker) mobileColorPicker.value = this.currentColor;
+        document.getElementById('grid-size-slider').value = this.GRID;
+        document.getElementById('grid-size-display').textContent = `${this.GRID}³`;
+        document.getElementById('color-picker-input').value = this.currentColor;
+        if (this.isMobile) document.getElementById('mobile-color-picker').value = this.currentColor;
         this.setFlySpeed(this.flySpeed);
-        
-        const invertLookX = document.getElementById('invertLookX');
-        if (invertLookX) invertLookX.checked = this.controls.invertLookX;
-        const invertLookY = document.getElementById('invertLookY');
-        if (invertLookY) invertLookY.checked = this.controls.invertLookY;
-        const invertZoom = document.getElementById('invertZoom');
-        if (invertZoom) invertZoom.checked = this.controls.invertZoom;
-        const invertStrafeX = document.getElementById('invertStrafeX');
-        if (invertStrafeX) invertStrafeX.checked = this.controls.invertStrafeX;
-        const invertStrafeY = document.getElementById('invertStrafeY');
-        if (invertStrafeY) invertStrafeY.checked = this.controls.invertStrafeY;
-
+        document.getElementById('invertLookX').checked = this.controls.invertLookX;
+        document.getElementById('invertLookY').checked = this.controls.invertLookY;
+        document.getElementById('invertZoom').checked = this.controls.invertZoom;
+        document.getElementById('invertStrafeX').checked = this.controls.invertStrafeX;
+        document.getElementById('invertStrafeY').checked = this.controls.invertStrafeY;
         if(this.isMobile) {
-            const mobileInvertLookX = document.getElementById('mobileInvertLookX');
-            if (mobileInvertLookX) mobileInvertLookX.checked = this.controls.invertLookX;
-            const mobileInvertLookY = document.getElementById('mobileInvertLookY');
-            if (mobileInvertLookY) mobileInvertLookY.checked = this.controls.invertLookY;
-            const mobileInvertZoom = document.getElementById('mobileInvertZoom');
-            if (mobileInvertZoom) mobileInvertZoom.checked = this.controls.invertZoom;
-            const mobileInvertStrafeX = document.getElementById('mobileInvertStrafeX');
-            if (mobileInvertStrafeX) mobileInvertStrafeX.checked = this.controls.invertStrafeX;
-            const mobileInvertStrafeY = document.getElementById('mobileInvertStrafeY');
-            if (mobileInvertStrafeY) mobileInvertStrafeY.checked = this.controls.invertStrafeY;
-
-            const mobileFlySpeedSlider = document.getElementById('mobile-fly-speed-slider');
-            if (mobileFlySpeedSlider) mobileFlySpeedSlider.value = this.flySpeed;
-            const mobileFlySpeedDisplay = document.getElementById('mobile-fly-speed-display');
-            if (mobileFlySpeedDisplay) mobileFlySpeedDisplay.textContent = this.flySpeed.toFixed(2);
+            document.getElementById('mobileInvertLookX').checked = this.controls.invertLookX;
+            document.getElementById('mobileInvertLookY').checked = this.controls.invertLookY;
+            document.getElementById('mobileInvertZoom').checked = this.controls.invertZoom;
         }
         this.updateAxisAndLevelUI();
-        this.updateModeUI();
     },
     
     disposeTemplateImageMesh: function () {
@@ -1948,10 +1748,10 @@ const VoxelApp = {
                 planeWidth = size * aspect;
             }
             const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                side: THREE.DoubleSide,
+            const material = new THREE.MeshBasicMaterial({ 
+                map: texture, 
+                transparent: true, 
+                side: THREE.DoubleSide, 
                 depthTest: true,
                 depthWrite: false
             });
@@ -1998,8 +1798,8 @@ const VoxelApp = {
             return;
         }
         try {
-            const data = {
-                gridSize: this.GRID,
+            const data = { 
+                gridSize: this.GRID, 
                 currentDrawingAxis: this.currentDrawingAxis,
                 activeDrawingLevel: this.activeDrawingLevel,
                 voxels: Array.from(this.voxels.entries()).map(([k, v]) => {
@@ -2034,7 +1834,5 @@ const VoxelApp = {
 document.addEventListener('DOMContentLoaded', () => VoxelApp.init());
 </script>
 
-
-
-
-</body></html>
+</body>
+</html>
