@@ -260,7 +260,7 @@
     <div class="modal-box">
         <h3 class="font-bold text-lg">Export Options</h3>
         <div class="form-control mb-4">
-            <label class="label"><span class="label-text">Scale Unit:</span></label>
+            <label class="label"><span class="label-text">Scale Unit (for 3MF & STL):</span></label>
             <div class="flex gap-3">
                 <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="mm" class="radio radio-primary"><span class="ml-2">Millimeters (mm)</span></label>
                 <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="cm" class="radio radio-primary" checked=""><span class="ml-2">Centimeters (cm)</span></label>
@@ -431,7 +431,7 @@ const VoxelApp3MFExporter = {
             metadata.file("model_settings.config",  modelXMLset);
 
             const blob = await zip.generateAsync({type:"blob", compression:"DEFLATE", compressionOptions:{level:6}});
-            saveAs(blob, "VoxelShaper_by_Christian_Hohlfeld.3mf");
+            saveAs(blob, "VoxelShaper_Export.3mf");
             
             showToast('Export Complete', 'Bambu Studio 3MF file saved!', 'success');
         } catch(err) {
@@ -475,8 +475,8 @@ const VoxelApp3MFExporter = {
         for (const v of voxels) {
             const base = V.length;
             for (const [x, y, z] of CUBE_V) {
-                // Editor Y-up -> Printer Z-up transform
-                V.push([this.fmt((v.x + x) * s), this.fmt((v.z + y) * s), this.fmt((v.y + z) * s)]);
+                // Editor Y-up -> Printer Z-up transform with Y-axis correction
+                V.push([this.fmt((v.x + x) * s), this.fmt(-(v.z + y) * s), this.fmt((v.y + z) * s)]);
             }
             const token = this.tokenFromPaletteIndex(colorToIdx.get(v.color));
             for (const [a, b, c] of CUBE_T) {
@@ -552,19 +552,57 @@ const VoxelApp3MFExporter = {
         return {xml, ids:{mainId, wrapperId, dummyIds}};
     },
     
-    buildProjectSettingsJSON: function(palette) {
-        const cols = palette.map(c => c.slice(0, 7));
-        const n = Math.min(cols.length, 16);
-        const arr = (val) => Array.from({length:n}, ()=>val);
-        const j = {
-            "version": "02.02.02.56", "plate_name": ["1"], "plates": [0], "bed_type": "Textured PEI Plate", "curr_bed_type": "Textured PEI Plate", "plate_model_index": [[0]],
-            "filament_colour": cols, "filament_type": arr("PLA"), "filament_vendor": arr("Generic"), "filament_settings_id": arr("Generic PLA"),
-            "filament_ids": arr("GFG99"), "filament_is_support": arr("0"), "filament_printable": arr("3"), "filament_diameter": arr("1.75"),
-            "filament_map_mode": "Manual", "filament_map": cols.map((_,i) => String(i+1)),
-            "nozzle_diameter": ["0.4"], "selected_plate_index": 0, "project_location_type": "local"
-        };
-        return JSON.stringify(j);
-    },
+    buildProjectSettingsJSON: function(palette){
+  const cols = palette.map(c=>c.slice(0,7));          // "#RRGGBB"
+  const n = Math.min(cols.length, 16);
+  const arr = v => Array.from({length:n}, ()=>v);
+
+  // Shown in the popup as the *printer* customized preset (string)
+  const PRINTER_PRESET_NAME = "VoxelShaper Custom Printer";
+
+  // What the user will see for *filament* customized presets (array)
+  const niceNames = cols.map(c => `VoxelShaper PLA ${c}`);
+
+  const j = {
+    "version": "02.02.02.56",
+
+    /* ---- Printer preset name (appears in Customized Preset dialog) ---- */
+    "printer_settings_id": PRINTER_PRESET_NAME,
+
+    /* ---- Plates & bed ---- */
+    "plate_name": ["1"],
+    "plates": [0],
+    "bed_type": "Textured PEI Plate",
+    "curr_bed_type": "Textured PEI Plate",
+    "plate_model_index": [[0]],
+
+    /* ---- Filament presets: names + display labels ---- */
+    "filament_settings_id":  niceNames,
+    "filament_name":         niceNames,
+    "filament_display_name": niceNames,
+
+    /* ---- Filament metadata used elsewhere in Studio ---- */
+    "filament_colour": cols,
+    "filament_color":  cols,
+    "filament_vendor": arr("Generic"),
+    "filament_type":   arr("PLA"),
+    "filament_diameter": arr("1.75"),
+    "filament_ids": cols.map((_,i)=>`GEN-PLA-${i+1}`),
+    "filament_is_support": arr("0"),
+    "filament_printable":  arr("3"),
+
+    /* ---- Keep mapping stable; 1:1 to extruders ---- */
+    "filament_map_mode": "Manual",
+    "filament_map": Array.from({length:n}, (_,i)=> String(i+1)),
+
+    "nozzle_diameter": ["0.4"],
+    "selected_plate_index": 0,
+    "project_location_type": "local"
+  };
+
+  return JSON.stringify(j);
+},
+
 
     buildModelSettingsXML: function(ids) {
         let x = `<?xml version="1.0" encoding="UTF-8"?>\n<config version="02.02.02.56">\n <global>\n  <object_include exclude-non-stl="0"/>\n  <object_split split="1"/>\n </global>\n <objects>\n`;
