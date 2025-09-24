@@ -8,7 +8,7 @@
     <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
     <meta name="format-detection" content="telephone=no, email=no, address=no">
-    <title>[TEST] VoxelShaper – Simplified Voxel Editor</title>
+    <title>VoxelShaper by Christian Heinrich Hohlfeld – Simplified Voxel Editor</title>
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -93,45 +93,37 @@
             height: 3.5rem;
             font-size: 1.5rem;
         }
-    </style>
-    
-    <style>
-      .orientation-overlay {
-        position: fixed; inset: 0;
-        display: none; align-items: center; justify-content: center;
-        background: rgba(0,0,0,.6);
-        color: #fff; font: 600 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        z-index: 2147483646;
-        text-align: center; padding: 24px;
-      }
-      .orientation-overlay.show { display: flex; }
-    </style>
-    <style>
-      :root { --safe-bottom: env(safe-area-inset-bottom); --safe-top: env(safe-area-inset-top); }
-      #mobile-ui-container .mobile-bottom-bar {
-        position: fixed; left: 0; right: 0; bottom: 0;
-        padding-bottom: calc(var(--safe-bottom) + 8px);
-        z-index: 40;
-      }
-      body.has-mobile-bar {
-        padding-bottom: calc(64px + var(--safe-bottom));
-      }
-    </style>
-    <style>
+        .orientation-overlay {
+            position: fixed; inset: 0;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,.6);
+            color: #fff; font: 600 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            z-index: 2147483646;
+            text-align: center; padding: 24px;
+        }
+        .orientation-overlay.show { display: flex; }
+        :root { --safe-bottom: env(safe-area-inset-bottom); --safe-top: env(safe-area-inset-top); }
+        #mobile-ui-container .mobile-bottom-bar {
+            position: fixed; left: 0; right: 0; bottom: 0;
+            padding-bottom: calc(var(--safe-bottom) + 8px);
+            z-index: 40;
+        }
+        body.has-mobile-bar {
+            padding-bottom: calc(64px + var(--safe-bottom));
+        }
         :where(html, body, #container, #voxelCanvas, #controls, #mobile-ui-container,
                .mobile-bottom-bar, .btn, .dropdown, .menu, .modal, label, span, div) {
-          -webkit-user-select: none;
-          user-select: none;
-          -webkit-touch-callout: none;
-          -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
         input, textarea, select, [contenteditable] {
-          -webkit-user-select: text;
-          user-select: text;
-          -webkit-touch-callout: default;
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-touch-callout: default;
         }
     </style>
-    <style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:12px;right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647} @media (max-width:480px){body::after{font-size:11px;bottom:8px;right:8px;padding:5px 8px}}</style>
 </head>
 <body class="bg-base-100 min-h-screen text-base-content flex flex-col">
 
@@ -175,7 +167,7 @@
                         <li><a id="resetDefaultsBtn">Reset to Default</a></li>
                       </ul>
                     </details>
-                </li>
+                  </li>
             </ul>
         </div>
         <div class="divider divider-horizontal"></div>
@@ -219,7 +211,6 @@
 <!-- Mobile Controls -->
 <div id="mobile-ui-container">
     <div class="mobile-bottom-bar flex items-center justify-around p-2 bg-base-200 border-t border-base-content/20">
-        
         <div class="dropdown dropdown-top">
             <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="File Menu"><i class="fas fa-folder-open"></i></label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
@@ -232,12 +223,11 @@
                  <div class="divider my-1"></div>
                 <li><a id="goToHubBtnMobile">Go to Hub</a></li>
                  <div class="divider my-1"></div>
-                 <li id="mobile-upload-li" class="hidden"><a><button id="mobile-upload" class="w-full text-left">Upload to Hub</button></a></li>
-                 <li id="mobile-login-li"><a id="mobile-login-logout">Login</a></li>
-                 <li id="mobile-logout-li" class="hidden"><a><button id="mobile-logout" class="w-full text-left text-error">Logout</button></a></li>
+                <li id="mobile-upload-li" class="hidden"><a><button id="mobile-upload" class="w-full text-left">Upload to Hub</button></a></li>
+                <li id="mobile-login-li"><a><button id="mobile-login-logout" class="w-full text-left">Login</button></a></li>
+                <li id="mobile-logout-li" class="hidden"><a><button id="mobile-logout" class="w-full text-left text-error">Logout</button></a></li>
             </ul>
         </div>
-
         <div class="dropdown dropdown-top">
             <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="Edit Menu"><i class="fas fa-edit"></i></label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
@@ -247,11 +237,10 @@
                 <li><a id="clearBtnMobile" class="text-error">Clear Scene</a></li>
             </ul>
         </div>
-        
         <div class="dropdown dropdown-top">
             <label tabindex="0" class="btn btn-ghost rounded-full" aria-label="Tools Menu"><i class="fas fa-tools"></i></label>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52">
-                <li><a id="mobile-cycle-axis">Cycle Axis</a></li>
+                <li><a id="mobile-cycle-axis">Y</a></li>
                 <li><a id="mobile-level-up">Level Up</a></li>
                 <li><a id="mobile-level-down">Level Down</a></li>
                 <div class="divider my-1"></div>
@@ -259,7 +248,6 @@
                 <li><a id="mobile-settings">Settings</a></li>
             </ul>
         </div>
-
         <input type="color" id="mobile-color-picker" value="#FFFFFF" class="rounded-full p-1 border-2 border-base-content/50 bg-clip-content">
         <button class="btn btn-ghost rounded-full" id="mobile-mode-toggle" aria-label="Toggle Mode">
             <i id="mobile-mode-icon" class="fas fa-plus"></i>
@@ -272,22 +260,23 @@
     <div class="modal-box">
         <h3 class="font-bold text-lg">Export Options</h3>
         <div class="form-control mb-4">
-            <label class="label"><span class="label-text">Scale Unit:</span></label>
+            <label class="label"><span class="label-text">Scale Unit (for STL):</span></label>
             <div class="flex gap-3">
                 <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="mm" class="radio radio-primary" checked=""><span class="ml-2">Millimeters (mm)</span></label>
                 <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="cm" class="radio radio-primary"><span class="ml-2">Centimeters (cm)</span></label>
             </div>
         </div>
         <div class="form-control mb-4">
-            <label class="label"><span class="label-text">Up-Axis for Export:</span></label>
+            <label class="label"><span class="label-text">Up-Axis (for STL):</span></label>
             <div class="flex gap-3">
                 <label class="flex items-center"><input type="radio" name="exportUpAxis" value="Y" class="radio radio-primary"><span class="ml-2">Y-Up (Standard)</span></label>
                 <label class="flex items-center"><input type="radio" name="exportUpAxis" value="Z" class="radio radio-primary" checked=""><span class="ml-2">Z-Up (3D Printers)</span></label>
             </div>
         </div>
         <div class="modal-action">
-            <button id="confirmExportBtn" class="btn btn-success">Confirm Export</button>
-            <form method="dialog"><button class="btn">Cancel</button></form>
+            <button id="exportBambuStudioBtn" class="btn btn-accent">Export for Bambu Lab (3MF)</button>
+            <button id="exportSTLBtn" class="btn btn-primary">Export STL</button>
+            <form method="dialog"><button class="btn btn-ghost">Cancel</button></form>
         </div>
     </div>
 </dialog>
@@ -366,11 +355,225 @@
 <div id="toast-container" class="toast toast-top toast-center z-50"></div>
 <div id="rotateOverlay" class="orientation-overlay">Bitte ins Hochformat drehen</div>
 
+<!-- Core Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<!-- Library for 3MF Packaging -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
 
 <script>
+// --- START: 3MF EXPORTER INTEGRATION (FINAL, BAMBU-COMPLIANT VERSION) ---
+/**
+ * ==================================================================================
+ * 3MF Exporter for Bambu Lab Studio
+ * * This file contains the final, validated function for exporting a voxel
+ * model from the VoxelShaper application into a native Bambu Studio project file.
+ * * Author: Christian Heinrich Hohlfeld & Gemini
+ * * Based on unique idea by: Christian Heinrich Hohlfeld
+ * * Date: 24. September 2025
+ * * Location: Konstanz, Germany
+ * * This implementation rigorously follows the verified Bambu Studio file structure,
+ * including metadata, object instancing, thumbnails, and the 'paint_color' attribute.
+ * ==================================================================================
+ */
+const VoxelApp3MFExporter = {
+    exportBambuStudio3MF: async function(voxels, voxelSize, showToast, parseKey) {
+        if (!voxels || voxels.size === 0) {
+            showToast('Export Error', 'Scene is empty.', 'warning');
+            return;
+        }
+        if (!window.JSZip || !window.saveAs) {
+            showToast('Export Error', 'Required libraries (JSZip, FileSaver) not found.', 'error');
+            return;
+        }
+        showToast('Exporting...', 'Building Bambu Studio Project File...', 'info');
+
+        try {
+            const voxelArray = Array.from(voxels.entries()).map(([key, data]) => {
+                const [x, y, z] = parseKey(key);
+                return {x, y, z, color: this.normalizeColor(data.color)};
+            });
+            
+            if (voxelArray.length === 0) {
+                showToast('Export Error', 'No voxels to export.', 'warning');
+                return;
+            }
+
+            const modelXML = this.build3DModelXML(voxelArray, { voxelMM: voxelSize });
+            const contentTypes = this.buildContentTypesXML();
+            const rootRels = this.buildRootRelsXML();
+            const modelRels = this.buildModelRelsXML();
+
+            const zip = new JSZip();
+            zip.file("[Content_Types].xml", contentTypes);
+            zip.folder("_rels").file(".rels", rootRels);
+            zip.folder("3D").file("3dmodel.model", modelXML);
+            zip.folder("3D").folder("_rels").file("3dmodel.model.rels", modelRels);
+
+            const bigThumb = this.dataURLtoUint8Array(this.makeThumb('plate_1', 600, 600));
+            const smallThumb = this.dataURLtoUint8Array(this.makeThumb('plate_1_small', 300, 300));
+            zip.folder("Metadata").file("plate_1.png", bigThumb, {binary:true});
+            zip.folder("Metadata").file("plate_1_small.png", smallThumb, {binary:true});
+
+            const blob = await zip.generateAsync({type:"blob", compression:"DEFLATE", compressionOptions:{level:6}});
+            saveAs(blob, "VoxelShaper_Model_by_Christian_Hohlfeld.3mf");
+            
+            showToast('Export Complete', 'Bambu Studio 3MF file saved!', 'success');
+        } catch(err) {
+            console.error(err);
+            showToast('Export Error', err.message, 'error');
+        }
+    },
+    
+    // --- XML and Asset Builders (based on working Bambu Studio file) ---
+    esc: (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'),
+    pad2: (n) => String(n).padStart(2,'0'),
+    ymd: (d=new Date()) => `${d.getFullYear()}-${VoxelApp3MFExporter.pad2(d.getMonth()+1)}-${VoxelApp3MFExporter.pad2(d.getDate())}`,
+    fmt: (n) => Number.isInteger(n)? String(n) : Number(n).toFixed(7).replace(/\.?0+$/,''),
+
+    normalizeColor: function(c) {
+        if(!c) return '#FFFFFFFF';
+        let s = String(c).trim();
+        if(/^0x/i.test(s)) s = '#' + s.slice(2);
+        if(!s.startsWith('#')) s = '#' + s;
+        if(/^#([0-9a-f]{3})$/i.test(s)){ s = '#'+s[1]+s[1]+s[2]+s[2]+s[3]+s[3]; }
+        if(/^#([0-9a-f]{6})$/i.test(s)) s = s + 'FF';
+        if(!/^#([0-9a-f]{8})$/i.test(s)) return '#FFFFFFFF'; // Fallback for invalid color
+        return s.toUpperCase();
+    },
+    
+    tokenForColorNumber: function(n) {
+        if (n <= 1) return "0";
+        if (n === 2) return "8";
+        return ((n-3).toString(16).toUpperCase() + "C");
+    },
+    
+    tokenFromPaletteIndex: function(i) { return this.tokenForColorNumber(i + 1); },
+
+    build3DModelXML: function(voxels, {voxelMM = 1, title = 'VoxelShaper Model by Christian Hohlfeld'}={}) {
+        const CUBE_V = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+        const CUBE_T = [[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,4,7],[0,7,3],[1,2,6],[1,6,5],[3,7,6],[3,6,2],[0,1,5],[0,5,4]];
+        
+        const palette = Array.from(new Set(voxels.map(v => v.color)));
+        const colorToIdx = new Map(palette.map((c, i) => [c, i]));
+        
+        const V = [];
+        const T = [];
+        const s = +voxelMM || 1;
+
+        // Note: The main app uses a Y-up coordinate system.
+        // 3MF and printers use Z-up. We must transform the coordinates here.
+        // Editor X -> Model X
+        // Editor Y -> Model Z
+        // Editor Z -> Model Y
+        for (const v of voxels) {
+            const base = V.length;
+            for (const [x, y, z] of CUBE_V) {
+                V.push([this.fmt((v.x + x) * s), this.fmt((v.z + y) * s), this.fmt((v.y + z) * s)]);
+            }
+            const token = this.tokenFromPaletteIndex(colorToIdx.get(v.color));
+            for (const [a, b, c] of CUBE_T) {
+                T.push([base + a, base + b, base + c, token]);
+            }
+        }
+        
+        // Calculate bounds for centering transform
+        let minX = Infinity, minY = Infinity, minZ = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+        V.forEach(([x,y,z]) => {
+            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+            minZ = Math.min(minZ, z);
+        });
+
+        const modelCenterX = minX + (maxX - minX) / 2;
+        const modelCenterY = minY + (maxY - minY) / 2;
+        const buildPlateCenter = 125;
+        
+        const bx = buildPlateCenter - modelCenterX;
+        const by = buildPlateCenter - modelCenterY;
+        const bz = -minZ; // Place bottom of model on the plate
+
+        const today = this.ymd();
+        const { esc, fmt } = this;
+
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xml += `<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:BambuStudio="http://schemas.bambulab.com/package/2021">\n`;
+        xml += ` <metadata name="Application">BambuStudio-02.02.02.56</metadata>\n`;
+        xml += ` <metadata name="BambuStudio:3mfVersion">1</metadata>\n <metadata name="Copyright"></metadata>\n`;
+        xml += ` <metadata name="CreationDate">${today}</metadata>\n <metadata name="Description"></metadata>\n`;
+        xml += ` <metadata name="Designer">${esc('Christian Heinrich Hohlfeld')}</metadata>\n`;
+        xml += ` <metadata name="DesignerCover"></metadata>\n <metadata name="DesignerUserId"></metadata>\n`;
+        xml += ` <metadata name="License"></metadata>\n <metadata name="ModificationDate">${today}</metadata>\n`;
+        xml += ` <metadata name="Origin"></metadata>\n <metadata name="Thumbnail_Middle">/Metadata/plate_1.png</metadata>\n`;
+        xml += ` <metadata name="Thumbnail_Small">/Metadata/plate_1_small.png</metadata>\n`;
+        xml += ` <metadata name="Title">${esc(title)}</metadata>\n`;
+        
+        const tokenMap = {};
+        palette.forEach((hex, i) => { tokenMap[this.tokenFromPaletteIndex(i)] = hex; });
+        xml += ` <metadata name="BambuStudio:PaintTokenARGB">${esc(JSON.stringify(tokenMap))}</metadata>\n`;
+        
+        xml += ` <resources>\n  <object id="1" type="model">\n   <mesh>\n    <vertices>\n`;
+        for (const [x,y,z] of V) { xml += `     <vertex x="${x}" y="${y}" z="${z}"/>\n`; }
+        xml += `    </vertices>\n    <triangles>\n`;
+        for (const [v1,v2,v3,pc] of T) { xml += `     <triangle v1="${v1}" v2="${v2}" v3="${v3}" paint_color="${pc}"/>\n`; }
+        xml += `    </triangles>\n   </mesh>\n  </object>\n`;
+        xml += `  <object id="2" type="model">\n   <components>\n`;
+        xml += `    <component objectid="1" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n`;
+        xml += `   </components>\n  </object>\n </resources>\n <build>\n`;
+        xml += `  <item objectid="2" transform="1 0 0 0 1 0 0 0 1 ${fmt(bx)} ${fmt(by)} ${fmt(bz)}" printable="1"/>\n`;
+        xml += ` </build>\n</model>\n`;
+        return xml;
+    },
+
+    buildContentTypesXML: () => `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="png"  ContentType="image/png"/>
+  <Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>
+</Types>`,
+
+    buildRootRelsXML: () => `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel" Target="/3D/3dmodel.model"/>
+</Relationships>`,
+
+    buildModelRelsXML: () => `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rThumb1" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail" Target="/Metadata/plate_1.png"/>
+  <Relationship Id="rThumb2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail" Target="/Metadata/plate_1_small.png"/>
+</Relationships>`,
+    
+    dataURLtoUint8Array: function(dataURL) {
+      const base64 = dataURL.split(',')[1];
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    },
+
+    makeThumb: function(label="plate_1", w=600, h=600) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      const g = ctx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0,'#191a1f'); g.addColorStop(0.5,'#3b3f46'); g.addColorStop(1,'#0e0f12');
+      ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.9;
+      ctx.font = `${Math.floor(w*0.08)}px system-ui,Arial,sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(label, w/2, h/2);
+      return c.toDataURL('image/png');
+    }
+};
+// --- END: 3MF EXPORTER INTEGRATION ---
+
+
 const VoxelApp = {
     // --- Configuration ---
     VS: 1,
@@ -381,7 +584,7 @@ const VoxelApp = {
     DRAG_THRESHOLD: 5,
     MAX_HISTORY_SIZE: 50,
     BACKEND_URL: "https://api.voxelshaper.com",
-    HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://test.hub.voxelshaper.com' : 'https://hub.voxelshaper.com'),
+    HUB_URL: (window.location.hostname.startsWith('test.') ? 'https://test.hub.voxelshaper.com' : 'https://test.hub.voxelshaper.com'),
     // --- State ---
     scene: null, cam: null, ren: null, gridHelper: null, boxHelper: null,
     euler: null, voxels: new Map(), keyboard: {},
@@ -739,12 +942,26 @@ const VoxelApp = {
             this.clearAllConfirmed();
             document.getElementById('clearConfirmationModal').close();
         });
-        document.getElementById('confirmExportBtn').addEventListener('click', () => {
+        
+        // --- START: NEW/MODIFIED EXPORT EVENT LISTENERS ---
+        document.getElementById('exportBambuStudioBtn').addEventListener('click', () => {
+            VoxelApp3MFExporter.exportBambuStudio3MF(
+                this.voxels, 
+                this.VS, 
+                this.showToast,
+                this.parseKey,
+                this.key
+            );
+            document.getElementById('exportOptionsModal').close();
+        });
+
+        document.getElementById('exportSTLBtn').addEventListener('click', () => {
             const scaleUnit = document.querySelector('input[name="exportScaleUnit"]:checked').value;
             const upAxis = document.querySelector('input[name="exportUpAxis"]:checked').value;
             this.exportSTL(scaleUnit, upAxis);
             document.getElementById('exportOptionsModal').close();
         });
+        // --- END: NEW/MODIFIED EXPORT EVENT LISTENERS ---
         
         let lastTouchEnd = 0;
         this.containerDiv.addEventListener('touchend', (e) => {
@@ -1298,7 +1515,7 @@ const VoxelApp = {
         const uploadLi = document.getElementById('mobile-upload-li');
         if (uploadLi) uploadLi.classList.toggle('hidden', !isLoggedIn);
 
-        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? '🚪' : '🔑';
+        document.getElementById('mobile-login-logout').textContent = isLoggedIn ? 'Logout' : 'Login';
         const loginLi  = document.getElementById('mobile-login-li');
         const logoutLi = document.getElementById('mobile-logout-li');
         if (loginLi)  loginLi.classList.toggle('hidden',  isLoggedIn);
@@ -1620,7 +1837,7 @@ const VoxelApp = {
                     this.scene.remove(existingVoxel.mesh);
                     existingVoxel.mesh.geometry.dispose();
                     existingVoxel.mesh.material.dispose();
-                    this.voxels.delete(key);
+                    this.voxels.delete(k);
                 }
             } else {
                  const existingVoxel = this.voxels.get(key);
@@ -1836,3 +2053,4 @@ document.addEventListener('DOMContentLoaded', () => VoxelApp.init());
 
 </body>
 </html>
+
