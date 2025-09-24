@@ -260,10 +260,10 @@
     <div class="modal-box">
         <h3 class="font-bold text-lg">Export Options</h3>
         <div class="form-control mb-4">
-            <label class="label"><span class="label-text">Scale Unit (for STL):</span></label>
+            <label class="label"><span class="label-text">Scale Unit:</span></label>
             <div class="flex gap-3">
-                <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="mm" class="radio radio-primary" checked=""><span class="ml-2">Millimeters (mm)</span></label>
-                <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="cm" class="radio radio-primary"><span class="ml-2">Centimeters (cm)</span></label>
+                <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="mm" class="radio radio-primary"><span class="ml-2">Millimeters (mm)</span></label>
+                <label class="flex items-center"><input type="radio" name="exportScaleUnit" value="cm" class="radio radio-primary" checked=""><span class="ml-2">Centimeters (cm)</span></label>
             </div>
         </div>
         <div class="form-control mb-4">
@@ -376,11 +376,11 @@
  * * Date: 24. September 2025
  * * Location: Konstanz, Germany
  * * This implementation rigorously follows the verified Bambu Studio file structure,
- * including metadata, object instancing, thumbnails, and the 'paint_color' attribute.
+ * creating a full project with auto-assigned filament slots.
  * ==================================================================================
  */
 const VoxelApp3MFExporter = {
-    exportBambuStudio3MF: async function(voxels, voxelSize, showToast, parseKey) {
+    exportBambuStudio3MF: async function(voxels, voxelSize, showToast, parseKey, scaleUnit) {
         if (!voxels || voxels.size === 0) {
             showToast('Export Error', 'Scene is empty.', 'warning');
             return;
@@ -401,8 +401,17 @@ const VoxelApp3MFExporter = {
                 showToast('Export Error', 'No voxels to export.', 'warning');
                 return;
             }
+            
+            const palette = Array.from(new Set(voxelArray.map(v => v.color))).slice(0, 16);
+            const voxelMM = (scaleUnit === 'cm' ? 10 : 1) * voxelSize;
 
-            const modelXML = this.build3DModelXML(voxelArray, { voxelMM: voxelSize });
+            const mainMesh = this.buildPaintMesh(voxelArray, voxelMM, palette);
+            const dummies = palette.map((_, i) => this.tinyTriangle(-0.2 - i * 0.05));
+            
+            const { xml: modelXML, ids } = this.build3DModelXML({ mainMesh, dummies });
+            const projectJSON = this.buildProjectSettingsJSON(palette);
+            const modelXMLset = this.buildModelSettingsXML(ids);
+            
             const contentTypes = this.buildContentTypesXML();
             const rootRels = this.buildRootRelsXML();
             const modelRels = this.buildModelRelsXML();
@@ -413,10 +422,13 @@ const VoxelApp3MFExporter = {
             zip.folder("3D").file("3dmodel.model", modelXML);
             zip.folder("3D").folder("_rels").file("3dmodel.model.rels", modelRels);
 
+            const metadata = zip.folder("Metadata");
             const bigThumb = this.dataURLtoUint8Array(this.makeThumb('plate_1', 600, 600));
             const smallThumb = this.dataURLtoUint8Array(this.makeThumb('plate_1_small', 300, 300));
-            zip.folder("Metadata").file("plate_1.png", bigThumb, {binary:true});
-            zip.folder("Metadata").file("plate_1_small.png", smallThumb, {binary:true});
+            metadata.file("plate_1.png", bigThumb, {binary:true});
+            metadata.file("plate_1_small.png", smallThumb, {binary:true});
+            metadata.file("project_settings.config", projectJSON);
+            metadata.file("model_settings.config",  modelXMLset);
 
             const blob = await zip.generateAsync({type:"blob", compression:"DEFLATE", compressionOptions:{level:6}});
             saveAs(blob, "VoxelShaper_by_Christian_Hohlfeld.3mf");
@@ -428,7 +440,7 @@ const VoxelApp3MFExporter = {
         }
     },
     
-    // --- XML and Asset Builders (based on working Bambu Studio file) ---
+    // --- Helper functions from your working example ---
     esc: (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'),
     pad2: (n) => String(n).padStart(2,'0'),
     ymd: (d=new Date()) => `${d.getFullYear()}-${VoxelApp3MFExporter.pad2(d.getMonth()+1)}-${VoxelApp3MFExporter.pad2(d.getDate())}`,
@@ -441,7 +453,7 @@ const VoxelApp3MFExporter = {
         if(!s.startsWith('#')) s = '#' + s;
         if(/^#([0-9a-f]{3})$/i.test(s)){ s = '#'+s[1]+s[1]+s[2]+s[2]+s[3]+s[3]; }
         if(/^#([0-9a-f]{6})$/i.test(s)) s = s + 'FF';
-        if(!/^#([0-9a-f]{8})$/i.test(s)) return '#FFFFFFFF'; // Fallback for invalid color
+        if(!/^#([0-9a-f]{8})$/i.test(s)) return '#FFFFFFFF';
         return s.toUpperCase();
     },
     
@@ -453,70 +465,124 @@ const VoxelApp3MFExporter = {
     
     tokenFromPaletteIndex: function(i) { return this.tokenForColorNumber(i + 1); },
 
-    build3DModelXML: function(voxels, {
-        voxelMM=1,
-        title='VoxelShaper Model by Christian Hohlfeld',
-        buildXYZ=[90,90,0]
-    }={}) {
+    buildPaintMesh: function(voxels, voxelMM, palette) {
+        const V = [], T = [];
+        const s = +voxelMM || 1;
+        const colorToIdx = new Map(palette.map((c, i) => [c, i]));
         const CUBE_V = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
         const CUBE_T = [[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,4,7],[0,7,3],[1,2,6],[1,6,5],[3,7,6],[3,6,2],[0,1,5],[0,5,4]];
         
-        const s = +voxelMM || 1;
-        const palette = Array.from(new Set(voxels.map(v=>v.color)));
-        const colorToIdx = new Map(palette.map((c,i)=>[c,i]));
-        const [bx,by,bz] = buildXYZ.map(n=>+n||0);
-        const today = this.ymd();
-        const { esc, fmt } = this;
-        
-        const V = [];
-        const T = [];
-        for (const v of voxels){
+        for (const v of voxels) {
             const base = V.length;
-            for (const [x,y,z] of CUBE_V){
-                // Note: The main app uses a Y-up coordinate system.
-                // 3MF and printers use Z-up. We must transform the coordinates here.
-                // Editor X -> Model X
-                // Editor Y -> Model Z
-                // Editor Z -> Model Y
-                V.push([fmt((v.x + x)*s), fmt((v.z + y)*s), fmt((v.y + z)*s)]);
+            for (const [x, y, z] of CUBE_V) {
+                // Editor Y-up -> Printer Z-up transform
+                V.push([this.fmt((v.x + x) * s), this.fmt((v.z + y) * s), this.fmt((v.y + z) * s)]);
             }
             const token = this.tokenFromPaletteIndex(colorToIdx.get(v.color));
-            for (const [a,b,c] of CUBE_T){
-                T.push([base+a, base+b, base+c, token]);
+            for (const [a, b, c] of CUBE_T) {
+                T.push([base + a, base + b, base + c, token]);
             }
         }
+        return { V, T, palette };
+    },
+    
+    tinyTriangle: function(z = 0) {
+        return {
+            V: [[0,0,z],[0.1,0,z],[0,0.1,z]].map(([x,y,z]) => [this.fmt(x), this.fmt(y), this.fmt(z)]),
+            T: [[0,1,2]],
+        };
+    },
+
+    build3DModelXML: function({mainMesh, dummies, title='VoxelShaper Model', buildXYZ=[125,125,0]}) {
+        const today = this.ymd();
+        const [bx,by,bz] = buildXYZ.map(n=>+n||0);
+
+        let nextId = 1;
+        const mainId = nextId++;
+        const dummyIds = dummies.map(()=>nextId++);
+        const wrapperId = nextId++;
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
         xml += `<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:BambuStudio="http://schemas.bambulab.com/package/2021">\n`;
-        xml += ` <metadata name="Application">BambuStudio-02.02.02.56</metadata>\n <metadata name="BambuStudio:3mfVersion">1</metadata>\n <metadata name="Copyright"></metadata>\n`;
-        xml += ` <metadata name="CreationDate">${today}</metadata>\n <metadata name="Description"></metadata>\n <metadata name="Designer">${esc('Christian Heinrich Hohlfeld')}</metadata>\n`;
-        xml += ` <metadata name="DesignerCover"></metadata>\n <metadata name="DesignerUserId"></metadata>\n <metadata name="License"></metadata>\n <metadata name="ModificationDate">${today}</metadata>\n`;
-        xml += ` <metadata name="Origin"></metadata>\n <metadata name="Thumbnail_Middle">/Metadata/plate_1.png</metadata>\n <metadata name="Thumbnail_Small">/Metadata/plate_1_small.png</metadata>\n`;
-        xml += ` <metadata name="Title">${esc(title)}</metadata>\n`;
-        
+        xml += ` <metadata name="Application">BambuStudio-02.02.02.56</metadata>\n <metadata name="BambuStudio:3mfVersion">1</metadata>\n`;
+        xml += ` <metadata name="CreationDate">${today}</metadata>\n <metadata name="Thumbnail_Middle">/Metadata/plate_1.png</metadata>\n`;
+        xml += ` <metadata name="Thumbnail_Small">/Metadata/plate_1_small.png</metadata>\n <metadata name="Title">${this.esc(title)}</metadata>\n`;
+
         const tokenMap = {};
-        palette.forEach((hex,i)=>{ tokenMap[this.tokenFromPaletteIndex(i)] = hex; });
-        xml += ` <metadata name="BambuStudio:PaintTokenARGB">${esc(JSON.stringify(tokenMap))}</metadata>\n`;
-        
+        mainMesh.palette.forEach((hex, i) => { tokenMap[this.tokenFromPaletteIndex(i)] = hex; });
+        xml += ` <metadata name="BambuStudio:PaintTokenARGB">${this.esc(JSON.stringify(tokenMap))}</metadata>\n`;
         xml += ` <resources>\n`;
-        xml += `  <object id="1" type="model">\n   <mesh>\n    <vertices>\n`;
-        for (const [x,y,z] of V) { xml += `     <vertex x="${x}" y="${y}" z="${z}"/>\n`; }
+        
+        xml += `  <object id="${mainId}" type="model" name="PaintedMesh">\n   <mesh>\n    <vertices>\n`;
+        for (const [x,y,z] of mainMesh.V) { xml += `     <vertex x="${x}" y="${y}" z="${z}"/>\n`; }
         xml += `    </vertices>\n    <triangles>\n`;
-        for (const [v1,v2,v3,pc] of T) { xml += `     <triangle v1="${v1}" v2="${v2}" v3="${v3}" paint_color="${pc}"/>\n`; }
+        for (const [v1,v2,v3,pc] of mainMesh.T) { xml += `     <triangle v1="${v1}" v2="${v2}" v3="${v3}" paint_color="${pc}"/>\n`; }
         xml += `    </triangles>\n   </mesh>\n  </object>\n`;
-        xml += `  <object id="2" type="model">\n   <components>\n`;
-        xml += `    <component objectid="1" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n`;
-        xml += `   </components>\n  </object>\n`;
-        xml += ` </resources>\n <build>\n`;
-        xml += `  <item objectid="2" transform="1 0 0 0 1 0 0 0 1 ${fmt(bx)} ${fmt(by)} ${fmt(bz)}" printable="1"/>\n`;
+
+        dummies.forEach((d, i) => {
+            const id = dummyIds[i];
+            xml += `  <object id="${id}" type="model" name="ColorSlot_${i+1}">\n   <mesh>\n    <vertices>\n`;
+            d.V.forEach(([x,y,z]) => { xml += `     <vertex x="${x}" y="${y}" z="${z}"/>\n`; });
+            xml += `    </vertices>\n    <triangles>\n`;
+            d.T.forEach(([a,b,c]) => { xml += `     <triangle v1="${a}" v2="${b}" v3="${c}"/>\n`; });
+            xml += `    </triangles>\n   </mesh>\n  </object>\n`;
+        });
+
+        xml += `  <object id="${wrapperId}" type="model">\n   <components>\n`;
+        xml += `    <component objectid="${mainId}" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n`;
+        xml += `   </components>\n  </object>\n </resources>\n <build>\n`;
+        
+        let minX = Infinity, minY = Infinity, minZ = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+        mainMesh.V.forEach(([x,y,z]) => {
+            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+            minZ = Math.min(minZ, z);
+        });
+        const final_bx = bx - (minX + (maxX-minX)/2);
+        const final_by = by - (minY + (maxY-minY)/2);
+        const final_bz = bz - minZ;
+        
+        xml += `  <item objectid="${wrapperId}" transform="1 0 0 0 1 0 0 0 1 ${this.fmt(final_bx)} ${this.fmt(final_by)} ${this.fmt(final_bz)}" printable="1"/>\n`;
+        dummies.forEach((_, i) => {
+            xml += `  <item objectid="${dummyIds[i]}" transform="1 0 0 0 1 0 0 0 1 ${this.fmt(final_bx)} ${this.fmt(final_by)} ${this.fmt(final_bz)}" printable="0"/>\n`;
+        });
         xml += ` </build>\n</model>\n`;
-        return xml;
+        
+        return {xml, ids:{mainId, wrapperId, dummyIds}};
+    },
+    
+    buildProjectSettingsJSON: function(palette) {
+        const cols = palette.map(c => c.slice(0, 7));
+        const n = Math.min(cols.length, 16);
+        const arr = (val) => Array.from({length:n}, ()=>val);
+        const j = {
+            "version": "02.02.02.56", "plate_name": ["1"], "plates": [0], "bed_type": "Textured PEI Plate", "curr_bed_type": "Textured PEI Plate", "plate_model_index": [[0]],
+            "filament_colour": cols, "filament_type": arr("PLA"), "filament_vendor": arr("Generic"), "filament_settings_id": arr("Generic PLA"),
+            "filament_ids": arr("GFG99"), "filament_is_support": arr("0"), "filament_printable": arr("3"), "filament_diameter": arr("1.75"),
+            "filament_map_mode": "Manual", "filament_map": cols.map((_,i) => String(i+1)),
+            "nozzle_diameter": ["0.4"], "selected_plate_index": 0, "project_location_type": "local"
+        };
+        return JSON.stringify(j);
+    },
+
+    buildModelSettingsXML: function(ids) {
+        let x = `<?xml version="1.0" encoding="UTF-8"?>\n<config version="02.02.02.56">\n <global>\n  <object_include exclude-non-stl="0"/>\n  <object_split split="1"/>\n </global>\n <objects>\n`;
+        x += `  <object id="${ids.mainId}">\n   <metadata key="extruder" value="1"/>\n  </object>\n`;
+        ids.dummyIds.forEach((oid, i) => {
+            x += `  <object id="${oid}">\n   <metadata key="extruder" value="${i+2}"/>\n  </object>\n`;
+        });
+        x += ` </objects>\n</config>\n`;
+        return x;
     },
 
     buildContentTypesXML: () => `<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="png"  ContentType="image/png"/>
+  <Default Extension="json" ContentType="application/json"/>
+  <Default Extension="config" ContentType="text/xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
   <Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>
 </Types>`,
 
@@ -929,11 +995,13 @@ const VoxelApp = {
         
         // --- START: NEW/MODIFIED EXPORT EVENT LISTENERS ---
         document.getElementById('exportBambuStudioBtn').addEventListener('click', () => {
+            const scaleUnit = document.querySelector('input[name="exportScaleUnit"]:checked').value;
             VoxelApp3MFExporter.exportBambuStudio3MF(
                 this.voxels, 
                 this.VS, 
                 this.showToast,
-                this.parseKey
+                this.parseKey,
+                scaleUnit
             );
             document.getElementById('exportOptionsModal').close();
         });
@@ -1956,10 +2024,6 @@ const VoxelApp = {
                 depthWrite: false
             });
             this.templateImageMesh = new THREE.Mesh(geometry, material);
-            if (this.templateImagePinnedY == null) {
-              this.templateImagePinnedY = (this.activeDrawingLevel?.y ?? 0);
-            }
-            this.templateImageMesh.renderOrder = -1;
             this.updateTemplateImagePosition();
             this.scene.add(this.templateImageMesh);
             document.getElementById('removeImageBtn').classList.remove('hidden');
@@ -1987,7 +2051,7 @@ const VoxelApp = {
         if (!this.templateImageMesh) return;
         const sizeAll = this.GRID * this.VS;
         const offsetY = -0.01;
-        const y = (this.templateImagePinnedY ?? 0) * this.VS + offsetY;
+        const y = offsetY; // Lock to the ground plane
         this.templateImageMesh.position.set(sizeAll / 2, y, sizeAll / 2);
         this.templateImageMesh.rotation.set(-Math.PI / 2, 0, 0);
     },
