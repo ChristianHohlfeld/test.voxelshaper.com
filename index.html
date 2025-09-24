@@ -419,7 +419,7 @@ const VoxelApp3MFExporter = {
             zip.folder("Metadata").file("plate_1_small.png", smallThumb, {binary:true});
 
             const blob = await zip.generateAsync({type:"blob", compression:"DEFLATE", compressionOptions:{level:6}});
-            saveAs(blob, "VoxelShaper_Model_by_Christian_Hohlfeld.3mf");
+            saveAs(blob, "VoxelShaper_by_Christian_Hohlfeld.3mf");
             
             showToast('Export Complete', 'Bambu Studio 3MF file saved!', 'success');
         } catch(err) {
@@ -453,77 +453,61 @@ const VoxelApp3MFExporter = {
     
     tokenFromPaletteIndex: function(i) { return this.tokenForColorNumber(i + 1); },
 
-    build3DModelXML: function(voxels, {voxelMM = 1, title = 'VoxelShaper Model by Christian Hohlfeld'}={}) {
+    build3DModelXML: function(voxels, {
+        voxelMM=1,
+        title='VoxelShaper Model by Christian Hohlfeld',
+        buildXYZ=[90,90,0]
+    }={}) {
         const CUBE_V = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
         const CUBE_T = [[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,4,7],[0,7,3],[1,2,6],[1,6,5],[3,7,6],[3,6,2],[0,1,5],[0,5,4]];
         
-        const palette = Array.from(new Set(voxels.map(v => v.color)));
-        const colorToIdx = new Map(palette.map((c, i) => [c, i]));
+        const s = +voxelMM || 1;
+        const palette = Array.from(new Set(voxels.map(v=>v.color)));
+        const colorToIdx = new Map(palette.map((c,i)=>[c,i]));
+        const [bx,by,bz] = buildXYZ.map(n=>+n||0);
+        const today = this.ymd();
+        const { esc, fmt } = this;
         
         const V = [];
         const T = [];
-        const s = +voxelMM || 1;
-
-        // Note: The main app uses a Y-up coordinate system.
-        // 3MF and printers use Z-up. We must transform the coordinates here.
-        // Editor X -> Model X
-        // Editor Y -> Model Z
-        // Editor Z -> Model Y
-        for (const v of voxels) {
+        for (const v of voxels){
             const base = V.length;
-            for (const [x, y, z] of CUBE_V) {
-                V.push([this.fmt((v.x + x) * s), this.fmt((v.z + y) * s), this.fmt((v.y + z) * s)]);
+            for (const [x,y,z] of CUBE_V){
+                // Note: The main app uses a Y-up coordinate system.
+                // 3MF and printers use Z-up. We must transform the coordinates here.
+                // Editor X -> Model X
+                // Editor Y -> Model Z
+                // Editor Z -> Model Y
+                V.push([fmt((v.x + x)*s), fmt((v.z + y)*s), fmt((v.y + z)*s)]);
             }
             const token = this.tokenFromPaletteIndex(colorToIdx.get(v.color));
-            for (const [a, b, c] of CUBE_T) {
-                T.push([base + a, base + b, base + c, token]);
+            for (const [a,b,c] of CUBE_T){
+                T.push([base+a, base+b, base+c, token]);
             }
         }
-        
-        // Calculate bounds for centering transform
-        let minX = Infinity, minY = Infinity, minZ = Infinity;
-        let maxX = -Infinity, maxY = -Infinity;
-        V.forEach(([x,y,z]) => {
-            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-            minZ = Math.min(minZ, z);
-        });
-
-        const modelCenterX = minX + (maxX - minX) / 2;
-        const modelCenterY = minY + (maxY - minY) / 2;
-        const buildPlateCenter = 125;
-        
-        const bx = buildPlateCenter - modelCenterX;
-        const by = buildPlateCenter - modelCenterY;
-        const bz = -minZ; // Place bottom of model on the plate
-
-        const today = this.ymd();
-        const { esc, fmt } = this;
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
         xml += `<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:BambuStudio="http://schemas.bambulab.com/package/2021">\n`;
-        xml += ` <metadata name="Application">BambuStudio-02.02.02.56</metadata>\n`;
-        xml += ` <metadata name="BambuStudio:3mfVersion">1</metadata>\n <metadata name="Copyright"></metadata>\n`;
-        xml += ` <metadata name="CreationDate">${today}</metadata>\n <metadata name="Description"></metadata>\n`;
-        xml += ` <metadata name="Designer">${esc('Christian Heinrich Hohlfeld')}</metadata>\n`;
-        xml += ` <metadata name="DesignerCover"></metadata>\n <metadata name="DesignerUserId"></metadata>\n`;
-        xml += ` <metadata name="License"></metadata>\n <metadata name="ModificationDate">${today}</metadata>\n`;
-        xml += ` <metadata name="Origin"></metadata>\n <metadata name="Thumbnail_Middle">/Metadata/plate_1.png</metadata>\n`;
-        xml += ` <metadata name="Thumbnail_Small">/Metadata/plate_1_small.png</metadata>\n`;
+        xml += ` <metadata name="Application">BambuStudio-02.02.02.56</metadata>\n <metadata name="BambuStudio:3mfVersion">1</metadata>\n <metadata name="Copyright"></metadata>\n`;
+        xml += ` <metadata name="CreationDate">${today}</metadata>\n <metadata name="Description"></metadata>\n <metadata name="Designer">${esc('Christian Heinrich Hohlfeld')}</metadata>\n`;
+        xml += ` <metadata name="DesignerCover"></metadata>\n <metadata name="DesignerUserId"></metadata>\n <metadata name="License"></metadata>\n <metadata name="ModificationDate">${today}</metadata>\n`;
+        xml += ` <metadata name="Origin"></metadata>\n <metadata name="Thumbnail_Middle">/Metadata/plate_1.png</metadata>\n <metadata name="Thumbnail_Small">/Metadata/plate_1_small.png</metadata>\n`;
         xml += ` <metadata name="Title">${esc(title)}</metadata>\n`;
         
         const tokenMap = {};
-        palette.forEach((hex, i) => { tokenMap[this.tokenFromPaletteIndex(i)] = hex; });
+        palette.forEach((hex,i)=>{ tokenMap[this.tokenFromPaletteIndex(i)] = hex; });
         xml += ` <metadata name="BambuStudio:PaintTokenARGB">${esc(JSON.stringify(tokenMap))}</metadata>\n`;
         
-        xml += ` <resources>\n  <object id="1" type="model">\n   <mesh>\n    <vertices>\n`;
+        xml += ` <resources>\n`;
+        xml += `  <object id="1" type="model">\n   <mesh>\n    <vertices>\n`;
         for (const [x,y,z] of V) { xml += `     <vertex x="${x}" y="${y}" z="${z}"/>\n`; }
         xml += `    </vertices>\n    <triangles>\n`;
         for (const [v1,v2,v3,pc] of T) { xml += `     <triangle v1="${v1}" v2="${v2}" v3="${v3}" paint_color="${pc}"/>\n`; }
         xml += `    </triangles>\n   </mesh>\n  </object>\n`;
         xml += `  <object id="2" type="model">\n   <components>\n`;
         xml += `    <component objectid="1" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n`;
-        xml += `   </components>\n  </object>\n </resources>\n <build>\n`;
+        xml += `   </components>\n  </object>\n`;
+        xml += ` </resources>\n <build>\n`;
         xml += `  <item objectid="2" transform="1 0 0 0 1 0 0 0 1 ${fmt(bx)} ${fmt(by)} ${fmt(bz)}" printable="1"/>\n`;
         xml += ` </build>\n</model>\n`;
         return xml;
@@ -949,8 +933,7 @@ const VoxelApp = {
                 this.voxels, 
                 this.VS, 
                 this.showToast,
-                this.parseKey,
-                this.key
+                this.parseKey
             );
             document.getElementById('exportOptionsModal').close();
         });
