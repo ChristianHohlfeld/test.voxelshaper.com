@@ -1,4 +1,4 @@
-name: Deploy static content to Pages
+name: Build & publish (deploy-from-branch + SEO)
 
 on:
   push:
@@ -6,63 +6,91 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  contents: write
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Prepare output folder
+      - name: Prepare dist
         run: |
-          mkdir out
-          cp index.html out/index.html
-          touch out/.nojekyll
+          set -e
+          rm -rf dist && mkdir -p dist
+          cp index.html dist/index.html
+          # cp -R assets dist/assets || true
+          touch dist/.nojekyll
 
-      - name: Replace domain in all HTML files
+      - name: SEO inject (canonical, OG/Twitter, JSON-LD, etc.)
         run: |
-          echo "🔄 Replacing voxelshaper.com → test.voxelshaper.com (excluding api.*)..."
-          # Add test. to hosts under voxelshaper.com EXCEPT when host already starts with test. or api.
-          find out -name '*.html' \
-            -exec perl -i -pe 's~https://(?!(?:test\.|api\.))([^/]*voxelshaper\.com)~https://test.$1~g' {} +
+          set -euo pipefail
+          cd dist
 
-      - name: Verify no test.api leak
-        run: |
-          if grep -Rn "https://test\.api\.voxelshaper\.com" out; then
-            echo "::error::Found forbidden URL: test.api.voxelshaper.com"
-            exit 1
+          # Domain bestimmen (CNAME aus Repo-Root, sonst Fallback)
+          DOMAIN="$(cat ../CNAME 2>/dev/null || true)"
+          if [ -z "${DOMAIN:-}" ]; then
+            echo "::warning::No CNAME in repo root. Falling back to owner.github.io"
+            DOMAIN="${GITHUB_REPOSITORY_OWNER}.github.io"
+          fi
+          echo "$DOMAIN" > CNAME
+
+          CANON="https://${DOMAIN}/"
+          OG="${CANON}og.png"
+          LOGO="${CANON}logo-512.png"
+
+          # Texte je Domain
+          if [[ "$DOMAIN" == "hub.voxelshaper.com" ]]; then
+            TITLE="VoxelShaper Hub – 3D-Modelle & Community für Maker"
+            DESC="Teile, stöbere und lade 3D-druckbare Voxel-Modelle. Bambu-Studio-freundliche 3MF/STL-Assets. Minecraft-Style Block-CAD."
+            KEYS="voxel models, 3mf, stl, bambu studio, makerworld, voxel cad, block cad, minecraft style, community, download"
           else
-            echo "✅ No test.api.voxelshaper.com links found."
+            TITLE="VoxelShaper – Voxel-CAD für 3D-Druck (Bambu Lab Ready)"
+            DESC="Einfaches voxel-basiertes CAD für Maker. Minecraft-Style Modelle, Export als 3MF/STL für Bambu Studio & AMS Multicolor."
+            KEYS="voxel cad, voxel editor, block based cad, 3d printing cad, bambu lab, 3mf export, stl export, ams multicolor, maker cad, minecraft style 3d editor"
           fi
 
-      - name: 🔧 Inject subtle TEST badge (no overlay)
-        run: |
-          echo "🔧 Injecting subtle TEST badge (+1cm higher)..."
-          perl -i -pe 's~</head>~<style id="env-badge">:root{--env-badge-bg:#b91c1c;--env-badge-fg:#fff}body::after{content:"TEST – test.voxelshaper.com";position:fixed;bottom:calc(1cm + 12px);right:12px;background:var(--env-badge-bg);color:var(--env-badge-fg);padding:6px 10px;border-radius:9999px;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.06em;opacity:.85;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:2147483647}@media (max-width:480px){body::after{font-size:11px;bottom:calc(1cm + 8px);right:8px;padding:5px 8px}}</style></head>~' out/index.html
+          # Alte Head-Tags entfernen
+          perl -0777 -i -pe '
+            s~<meta[^>]+property="og:[^"]+"[^>]*>~~gi;
+            s~<meta[^>]+name="twitter:[^"]+"[^>]*>~~gi;
+            s~<meta[^>]+name="description"[^>]*>~~gi;
+            s~<meta[^>]+name="keywords"[^>]*>~~gi;
+            s~<link[^>]+rel=["\x27]canonical["\x27][^>]*>~~gi;
+            s~<script[^>]+application/ld\+json[^>]*>.*?</script>~~gsi;
+          ' index.html
 
-      - name: 🔖 Prefix title with [TEST]
-        run: |
-          perl -i -pe 's~<title>(.*?)</title>~<title>[TEST] $1</title>~' out/index.html
+          # JSON-LD bauen (einzeilig)
+          JSONLD='{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://voxelshaper.com/#org","name":"VoxelShaper","url":"https://voxelshaper.com/","logo":"'"$LOGO"'","sameAs":[]},{"@type":"WebApplication","@id":"'"$CANON"'#app","name":"VoxelShaper","url":"'"$CANON"'","applicationCategory":"DesignApplication","operatingSystem":"Web","isAccessibleForFree":true},{"@type":"WebSite","@id":"'"$CANON"'#website","name":"VoxelShaper","url":"'"$CANON"'"}]}'
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+          # SEO-Block in Datei schreiben (eine Zeile)
+          printf '<meta name="description" content="%s"><meta name="keywords" content="%s"><link rel="canonical" href="%s"><meta property="og:title" content="%s"><meta property="og:description" content="%s"><meta property="og:type" content="website"><meta property="og:url" content="%s"><meta property="og:image" content="%s"><meta property="og:site_name" content="VoxelShaper"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="%s"><meta name="twitter:description" content="%s"><meta name="twitter:image" content="%s"><script type="application/ld+json">%s</script>' \
+            "$DESC" "$KEYS" "$CANON" "$TITLE" "$DESC" "$CANON" "$OG" "$TITLE" "$DESC" "$OG" "$JSONLD" > __seo.html
+
+          # Sicher vor </head> einsetzen (liest Datei; keine @-Interpolation)
+          perl -0777 -i -pe 'BEGIN{undef $/; open my $fh,"<","__seo.html" or die $!; my $s=do{local $/; <$fh>}; s~</head>~$s</head>~i' index.html
+          rm -f __seo.html
+
+          # robots.txt + sitemap.xml
+          printf "User-agent: *\nDisallow:\nSitemap: %ssitemap.xml\n" "$CANON" > robots.txt
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' \
+            "  <url><loc>${CANON}</loc><lastmod>${NOW}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>" \
+            '</urlset>' > sitemap.xml
+
+      - name: One-line HTML (optional GH quirk workaround)
+        run: |
+          set -e
+          cd dist
+          tr '\n' ' ' < index.html > __1l && mv __1l index.html
+
+      - name: Deploy to branch "pages"
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: out
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: pages
+          # cname: hub.voxelshaper.com   # optional, falls du CNAME hier setzen willst
+          # force_orphan: true           # optional
