@@ -529,26 +529,25 @@ const predefinedCategories = ["Spielzeug", "Dekoration", "Funktional", "Kunst", 
  */
 function createBrickGeometry(unitSize) {
     const geometries = [];
-    const printTolerance_mm = 0.05;
-
+    const printTolerance_mm = 0.10;
     // Standard LEGO dimensions in mm
-    const lego_brick_width_mm = 8.0; // Width and Depth of a 1x1 brick
-    const lego_brick_body_height_mm = 9.6; // Body height (3 plates)
-    const lego_stud_height_mm = 3;
-    const lego_stud_diameter_mm = 4.8;
-    const lego_outer_wall_thickness_mm = 1.4;
+    const brick_brick_width_mm = 8.0; // Width and Depth of a 1x1 brick
+    const brick_brick_body_height_mm = 9.6; // Body height (3 plates)
+    const brick_stud_height_mm = 3;
+    const brick_stud_diameter_mm = 4.8;
+    const brick_outer_wall_thickness_mm = 1.4;
 
     // Calculate scaling factors for each dimension to make the BODY unitSize x unitSize x unitSize
-    const scaleX = unitSize / lego_brick_width_mm;
-    const scaleY = unitSize / lego_brick_body_height_mm; // For the body height
-    const scaleZ = unitSize / lego_brick_width_mm; // For depth, same as width
+    const scaleX = unitSize / brick_brick_width_mm;
+    const scaleY = unitSize / brick_brick_body_height_mm; // For the body height
+    const scaleZ = unitSize / brick_brick_width_mm; // For depth, same as width
 
     // Apply scaling factors to nominal dimensions
-    const scaled_brick_width = lego_brick_width_mm * scaleX; // This will now be unitSize
-    const scaled_brick_body_height = lego_brick_body_height_mm * scaleY; // This will now be unitSize
-    const scaled_stud_height = lego_stud_height_mm * scaleY; // Stud height scales with body height
-    const scaled_stud_diameter = lego_stud_diameter_mm * scaleX; // Stud diameter scales with width
-    const scaled_outer_wall_thickness = lego_outer_wall_thickness_mm * scaleX; // Wall thickness scales with width
+    const scaled_brick_width = brick_brick_width_mm * scaleX; // This will now be unitSize
+    const scaled_brick_body_height = brick_brick_body_height_mm * scaleY; // This will now be unitSize
+    const scaled_stud_height = brick_stud_height_mm * scaleY; // Stud height scales with body height
+    const scaled_stud_diameter = brick_stud_diameter_mm * scaleX; // Stud diameter scales with width
+    const scaled_outer_wall_thickness = brick_outer_wall_thickness_mm * scaleX; // Wall thickness scales with width
     const scaled_print_tolerance = printTolerance_mm * scaleX; // Tolerance scales with width
 
     const halfScaledWidth = scaled_brick_width / 2;
